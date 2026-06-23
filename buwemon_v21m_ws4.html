@@ -1622,7 +1622,7 @@ function removeCardSynced(el) {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v21n_ws1',
+    version: 'v21m_ws443',
     deck: G.deck,
     graves: G.graves,
     slots: G.slots,
@@ -1813,7 +1813,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;">
-    v21n_ws1
+    v21m_ws443
   </div>
 </div>
 
@@ -1852,9 +1852,7 @@ function pickPlayer(n) {
 
 function wsConnect(onOpen) {
   try {
-    // Connect to WebSocket - same host, /ws path
-    const wsUrl = (location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws';
-    const ws = new WebSocket(wsUrl);
+    const ws = new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws');
     NET.ws = ws;
     ws.onopen = () => {
       try { updateConnDot(true); } catch(e) {}
