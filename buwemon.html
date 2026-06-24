@@ -1622,7 +1622,7 @@ function removeCardSynced(el) {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v21n_ws4',
+    version: 'v21n_ws1',
     deck: G.deck,
     graves: G.graves,
     slots: G.slots,
@@ -1813,7 +1813,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;">
-    v21n_ws4
+    v21n_ws1
   </div>
 </div>
 
@@ -1915,8 +1915,7 @@ function netSendState() {
     .map(c => {
       const r = c.getBoundingClientRect();
       const cx = r.left+r.width/2, cy = r.top+r.height/2;
-      const myPfx2 = (NET.myPlayer === 2) ? 'p2' : 'p1';
-      const myH = document.getElementById(myPfx2+'-hand');
+      const myH = document.getElementById('p1-hand');
       const hr = myH ? myH.getBoundingClientRect() : null;
       const inMyHand = hr && cx>=hr.left && cx<=hr.right && cy>=hr.top && cy<=hr.bottom;
       const realFd = c.dataset.fdSaved !== undefined ? c.dataset.fdSaved : c.dataset.fd;
@@ -1986,7 +1985,7 @@ function onNetData(d) {
     const eZone2 = (NET.myPlayer === 2) ? '#p1-hand' : '#p2-hand';
     const lbl = document.querySelector(eZone2 + ' .zlbl');
     if (lbl) lbl.textContent = 'Hand – ' + NET.enemyName;
-    if (false) { // no hello loop
+    if (!NET.isHost) {
       netSend({t:'hello', name:NET.myName});
       startGame('multi');
     }
@@ -2075,22 +2074,16 @@ function onNetData(d) {
     const lbl = document.querySelector(eZone3 + ' .zlbl');
     if (lbl) lbl.textContent = (NET.enemyName||'Gegner') + ' — ' + (d.handCount||0) + ' Karten';
 
-    // Reveal state handled via separate event
+    // Reveal state
+    if (d.reveal !== undefined) {
+      G.reveal[1] = d.reveal;
+      const btn = document.getElementById('p2-reveal');
+      if (btn) { btn.textContent = d.reveal ? 'Hand verbergen' : 'Hand zeigen'; btn.classList.toggle('on', d.reveal); }
+      applyP1HandVisibility();
+    }
   }
 
 
-  if (d.t === 'lp') {
-    G.lp[d.p] = d.val;
-    document.getElementById('p'+d.p+'-lp').textContent = d.val;
-  }
-  if (d.t === 'gamereset') {
-    resetLocalState();
-  }
-  if (d.t === 'reveal') {
-    G.reveal[d.p] = d.val;
-    updateRevealBtn(d.p);
-    applyP1HandVisibility();
-  }
   if (d.t === 'dice') {
     showDiceResult(d.result, false);
   }
