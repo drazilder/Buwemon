@@ -1553,10 +1553,9 @@ function applyP1HandVisibility() {
     if (inEnemyHand && !G.reveal[revealKey]) {
       // In enemy hand: mask
       if (el.dataset.fd !== '1') { el.dataset.fd = '1'; renderCard(el); }
-    } else if (!inEnemyHand && el.dataset.netEnemy === '1') {
-      // Enemy card outside enemy hand: show with real fd
-      const targetFd = el.dataset.realFd || '0';
-      if (el.dataset.fd !== targetFd) { el.dataset.fd = targetFd; renderCard(el); }
+    } else if (inEnemyHand === false && el.dataset.netEnemy === '1' && el.dataset.fd === '1') {
+      // Enemy card outside enemy hand but still masked: unmask
+      el.dataset.fd = '0'; renderCard(el);
     }
     // Own cards on field: don't touch - netSendState and receiver handle them
   });
@@ -1574,7 +1573,7 @@ function removeCardSynced(el) {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v21n_ws10',
+    version: 'v21n_ws9',
     deck: G.deck,
     graves: G.graves,
     slots: G.slots,
@@ -1765,7 +1764,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;">
-    v21n_ws10
+    v21n_ws9
   </div>
 </div>
 
@@ -1992,13 +1991,14 @@ function onNetData(d) {
     (d.fieldCards||[]).forEach(fc => {
       let el = G.cards.find(c => c.dataset.uid === String(fc.uid));
       if (el) {
-        // Just update position - applyP1HandVisibility handles fd for enemy cards
+        // Just update position and state
         el.style.left = clampX(fc.x) + 'px';
         el.style.top  = clampY(fc.y) + 'px';
-        // For enemy cards: store real fd but let applyP1HandVisibility decide masking
-        el.dataset.realFd = fc.fd;
-        // Trigger applyP1HandVisibility immediately after position update
-        setTimeout(applyP1HandVisibility, 0);
+        // applyP1HandVisibility handles masking - just store the real fd
+        if (el.dataset.fd !== fc.fd) {
+          el.dataset.fd = fc.fd;
+          renderCard(el);
+        }
       } else {
         // New card - spawn at same absolute position
         el = spawnCard(
