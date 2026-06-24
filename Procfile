@@ -1,2 +1,1 @@
-# TODO: Modify this Procfile to fit your needs
-web: gunicorn app:app
+web: python buwemon_fly_server.py
