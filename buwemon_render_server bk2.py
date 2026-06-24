@@ -47,12 +47,8 @@ async def ws_handler(request):
     print("WS DISCONNECTED", flush=True)
     return ws
 
-async def ping_handler(request):
-    return web.Response(text='ok')
-
 async def main():
     app = web.Application(client_max_size=100*1024*1024)
-    app.router.add_get('/ping', ping_handler)
     app.router.add_get('/ws', ws_handler)
     app.router.add_static('/', str(BASE_DIR), show_index=True)
     runner = web.AppRunner(app)
