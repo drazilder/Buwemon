@@ -1527,7 +1527,6 @@ function releaseSlot(slotId, x, y) {
 // Unless G.reveal[1] is true (enemy pressed "Hand zeigen")
 function applyP1HandVisibility() {
   if (NET.mode !== 'multi') {
-    // Solo: restore all masked cards
     G.cards.forEach(el => {
       if (el.dataset.fdSaved !== undefined) {
         el.dataset.fd = el.dataset.fdSaved;
@@ -1538,30 +1537,74 @@ function applyP1HandVisibility() {
     return;
   }
 
-  // My enemy hand zone = what I mask
   const maskId    = (NET.myPlayer === 2) ? 'p1-hand' : 'p2-hand';
   const revealKey = (NET.myPlayer === 2) ? 1 : 2;
-  const maskEl = document.getElementById(maskId);
-  if (!maskEl) return;
-  const hr = maskEl.getBoundingClientRect();
+  const maskH = document.getElementById(maskId);
+  if (!maskH) return;
+  const hr = maskH.getBoundingClientRect();
+
+  // Also get OWN hand zone - cards there are never masked by us
+  const myHandId = (NET.myPlayer === 2) ? 'p2-hand' : 'p1-hand';
+  const myHandEl = document.getElementById(myHandId);
+  const myHR = myHandEl ? myHandEl.getBoundingClientRect() : null;
 
   G.cards.forEach(el => {
-    // Card center using style coords (position:fixed = screen coords)
-    const cx = parseFloat(el.style.left) + 31;
-    const cy = parseFloat(el.style.top) + 44;
-    const inEnemyHand = cx >= hr.left && cx <= hr.right && cy >= hr.top && cy <= hr.bottom;
+    const isEnemy = el.dataset.netEnemy === '1';
+
+    // Skip own card being dragged
+    if (!isEnemy && drag && drag.el === el) {
+      if (el.dataset.fdSaved !== undefined) {
+        el.dataset.fd = el.dataset.fdSaved;
+        delete el.dataset.fdSaved;
+        renderCard(el);
+      }
+      return;
+    }
+
+    // Card center position
+    let cx, cy;
+    if (isEnemy) {
+      cx = parseFloat(el.style.left) + 31;
+      cy = parseFloat(el.style.top) + 44;
+    } else {
+      const r = el.getBoundingClientRect();
+      cx = r.left + r.width/2;
+      cy = r.top + r.height/2;
+    }
+
+    const inEnemyHand = cx>=hr.left && cx<=hr.right && cy>=hr.top && cy<=hr.bottom;
+    const inMyHand = myHR && cx>=myHR.left && cx<=myHR.right && cy>=myHR.top && cy<=myHR.bottom;
 
     if (inEnemyHand && !G.reveal[revealKey]) {
       // Must be masked
-      if (el.dataset.fd !== '1') {
-        el.dataset.fd = '1';
-        renderCard(el);
+      if (isEnemy) {
+        if (el.dataset.fd !== '1') { el.dataset.fd = '1'; renderCard(el); }
+      } else {
+        if (el.dataset.fdSaved === undefined) {
+          el.dataset.fdSaved = el.dataset.fd;
+          el.dataset.fd = '1';
+          renderCard(el);
+        }
       }
     } else {
-      // Must be visible - force face up
-      if (el.dataset.fd !== '0') {
-        el.dataset.fd = '0';
-        renderCard(el);
+      // Must be visible - cards outside both hand zones are ALWAYS face up
+      if (isEnemy) {
+        const realFd = el.dataset.fdSaved !== undefined ? el.dataset.fdSaved : el.dataset.fd;
+        if (el.dataset.fd !== '0' || el.dataset.fdSaved !== undefined) {
+          el.dataset.fd = '0';
+          delete el.dataset.fdSaved;
+          renderCard(el);
+        }
+      } else {
+        if (el.dataset.fdSaved !== undefined) {
+          el.dataset.fd = el.dataset.fdSaved;
+          delete el.dataset.fdSaved;
+          renderCard(el);
+        } else if (!inMyHand && el.dataset.fd === '1') {
+          // Extra safety: own card outside both hand zones must be face up
+          el.dataset.fd = '0';
+          renderCard(el);
+        }
       }
     }
   });
@@ -1579,7 +1622,7 @@ function removeCardSynced(el) {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v21n_ws7',
+    version: 'v21n_ws6',
     deck: G.deck,
     graves: G.graves,
     slots: G.slots,
@@ -1770,7 +1813,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;">
-    v21n_ws7
+    v21n_ws6
   </div>
 </div>
 
@@ -2000,9 +2043,19 @@ function onNetData(d) {
         // Just update position and state
         el.style.left = clampX(fc.x) + 'px';
         el.style.top  = clampY(fc.y) + 'px';
-        // applyP1HandVisibility handles masking - just store the real fd
-        if (el.dataset.fd !== fc.fd) {
-          el.dataset.fd = fc.fd;
+        // Check if card should be masked based on position in enemy hand zone
+        // Enemy hand = p1-hand for Spieler 2, p2-hand for Spieler 1
+        const recvEnemyHandId = (NET.myPlayer === 2) ? 'p1-hand' : 'p2-hand';
+        const recvRevealKey = (NET.myPlayer === 2) ? 1 : 2;
+        const recvEhEl = document.getElementById(recvEnemyHandId);
+        const recvEhR = recvEhEl ? recvEhEl.getBoundingClientRect() : null;
+        // Use fc.x/fc.y (sent position = screen coords for position:fixed)
+        const recvCX = fc.x + 31, recvCY = fc.y + 44;
+        const recvInHand = recvEhR && recvCX >= recvEhR.left && recvCX <= recvEhR.right && recvCY >= recvEhR.top && recvCY <= recvEhR.bottom;
+        const recvFd = (recvInHand && !G.reveal[recvRevealKey]) ? '1' : fc.fd;
+        if (el.dataset.fd !== recvFd) {
+          el.dataset.fd = recvFd;
+          if (el.dataset.fdSaved !== undefined) el.dataset.fdSaved = fc.fd;
           renderCard(el);
         }
       } else {
