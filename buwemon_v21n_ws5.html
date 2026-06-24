@@ -1622,7 +1622,7 @@ function removeCardSynced(el) {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v21n_ws6',
+    version: 'v21n_ws5',
     deck: G.deck,
     graves: G.graves,
     slots: G.slots,
@@ -1813,7 +1813,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;">
-    v21n_ws6
+    v21n_ws5
   </div>
 </div>
 
@@ -2043,19 +2043,21 @@ function onNetData(d) {
         // Just update position and state
         el.style.left = clampX(fc.x) + 'px';
         el.style.top  = clampY(fc.y) + 'px';
-        // Check if card should be masked based on position in enemy hand zone
-        // Enemy hand = p1-hand for Spieler 2, p2-hand for Spieler 1
-        const recvEnemyHandId = (NET.myPlayer === 2) ? 'p1-hand' : 'p2-hand';
-        const recvRevealKey = (NET.myPlayer === 2) ? 1 : 2;
-        const recvEhEl = document.getElementById(recvEnemyHandId);
-        const recvEhR = recvEhEl ? recvEhEl.getBoundingClientRect() : null;
-        // Use fc.x/fc.y (sent position = screen coords for position:fixed)
-        const recvCX = fc.x + 31, recvCY = fc.y + 44;
-        const recvInHand = recvEhR && recvCX >= recvEhR.left && recvCX <= recvEhR.right && recvCY >= recvEhR.top && recvCY <= recvEhR.bottom;
-        const recvFd = (recvInHand && !G.reveal[recvRevealKey]) ? '1' : fc.fd;
-        if (el.dataset.fd !== recvFd) {
-          el.dataset.fd = recvFd;
-          if (el.dataset.fdSaved !== undefined) el.dataset.fdSaved = fc.fd;
+        const newFd = fc.fd;
+        if (el.dataset.fd !== newFd) {
+          el.dataset.fd = newFd;
+          // If this card is in p2-hand and revealed, keep face-up
+          if (G.reveal[1] && newFd === '1') {
+            const p1h = document.getElementById('p2-hand');
+            if (p1h) {
+              const hr = p1h.getBoundingClientRect();
+              const r2 = el.getBoundingClientRect();
+              const cx2 = r2.left+r2.width/2, cy2 = r2.top+r2.height/2;
+              if (cx2>=hr.left && cx2<=hr.right && cy2>=hr.top && cy2<=hr.bottom) {
+                el.dataset.fd = '0';
+              }
+            }
+          }
           renderCard(el);
         }
       } else {
