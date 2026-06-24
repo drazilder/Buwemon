@@ -1215,7 +1215,6 @@ function toggleReveal(p){
     netSendState(); // resend state with updated fd values
   }
   applyP1HandVisibility();
-  setTimeout(applyP1HandVisibility, 100);
 }
 
 function updateRevealBtn(p) {
@@ -2002,13 +2001,10 @@ function onNetData(d) {
     (d.fieldCards||[]).forEach(fc => {
       let el = G.cards.find(c => c.dataset.uid === String(fc.uid));
       if (el) {
-        // Just update position - applyP1HandVisibility handles fd for enemy cards
+        // Just update position - applyP1HandVisibility handles masking
         el.style.left = clampX(fc.x) + 'px';
         el.style.top  = clampY(fc.y) + 'px';
-        // For enemy cards: store real fd but let applyP1HandVisibility decide masking
         el.dataset.realFd = fc.fd;
-        // Trigger applyP1HandVisibility immediately after position update
-        setTimeout(applyP1HandVisibility, 0);
       } else {
         // New card - spawn at same absolute position
         el = spawnCard(
@@ -2018,6 +2014,9 @@ function onNetData(d) {
         el.dataset.netEnemy = '1';
       }
     });
+
+    // Re-apply visibility after state update
+    applyP1HandVisibility();
 
     // Hand count label
     const eZone3 = (NET.myPlayer === 2) ? '#p1-hand' : '#p2-hand';
@@ -2039,6 +2038,7 @@ function onNetData(d) {
     G.reveal[d.p] = d.val;
     updateRevealBtn(d.p);
     applyP1HandVisibility();
+    setTimeout(applyP1HandVisibility, 100);
   }
   if (d.t === 'lp') {
     G.lp[d.p] = d.val;
@@ -2051,6 +2051,7 @@ function onNetData(d) {
     G.reveal[d.p] = d.val;
     updateRevealBtn(d.p);
     applyP1HandVisibility();
+    setTimeout(applyP1HandVisibility, 100);
   }
   if (d.t === 'dice') {
     showDiceResult(d.result, false);
