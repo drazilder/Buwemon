@@ -1,65 +1,50 @@
 #!/usr/bin/env python3
-"""
-Buwemon Render.com Server
-HTTP + WebSocket auf Port $PORT (von Render gesetzt)
-"""
-import asyncio
-import json
-import os
-import sys
-import threading
-import webbrowser
+import asyncio, json, os, sys
 from pathlib import Path
-
 try:
-    from aiohttp import web
+    from aiohttp import web, WSMsgType
 except ImportError:
     os.system(f"{sys.executable} -m pip install aiohttp")
-    from aiohttp import web
+    from aiohttp import web, WSMsgType
 
 PORT = int(os.environ.get('PORT', 8765))
 BASE_DIR = Path(__file__).parent
-
 rooms = {}
 
 async def ws_handler(request):
-    ws = web.WebSocketResponse()
+    ws = web.WebSocketResponse(heartbeat=30)
     await ws.prepare(request)
+    print("WS CONNECTED", flush=True)
     room_code = None
-    try:
-        async for msg in ws:
-            if msg.type == web.WSMsgType.TEXT:
-                try:
-                    data = json.loads(msg.data)
-                except:
-                    continue
-                t = data.get('t')
-                if t == 'create':
-                    room_code = data['code']
-                    rooms[room_code] = [ws]
-                    print(f"Room created: {room_code}")
-                elif t == 'join':
-                    room_code = data['code']
-                    if room_code in rooms and len(rooms[room_code]) < 2:
-                        rooms[room_code].append(ws)
-                        print(f"Joined: {room_code}")
-                        await rooms[room_code][0].send_str(json.dumps({'t':'joined'}))
-                        await ws.send_str(json.dumps({'t':'joined'}))
-                    else:
-                        await ws.send_str(json.dumps({'t':'error','msg':'Room not found'}))
+    async for msg in ws:
+        print(f"MSG TYPE: {msg.type} DATA: {msg.data[:100] if msg.data else ''}", flush=True)
+        if msg.type == WSMsgType.TEXT:
+            try: data = json.loads(msg.data)
+            except: continue
+            t = data.get('t')
+            if t == 'create':
+                room_code = data['code']
+                rooms[room_code] = [ws]
+                print(f"ROOM CREATED: {room_code}", flush=True)
+            elif t == 'join':
+                room_code = data['code']
+                if room_code in rooms and len(rooms[room_code]) < 2:
+                    rooms[room_code].append(ws)
+                    await rooms[room_code][0].send_str(json.dumps({'t':'joined'}))
+                    await ws.send_str(json.dumps({'t':'joined'}))
+                    print(f"JOINED: {room_code}", flush=True)
                 else:
-                    if room_code and room_code in rooms:
-                        for c in rooms[room_code]:
-                            if c != ws:
-                                try: await c.send_str(msg.data)
-                                except: pass
-    except:
-        pass
-    finally:
-        if room_code and room_code in rooms:
-            rooms[room_code] = [c for c in rooms[room_code] if c != ws]
-            if not rooms[room_code]:
-                del rooms[room_code]
+                    await ws.send_str(json.dumps({'t':'error','msg':'not found'}))
+            else:
+                if room_code and room_code in rooms:
+                    for c in rooms[room_code]:
+                        if c != ws:
+                            try: await c.send_str(msg.data)
+                            except: pass
+    if room_code and room_code in rooms:
+        rooms[room_code] = [c for c in rooms[room_code] if c != ws]
+        if not rooms[room_code]: del rooms[room_code]
+    print("WS DISCONNECTED", flush=True)
     return ws
 
 async def main():
@@ -68,9 +53,8 @@ async def main():
     app.router.add_static('/', str(BASE_DIR), show_index=True)
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', PORT)
-    await site.start()
-    print(f"Server läuft auf Port {PORT}")
+    await web.TCPSite(runner, '0.0.0.0', PORT).start()
+    print(f"READY ON PORT {PORT}", flush=True)
     await asyncio.Future()
 
 asyncio.run(main())
