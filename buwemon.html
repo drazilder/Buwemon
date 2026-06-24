@@ -1528,14 +1528,12 @@ function releaseSlot(slotId, x, y) {
 function applyP1HandVisibility() {
   if (NET.mode !== 'multi') return;
 
-  // Enemy hand = the zone I mask on my screen
   const maskId    = (NET.myPlayer === 2) ? 'p1-hand' : 'p2-hand';
   const revealKey = (NET.myPlayer === 2) ? 1 : 2;
   const maskEl = document.getElementById(maskId);
   if (!maskEl) return;
   const hr = maskEl.getBoundingClientRect();
 
-  // My own hand = don't touch these
   const myHandId = (NET.myPlayer === 2) ? 'p2-hand' : 'p1-hand';
   const myEl = document.getElementById(myHandId);
   const myHR = myEl ? myEl.getBoundingClientRect() : null;
@@ -1544,20 +1542,17 @@ function applyP1HandVisibility() {
     const cx = parseFloat(el.style.left) + 31;
     const cy = parseFloat(el.style.top) + 44;
 
-    // Don't touch cards in my own hand zone
-    const inMyHand = myHR && cx >= myHR.left && cx <= myHR.right && cy >= myHR.top && cy <= myHR.bottom;
-    if (inMyHand) return;
-
+    const inMyHand    = myHR && cx >= myHR.left && cx <= myHR.right && cy >= myHR.top && cy <= myHR.bottom;
     const inEnemyHand = cx >= hr.left && cx <= hr.right && cy >= hr.top && cy <= hr.bottom;
 
     if (inEnemyHand && !G.reveal[revealKey]) {
-      // In enemy hand: mask
+      // In enemy hand: mask (ws10 logic - works for p1-hand)
       if (el.dataset.fd !== '1') { el.dataset.fd = '1'; renderCard(el); }
-    } else if (!inEnemyHand && el.dataset.netEnemy === '1') {
-      // Enemy card outside enemy hand: always face up on field
+    } else if (!inMyHand && !inEnemyHand) {
+      // On field outside both hand zones: always face up (ws11 logic - works for p2-hand)
       if (el.dataset.fd !== '0') { el.dataset.fd = '0'; renderCard(el); }
     }
-    // Own cards on field: don't touch - netSendState and receiver handle them
+    // In own hand: don't touch
   });
 }
 setInterval(applyP1HandVisibility, 300);
