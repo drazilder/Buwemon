@@ -1526,87 +1526,33 @@ function releaseSlot(slotId, x, y) {
 // On real screen: p2-hand cards show as backs (so I can't see enemy hand)
 // Unless G.reveal[1] is true (enemy pressed "Hand zeigen")
 function applyP1HandVisibility() {
-  if (NET.mode !== 'multi') {
-    G.cards.forEach(el => {
-      if (el.dataset.fdSaved !== undefined) {
-        el.dataset.fd = el.dataset.fdSaved;
-        delete el.dataset.fdSaved;
-        renderCard(el);
-      }
-    });
-    return;
-  }
+  if (NET.mode !== 'multi') return;
 
   const maskId    = (NET.myPlayer === 2) ? 'p1-hand' : 'p2-hand';
   const revealKey = (NET.myPlayer === 2) ? 1 : 2;
-  const maskH = document.getElementById(maskId);
-  if (!maskH) return;
-  const hr = maskH.getBoundingClientRect();
+  const maskEl = document.getElementById(maskId);
+  if (!maskEl) return;
+  const hr = maskEl.getBoundingClientRect();
 
-  // Also get OWN hand zone - cards there are never masked by us
   const myHandId = (NET.myPlayer === 2) ? 'p2-hand' : 'p1-hand';
-  const myHandEl = document.getElementById(myHandId);
-  const myHR = myHandEl ? myHandEl.getBoundingClientRect() : null;
+  const myEl = document.getElementById(myHandId);
+  const myHR = myEl ? myEl.getBoundingClientRect() : null;
 
   G.cards.forEach(el => {
-    const isEnemy = el.dataset.netEnemy === '1';
+    const cx = parseFloat(el.style.left) + 31;
+    const cy = parseFloat(el.style.top) + 44;
 
-    // Skip own card being dragged
-    if (!isEnemy && drag && drag.el === el) {
-      if (el.dataset.fdSaved !== undefined) {
-        el.dataset.fd = el.dataset.fdSaved;
-        delete el.dataset.fdSaved;
-        renderCard(el);
-      }
-      return;
-    }
-
-    // Card center position
-    let cx, cy;
-    if (isEnemy) {
-      cx = parseFloat(el.style.left) + 31;
-      cy = parseFloat(el.style.top) + 44;
-    } else {
-      const r = el.getBoundingClientRect();
-      cx = r.left + r.width/2;
-      cy = r.top + r.height/2;
-    }
-
-    const inEnemyHand = cx>=hr.left && cx<=hr.right && cy>=hr.top && cy<=hr.bottom;
-    const inMyHand = myHR && cx>=myHR.left && cx<=myHR.right && cy>=myHR.top && cy<=myHR.bottom;
+    const inMyHand    = myHR && cx >= myHR.left && cx <= myHR.right && cy >= myHR.top && cy <= myHR.bottom;
+    const inEnemyHand = cx >= hr.left && cx <= hr.right && cy >= hr.top && cy <= hr.bottom;
 
     if (inEnemyHand && !G.reveal[revealKey]) {
-      // Must be masked
-      if (isEnemy) {
-        if (el.dataset.fd !== '1') { el.dataset.fd = '1'; renderCard(el); }
-      } else {
-        if (el.dataset.fdSaved === undefined) {
-          el.dataset.fdSaved = el.dataset.fd;
-          el.dataset.fd = '1';
-          renderCard(el);
-        }
-      }
-    } else {
-      // Must be visible - cards outside both hand zones are ALWAYS face up
-      if (isEnemy) {
-        const realFd = el.dataset.fdSaved !== undefined ? el.dataset.fdSaved : el.dataset.fd;
-        if (el.dataset.fd !== '0' || el.dataset.fdSaved !== undefined) {
-          el.dataset.fd = '0';
-          delete el.dataset.fdSaved;
-          renderCard(el);
-        }
-      } else {
-        if (el.dataset.fdSaved !== undefined) {
-          el.dataset.fd = el.dataset.fdSaved;
-          delete el.dataset.fdSaved;
-          renderCard(el);
-        } else if (!inMyHand && el.dataset.fd === '1') {
-          // Extra safety: own card outside both hand zones must be face up
-          el.dataset.fd = '0';
-          renderCard(el);
-        }
-      }
+      // In enemy hand: mask
+      if (el.dataset.fd !== '1') { el.dataset.fd = '1'; renderCard(el); }
+    } else if (!inMyHand && !inEnemyHand) {
+      // On field (outside both hand zones): always face up
+      if (el.dataset.fd !== '0') { el.dataset.fd = '0'; renderCard(el); }
     }
+    // In own hand: don't touch
   });
 }
 setInterval(applyP1HandVisibility, 300);
@@ -1622,7 +1568,7 @@ function removeCardSynced(el) {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v21n_ws1',
+    version: 'v21n_ws11',
     deck: G.deck,
     graves: G.graves,
     slots: G.slots,
@@ -1813,7 +1759,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;">
-    v21n_ws1
+    v21n_ws11
   </div>
 </div>
 
@@ -1915,7 +1861,8 @@ function netSendState() {
     .map(c => {
       const r = c.getBoundingClientRect();
       const cx = r.left+r.width/2, cy = r.top+r.height/2;
-      const myH = document.getElementById('p1-hand');
+      const myPfx2 = (NET.myPlayer === 2) ? 'p2' : 'p1';
+      const myH = document.getElementById(myPfx2+'-hand');
       const hr = myH ? myH.getBoundingClientRect() : null;
       const inMyHand = hr && cx>=hr.left && cx<=hr.right && cy>=hr.top && cy<=hr.bottom;
       const realFd = c.dataset.fdSaved !== undefined ? c.dataset.fdSaved : c.dataset.fd;
@@ -1925,7 +1872,7 @@ function netSendState() {
         color: c.dataset.color,
         ctype: c.dataset.ctype,
         file: c.dataset.file || '',
-        fd: (inMyHand && !G.reveal[1]) ? '1' : realFd,
+        fd: (inMyHand && !G.reveal[NET.myPlayer===2?2:1] && !(drag && drag.el===c)) ? '1' : realFd,
         x: parseFloat(c.style.left),
         y: parseFloat(c.style.top),
       };
@@ -1985,7 +1932,7 @@ function onNetData(d) {
     const eZone2 = (NET.myPlayer === 2) ? '#p1-hand' : '#p2-hand';
     const lbl = document.querySelector(eZone2 + ' .zlbl');
     if (lbl) lbl.textContent = 'Hand – ' + NET.enemyName;
-    if (!NET.isHost) {
+    if (false) { // no hello loop
       netSend({t:'hello', name:NET.myName});
       startGame('multi');
     }
@@ -2039,26 +1986,13 @@ function onNetData(d) {
     (d.fieldCards||[]).forEach(fc => {
       let el = G.cards.find(c => c.dataset.uid === String(fc.uid));
       if (el) {
-        // Just update position and state
+        // Just update position - applyP1HandVisibility handles fd for enemy cards
         el.style.left = clampX(fc.x) + 'px';
         el.style.top  = clampY(fc.y) + 'px';
-        const newFd = fc.fd;
-        if (el.dataset.fd !== newFd) {
-          el.dataset.fd = newFd;
-          // If this card is in p2-hand and revealed, keep face-up
-          if (G.reveal[1] && newFd === '1') {
-            const p1h = document.getElementById('p2-hand');
-            if (p1h) {
-              const hr = p1h.getBoundingClientRect();
-              const r2 = el.getBoundingClientRect();
-              const cx2 = r2.left+r2.width/2, cy2 = r2.top+r2.height/2;
-              if (cx2>=hr.left && cx2<=hr.right && cy2>=hr.top && cy2<=hr.bottom) {
-                el.dataset.fd = '0';
-              }
-            }
-          }
-          renderCard(el);
-        }
+        // For enemy cards: store real fd but let applyP1HandVisibility decide masking
+        el.dataset.realFd = fc.fd;
+        // Trigger applyP1HandVisibility immediately after position update
+        setTimeout(applyP1HandVisibility, 0);
       } else {
         // New card - spawn at same absolute position
         el = spawnCard(
@@ -2074,16 +2008,34 @@ function onNetData(d) {
     const lbl = document.querySelector(eZone3 + ' .zlbl');
     if (lbl) lbl.textContent = (NET.enemyName||'Gegner') + ' — ' + (d.handCount||0) + ' Karten';
 
-    // Reveal state
-    if (d.reveal !== undefined) {
-      G.reveal[1] = d.reveal;
-      const btn = document.getElementById('p2-reveal');
-      if (btn) { btn.textContent = d.reveal ? 'Hand verbergen' : 'Hand zeigen'; btn.classList.toggle('on', d.reveal); }
-      applyP1HandVisibility();
-    }
+    // Reveal state handled via separate event
   }
 
 
+  if (d.t === 'lp') {
+    G.lp[d.p] = d.val;
+    document.getElementById('p'+d.p+'-lp').textContent = d.val;
+  }
+  if (d.t === 'gamereset') {
+    resetLocalState();
+  }
+  if (d.t === 'reveal') {
+    G.reveal[d.p] = d.val;
+    updateRevealBtn(d.p);
+    applyP1HandVisibility();
+  }
+  if (d.t === 'lp') {
+    G.lp[d.p] = d.val;
+    document.getElementById('p'+d.p+'-lp').textContent = d.val;
+  }
+  if (d.t === 'gamereset') {
+    resetLocalState();
+  }
+  if (d.t === 'reveal') {
+    G.reveal[d.p] = d.val;
+    updateRevealBtn(d.p);
+    applyP1HandVisibility();
+  }
   if (d.t === 'dice') {
     showDiceResult(d.result, false);
   }
