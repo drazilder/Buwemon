@@ -1210,25 +1210,9 @@ function toggleReveal(p){
     btn.style.background = G.reveal[p] ? 'rgba(180,50,50,0.5)' : '';
     btn.style.color = G.reveal[p] ? '#fff' : '';
   }
-  // Directly set fd on all cards in this hand zone
-  const handEl = document.getElementById('p'+p+'-hand');
-  if (handEl) {
-    const hr = handEl.getBoundingClientRect();
-    const W=1920,H=980,scale=Math.min(window.innerWidth/W,window.innerHeight/H);
-    const ox=(window.innerWidth-W*scale)/2, oy=(window.innerHeight-H*scale)/2;
-    G.cards.forEach(el => {
-      const cx = parseFloat(el.style.left)+31, cy = parseFloat(el.style.top)+44;
-      const gx=(hr.left-ox)/scale, gx2=(hr.right-ox)/scale;
-      const gy=(hr.top-oy)/scale, gy2=(hr.bottom-oy)/scale;
-      if (cx>=gx && cx<=gx2 && cy>=gy && cy<=gy2) {
-        el.dataset.fd = G.reveal[p] ? '0' : '1';
-        renderCard(el);
-      }
-    });
-  }
   if (NET.mode === 'multi') {
     netSend({t:'reveal', p, val: G.reveal[p]});
-    netSendState();
+    netSendState(); // resend state with updated fd values
   }
   applyP1HandVisibility();
 }
@@ -1599,7 +1583,7 @@ function removeCardSynced(el) {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v21n_ws15',
+    version: 'v21n_ws14_neu',
     deck: G.deck,
     graves: G.graves,
     slots: G.slots,
@@ -1790,7 +1774,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;">
-    v21n_ws15
+    v21n_ws14_neu
   </div>
 </div>
 
