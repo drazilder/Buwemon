@@ -1528,12 +1528,14 @@ function releaseSlot(slotId, x, y) {
 function applyP1HandVisibility() {
   if (NET.mode !== 'multi') return;
 
+  // Enemy hand = the zone I mask on my screen
   const maskId    = (NET.myPlayer === 2) ? 'p1-hand' : 'p2-hand';
   const revealKey = (NET.myPlayer === 2) ? 1 : 2;
   const maskEl = document.getElementById(maskId);
   if (!maskEl) return;
   const hr = maskEl.getBoundingClientRect();
 
+  // My own hand = don't touch these
   const myHandId = (NET.myPlayer === 2) ? 'p2-hand' : 'p1-hand';
   const myEl = document.getElementById(myHandId);
   const myHR = myEl ? myEl.getBoundingClientRect() : null;
@@ -1542,17 +1544,21 @@ function applyP1HandVisibility() {
     const cx = parseFloat(el.style.left) + 31;
     const cy = parseFloat(el.style.top) + 44;
 
-    const inMyHand    = myHR && cx >= myHR.left && cx <= myHR.right && cy >= myHR.top && cy <= myHR.bottom;
+    // Don't touch cards in my own hand zone
+    const inMyHand = myHR && cx >= myHR.left && cx <= myHR.right && cy >= myHR.top && cy <= myHR.bottom;
+    if (inMyHand) return;
+
     const inEnemyHand = cx >= hr.left && cx <= hr.right && cy >= hr.top && cy <= hr.bottom;
 
     if (inEnemyHand && !G.reveal[revealKey]) {
       // In enemy hand: mask
       if (el.dataset.fd !== '1') { el.dataset.fd = '1'; renderCard(el); }
-    } else if (!inMyHand && !inEnemyHand) {
-      // On field (outside both hand zones): always face up
-      if (el.dataset.fd !== '0') { el.dataset.fd = '0'; renderCard(el); }
+    } else if (!inEnemyHand && el.dataset.netEnemy === '1') {
+      // Enemy card outside enemy hand: show with real fd
+      const targetFd = el.dataset.realFd || '0';
+      if (el.dataset.fd !== targetFd) { el.dataset.fd = targetFd; renderCard(el); }
     }
-    // In own hand: don't touch
+    // Own cards on field: don't touch - netSendState and receiver handle them
   });
 }
 setInterval(applyP1HandVisibility, 300);
@@ -1568,7 +1574,7 @@ function removeCardSynced(el) {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v21n_ws11',
+    version: 'v21n_ws10',
     deck: G.deck,
     graves: G.graves,
     slots: G.slots,
@@ -1759,7 +1765,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;">
-    v21n_ws11
+    v21n_ws10
   </div>
 </div>
 
