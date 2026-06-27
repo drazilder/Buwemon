@@ -96,7 +96,7 @@ body{background:linear-gradient(160deg,#909aaa 0%,#d8dce8 45%,#a8aebb 75%,#e4e8f
 .modal-bg.open{display:flex;}
 .modal-box{background:#fff;border-radius:14px;padding:18px;box-shadow:0 8px 40px rgba(0,0,0,0.22);display:flex;flex-direction:column;gap:12px;}
 
-#browser-modal .modal-box{width:min(720px,96vw);}
+#browser-modal .modal-box{width:min(720px,96vw);max-height:90vh;overflow:hidden;}
 #browser-modal h3{font-size:1rem;font-weight:700;}
 #browser-modal .sub{font-size:.78rem;color:#888;}
 #browser-list{overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:3px;}
@@ -337,6 +337,23 @@ body {
 }
 .darkschah-win { animation: buweshake 0.3s infinite; }
 .card.darkschah-win, #ereignis-panel.darkschah-win, #banish-panel.darkschah-win { animation: buweshake 0.3s infinite; }
+
+.lobby-pick-btn {
+  background: linear-gradient(160deg,#c8ccd4 0%,#e8ecf2 40%,#d0d4dc 70%,#f0f2f6 100%) !important;
+  border: 1px solid rgba(255,255,255,0.7);
+  border-radius: 7px; padding: 7px;
+  font-size: .85rem; font-family: 'AiSpec', sans-serif;
+  font-style: italic; color: #2a2e3a; cursor: pointer;
+}
+.lobby-pick-btn:active, .lobby-pick-btn:focus {
+  background: linear-gradient(160deg,#686c74 0%,#888c92 40%,#707478 70%,#909296 100%) !important;
+  outline: none;
+}
+.lobby-pick-btn.selected {
+  background: linear-gradient(160deg,#686c74 0%,#888c92 40%,#707478 70%,#909296 100%) !important;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+  color: #fff;
+}
 </style>
 </head>
 <body>
@@ -348,7 +365,7 @@ body {
   <button class="tbtn danger" id="btn-reset" onclick="openConfirm()">↺ Neue Runde</button>
   <span id="conn-dot" style="width:7px;height:7px;border-radius:50%;background:#d95555;display:none;flex-shrink:0;"></span>
   <button class="tbtn" id="btn-lobby">⌂ Startbildschirm</button>
-  <button class="tbtn" id="btn-pov" onclick="togglePOV()" style="display:none;">👁 Gegner POV</button>
+  
   <button class="tbtn" id="btn-save" style="color:#1a6a1a;border-color:rgba(30,120,30,0.3);">💾 Speichern</button>
   <button class="tbtn" id="btn-color">🎨 Tischfarbe</button>
   <div id="cpicker">
@@ -600,39 +617,6 @@ body {
 
 <div id="carry-card"><img id="carry-img" src="" alt=""></div>
 
-<!-- GEGNER POV POPUP -->
-<div id="pov-popup" style="
-  display:none;position:fixed;z-index:7000;
-  width:560px;height:340px;
-  background:#1a1a1a;
-  border:1px solid rgba(255,255,255,0.15);
-  border-radius:12px;
-  overflow:hidden;
-  box-shadow:0 8px 32px rgba(0,0,0,0.5);
-  top:60px;right:10px;
-  user-select:none;
-  display:none;
-  flex-direction:column;
-">
-  <div id="pov-header" style="
-    padding:5px 10px;
-    background:rgba(0,0,0,0.4);
-    display:flex;align-items:center;gap:8px;
-    font-size:.72rem;color:rgba(255,255,255,0.55);
-    font-family:'Kievit',sans-serif;
-    border-bottom:1px solid rgba(255,255,255,0.1);
-    cursor:move;flex-shrink:0;
-  ">
-    <span style="pointer-events:none;">👁 Gegner POV</span>
-    <span id="pov-status" style="color:rgba(255,255,255,0.3);font-size:.65rem;pointer-events:none;"></span>
-    <span style="flex:1;"></span>
-    <span onclick="togglePOV()" style="cursor:pointer;opacity:.6;font-size:.9rem;pointer-events:all;">✕</span>
-  </div>
-  <div style="flex:1;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;background:#111;">
-    <canvas id="pov-canvas" style="display:block;max-width:100%;max-height:100%;"></canvas>
-  </div>
-</div>
-
 <div id="ctx"></div>
 
 <script>
@@ -727,7 +711,6 @@ function startGame(mode) {
   }
   document.querySelector('#p1-grave .zlbl').textContent = 'Friedhof';
   if (mode === 'multi') {
-    document.getElementById('btn-pov').style.display = 'inline-block';
     updateConnDot(true);
     // Show enemy name placeholder
     const eZone = (NET.myPlayer === 2) ? '#p1-hand' : '#p2-hand';
@@ -1046,7 +1029,9 @@ function bCardToField(i){
   if(isGrave){cd=G.graves[G.browserSource].splice(i,1)[0];updGrave(G.browserSource);}
   else if(isBanish){cd=G.banish.splice(i,1)[0];updBanish();}
   else{cd=G.deck.splice(i,1)[0];updDeck();}
+  cd = {...cd, uid: G.nid++};
   closeBrowser();
+  if(NET.mode==='multi') netSendState();
   startCarry(cd);
 }
 function shuffleAndClose(){shuffle(G.deck);updDeck();closeBrowser();if(NET.mode==='multi')netSendState();}
@@ -1086,6 +1071,7 @@ function openOverview(){
           const cd=G.deck[deckIdx];
           // Don't close overview-modal, just show bpopup on top
           openBPopup(cd, ()=>{
+            document.getElementById('overview-modal').classList.remove('open');
             const idx2=G.deck.findIndex(c=>c.name===def.name);
             if(idx2<0)return;
             const pulled=G.deck.splice(idx2,1)[0];
@@ -1115,21 +1101,18 @@ function openColorRemove(){
       G.deck.filter(c=>c.color===cg.hex).forEach(c=>{
         const bcd={name:c.name,color:c.color,type:c.type,file:c.file||''};
         G.banish.push(bcd);
-        if(NET.mode==='multi') netSend({t:'banish_add', cd:bcd});
       });
       G.deck=G.deck.filter(c=>c.color!==cg.hex);updDeck();
       // Add field cards to banish and remove them
       G.cards.filter(c=>c.dataset.color===cg.hex).forEach(c=>{
         const bcd={name:c.dataset.name,color:c.dataset.color,type:c.dataset.ctype,file:c.dataset.file||''};
         G.banish.push(bcd);
-        if(NET.mode==='multi') netSend({t:'banish_add', cd:bcd});
         removeCardSynced(c);
       });
       // Add grave cards to banish
       [...G.graves.p1.filter(c=>c.color===cg.hex), ...G.graves.p2.filter(c=>c.color===cg.hex)].forEach(c=>{
         const bcd={name:c.name,color:c.color,type:c.type,file:c.file||''};
         G.banish.push(bcd);
-        if(NET.mode==='multi') netSend({t:'banish_add', cd:bcd});
       });
       G.graves.p1=G.graves.p1.filter(c=>c.color!==cg.hex);updGrave('p1');
       G.graves.p2=G.graves.p2.filter(c=>c.color!==cg.hex);updGrave('p2');
@@ -1172,7 +1155,6 @@ document.getElementById('popup-remove-btn').onclick=()=>{
     const bcd={name:el.dataset.name,color:el.dataset.color,type:ctype,file:el.dataset.file||''};
     G.banish.push(bcd);
     updBanish();
-    if(NET.mode==='multi') netSend({t:'banish_add', cd:bcd});
   }
   removeCardSynced(el);
   closePopup();
@@ -1218,7 +1200,9 @@ function onCarryDrop(e) {
     const bz = banishZoneEl.getBoundingClientRect();
     if (e.clientX >= bz.left && e.clientX <= bz.right && e.clientY >= bz.top && e.clientY <= bz.bottom) {
       if (cd.type !== 'ereignis' && cd.type !== 'ex-ereignis') {
-        addToBanish(cd);
+        const bcd = {name:cd.name, color:cd.color, type:cd.type, file:cd.file||''};
+        G.banish.push(bcd);
+        updBanish();
       }
       if (NET.mode==='multi') netSendState();
       return;
@@ -1229,7 +1213,6 @@ function onCarryDrop(e) {
   for (const p of ['p1','p2']) {
     const gz = document.getElementById(p+'-grave').getBoundingClientRect();
     if (e.clientX >= gz.left && e.clientX <= gz.right && e.clientY >= gz.top && e.clientY <= gz.bottom) {
-      // EX and ereignis cards disappear, others go to grave
       if (cd.type==='ex'||cd.type==='ex-ereignis'||cd.type==='ex-auto'||cd.type==='ereignis') {
         if (NET.mode==='multi') netSendState();
         return;
@@ -1255,6 +1238,8 @@ function onCarryDrop(e) {
       renderSlot(sid);
       const player = sid.startsWith('p1') ? 'p1' : 'p2';
       if (!isExSlot) checkExBuwemon(player);
+      if (isExSlot && cd.color === '#111111') checkDarkschahWin(player);
+      if (NET.mode==='multi') netSendState();
       return;
     }
   }
@@ -1329,8 +1314,9 @@ function rollDice(){
   btn.classList.remove('show-result');
   btn.classList.add('rolling');
   btn.textContent='?';
-  // Tell opponent to start rolling animation
-  if(NET.mode==='multi') netSend({t:'dice_roll'});
+  const result=Math.floor(Math.random()*6)+1;
+  // Send result immediately so receiver can show same number after animation
+  if(NET.mode==='multi') netSend({t:'dice_roll', result});
   let count=0;
   const interval=setInterval(()=>{
     btn.textContent=Math.floor(Math.random()*6)+1;
@@ -1339,8 +1325,7 @@ function rollDice(){
   },60);
   setTimeout(()=>{
     clearInterval(interval);
-    const result=Math.floor(Math.random()*6)+1;
-    showDiceResult(result, NET.mode==='multi');
+    showDiceResult(result, false);
   },700);
 }
 
@@ -1879,7 +1864,6 @@ function checkDropOnBanish(el){
       const cd={name:el.dataset.name,color:el.dataset.color,type:ctype,file:el.dataset.file||''};
       G.banish.push(cd);
       updBanish();
-      if(NET.mode==='multi') netSend({t:'banish_add', cd});
     }
     el.remove();
     G.cards=G.cards.filter(c=>c!==el);
@@ -1930,8 +1914,9 @@ function openBrowserCardPopup(i) {
     if (isGrave) updGrave(G.browserSource);
     else if (isBanish) updBanish();
     else updDeck();
-    if (pulled) startCarry({...pulled, uid: G.nid++});
+    pulled.uid = G.nid++;
     if (NET.mode==='multi') netSendState();
+    if (pulled) startCarry(pulled);
   });
 }
 
@@ -2039,9 +2024,10 @@ function checkLPWin(p) {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v24r',
+    version: 'v25c',
     deck: G.deck,
     graves: G.graves,
+    banish: G.banish,
     slots: G.slots,
     bg: document.body.style.background || '',
     cards: G.cards.map(el => ({
@@ -2216,8 +2202,8 @@ document.querySelectorAll('.swatch').forEach(sw=>{
       transition:transform .12s,box-shadow .12s;text-shadow:0 1px 2px rgba(255,255,255,0.7);width:auto;padding:10px 14px;">Beitreten</button>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:4px;">
-      <button id="pick-p1" onclick="pickPlayer(1)" style="flex:1;background:linear-gradient(160deg,#c8ccd4 0%,#e8ecf2 40%,#d0d4dc 70%,#f0f2f6 100%);border:1px solid rgba(255,255,255,0.7);border-radius:7px;padding:7px;font-size:.85rem;font-family:'AiSpec',sans-serif;font-style:italic;color:#2a2e3a;cursor:pointer;">Spieler 1</button>
-      <button id="pick-p2" onclick="pickPlayer(2)" style="flex:1;background:linear-gradient(160deg,#c8ccd4 0%,#e8ecf2 40%,#d0d4dc 70%,#f0f2f6 100%);border:1px solid rgba(255,255,255,0.7);border-radius:7px;padding:7px;font-size:.85rem;font-family:'AiSpec',sans-serif;font-style:italic;color:#2a2e3a;cursor:pointer;">Spieler 2</button>
+      <button id="pick-p1" onclick="pickPlayer(1)" class="lobby-pick-btn" style="flex:1;">Spieler 1</button>
+      <button id="pick-p2" onclick="pickPlayer(2)" class="lobby-pick-btn" style="flex:1;">Spieler 2</button>
     </div>
     <div id="lobby-multi-status" style="font-size:.78rem;color:#2a2e3a;opacity:.6;text-align:center;min-height:1.2em;font-family:'Kievit',sans-serif;"></div>
     <div id="lobby-code-display" style="display:none;font-size:1.8rem;font-weight:900;letter-spacing:6px;color:#2a2e3a;text-align:center;font-family:'AiSpec',sans-serif;background:rgba(255,255,255,0.4);border-radius:8px;padding:8px 16px;"></div>
@@ -2230,7 +2216,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v24r
+    v25c
   </div>
 </div>
 
@@ -2263,8 +2249,8 @@ function setMultiStatus(msg) {
 
 function pickPlayer(n) {
   NET.myPlayer = n;
-  document.getElementById('pick-p1').style.background = n===1 ? 'rgba(80,120,220,0.35)' : 'rgba(255,255,255,0.4)';
-  document.getElementById('pick-p2').style.background = n===2 ? 'rgba(80,120,220,0.35)' : 'rgba(255,255,255,0.4)';
+  document.getElementById('pick-p1').classList.toggle('selected', n===1);
+  document.getElementById('pick-p2').classList.toggle('selected', n===2);
 }
 
 function wsConnect(onOpen) {
@@ -2372,6 +2358,7 @@ function netSendState() {
     t: 'state',
     deck: G.deck,
     graves: {p1: G.graves['p1'], p2: G.graves['p2']},
+    banish: G.banish,
     slots: mySlots,
     senderPrefix: myPfx,
     fieldCards,
@@ -2430,7 +2417,11 @@ function onNetData(d) {
       updGrave('p1');
       updGrave('p2');
     }
- else if (d.grave !== undefined) {
+    if (d.banish !== undefined) {
+      G.banish = d.banish;
+      updBanish();
+    }
+    if (d.grave !== undefined) {
       G.graves[sPfx] = d.grave;
       updGrave(sPfx);
     }
@@ -2486,42 +2477,6 @@ function onNetData(d) {
 
     // Reveal state handled via separate event
   }
-
-
-  if (d.t === 'banish_add') {
-    G.banish.push(d.cd);
-    updBanish();
-  }
-  if (d.t === 'card_remove') {
-    const toRemove = G.cards.find(c => String(c.dataset.uid) === String(d.uid));
-    if (toRemove) { toRemove.remove(); G.cards = G.cards.filter(c => c !== toRemove); }
-  }
-  if (d.t === 'lp') {
-    G.lp[d.p] = d.val;
-    document.getElementById('p'+d.p+'-lp').textContent = d.val;
-  }
-  if (d.t === 'gamereset') {
-    resetLocalState();
-  }
-  if (d.t === 'winlose') {
-    const myPlayer = NET.myPlayer;
-    showWinLose(myPlayer !== d.loser);
-  }
-  if (d.t === 'darkschah') {
-    const myPlayer = NET.myPlayer;
-    const winnerNum = parseInt(d.winner.replace('p',''));
-    showDarkschahWinLose(myPlayer === winnerNum);
-  }
-  if (d.t === 'reveal') {
-    G.reveal[d.p] = d.val;
-    updateRevealBtn(d.p);
-    applyRevealToHand(d.p);
-    applyP1HandVisibility();
-  }
-  if (d.t === 'banish_add') {
-    G.banish.push(d.cd);
-    updBanish();
-  }
   if (d.t === 'card_remove') {
     const toRemove = G.cards.find(c => String(c.dataset.uid) === String(d.uid));
     if (toRemove) { toRemove.remove(); G.cards = G.cards.filter(c => c !== toRemove); }
@@ -2549,7 +2504,7 @@ function onNetData(d) {
     applyP1HandVisibility();
   }
   if (d.t === 'dice_roll') {
-    // Show rolling animation, then show the actual result from sender
+    // Show rolling animation then display sender's result
     const btn = document.getElementById('dice-btn');
     btn.classList.remove('show-result');
     btn.classList.add('rolling');
@@ -2560,10 +2515,7 @@ function onNetData(d) {
       c++;
       if (c > 10) clearInterval(iv);
     }, 60);
-    // Result will arrive via d.t==='dice' event
-  }
-  if (d.t === 'dice') {
-    showDiceResult(d.result, false);
+    setTimeout(() => { showDiceResult(d.result, false); }, 700);
   }
 }
 
@@ -2592,170 +2544,6 @@ function updateEnemyHandDisplay(count) {
   if (lbl) lbl.textContent = (NET.enemyName||'Gegner') + ' — Hand (' + count + ')';
 }
 
-// ── POV POPUP ──
-let povVisible = false;
-let povDrag = null;
-let povInterval = null;
-let povRendering = false;
-
-function togglePOV() {
-  povVisible = !povVisible;
-  const popup = document.getElementById('pov-popup');
-  popup.style.display = povVisible ? 'flex' : 'none';
-  if (povVisible) {
-    startPOV();
-  } else {
-    stopPOV();
-  }
-}
-
-function startPOV() {
-  renderPOV();
-  povInterval = setInterval(renderPOV, 2000);
-}
-
-function stopPOV() {
-  if (povInterval) { clearInterval(povInterval); povInterval = null; }
-}
-
-function renderPOV() {
-  if (povRendering) return;
-  povRendering = true;
-  document.getElementById('pov-status').textContent = 'wird geladen …';
-
-  // Temporarily make hand cards show backs for the screenshot
-  // In POV: mask MY hand (enemy can't see it)
-  // Spieler 1 (myPlayer=1): mask p2-hand (bottom = my hand)
-  // Spieler 2 (myPlayer=2): mask p1-hand (top = my hand)
-  const myHandIdPOV = (NET.myPlayer === 2) ? 'p1-hand' : 'p2-hand';
-  const myRevealPOV = (NET.myPlayer === 2) ? G.reveal[2] : G.reveal[1];
-  const handCards = [];
-  G.cards.forEach(el => {
-    // For enemy cards, use style.left/top directly (more accurate after position update)
-    let cx, cy;
-    if (el.dataset.netEnemy === '1') {
-      cx = parseFloat(el.style.left) + 31;
-      cy = parseFloat(el.style.top) + 44;
-    } else {
-      const r = el.getBoundingClientRect();
-      cx = r.left + r.width/2; cy = r.top + r.height/2;
-    }
-    const myH = document.getElementById(myHandIdPOV);
-    if (myH && !myRevealPOV) {
-      const hr = myH.getBoundingClientRect();
-      if (cx>=hr.left && cx<=hr.right && cy>=hr.top && cy<=hr.bottom && el.dataset.fd!=='1') {
-        handCards.push({el, orig: el.innerHTML});
-        el.innerHTML = '<img src="karten/Rueckseite.png" style="width:63px;height:88px;border-radius:6px;object-fit:cover;display:block;" draggable="false">';
-      }
-    }
-  });
-
-  // Hide POV popup, carry card, ctx menu, and modals during screenshot
-  const povEl = document.getElementById('pov-popup');
-  const povWas = povEl ? povEl.style.display : 'none';
-  if (povEl) povEl.style.display = 'none';
-  // Show carry card as back in screenshot (not hidden)
-  const carry = document.getElementById('carry-card');
-  const carryOrig = carry ? carry.querySelector('img') : null;
-  const carryOrigSrc = carryOrig ? carryOrig.src : '';
-  if (carryOrig && carry.style.display !== 'none') {
-    carryOrig.src = 'karten/Rueckseite.png';
-  }
-  const carryWas = 'keep';
-  const ctx = document.getElementById('ctx');
-  const ctxWas = ctx ? ctx.style.display : 'none';
-  if (ctx) ctx.style.display = 'none';
-  // Hide all modals
-  const modals = document.querySelectorAll('.modal-bg.open');
-  modals.forEach(m => m.style.display = 'none');
-
-  // Temporarily restore p2-hand cards to face-up for POV
-  const p1HandRestored = [];
-  G.cards.forEach(el => {
-    if (el.dataset.fdSaved !== undefined) {
-      p1HandRestored.push({el, savedFd: el.dataset.fd, savedInner: el.innerHTML});
-      el.dataset.fd = el.dataset.fdSaved;
-      renderCard(el);
-    }
-  });
-
-  // No rotation needed in POV
-
-  // Hide dragged card (show as back) - card being dragged is hidden from enemy
-  const draggedEl = drag ? drag.el : null;
-  const draggedOrig = draggedEl ? draggedEl.innerHTML : null;
-  if (draggedEl && draggedEl.dataset.fd !== '1') {
-    draggedEl.innerHTML = '<img src="karten/Rueckseite.png" style="width:63px;height:88px;border-radius:6px;object-fit:cover;display:block;" draggable="false">';
-  }
-
-  // Screenshot the whole body so fixed-position cards are included
-  const boardEl = document.getElementById('board');
-  const boardRect = boardEl.getBoundingClientRect();
-  html2canvas(document.body, {
-    scale: 0.6,
-    useCORS: true,
-    allowTaint: true,
-    backgroundColor: null,
-    logging: false,
-    imageTimeout: 0,
-    x: boardRect.left,
-    y: boardRect.top,
-    width: boardRect.width,
-    height: boardRect.height,
-    scrollX: -window.scrollX,
-    scrollY: -window.scrollY,
-    windowWidth: window.innerWidth,
-    windowHeight: window.innerHeight,
-  }).then(canvas => {
-    // Restore hand cards
-    handCards.forEach(({el, orig}) => { el.innerHTML = orig; });
-    // Restore p2-hand cards to masked state
-    p1HandRestored.forEach(({el, savedFd, savedInner}) => {
-      el.dataset.fd = savedFd;
-      el.innerHTML = savedInner;
-    });
-    // Restore dragged card
-    if (draggedEl && draggedOrig) draggedEl.innerHTML = draggedOrig;
-
-    if (povEl) povEl.style.display = povWas;
-    if (carryOrig && carryOrigSrc) carryOrig.src = carryOrigSrc;
-    if (ctx) ctx.style.display = ctxWas;
-    modals.forEach(m => m.style.display = '');
-
-    // Rotate 180 by drawing onto a new flipped canvas
-    const povCanvas = document.getElementById('pov-canvas');
-    const popup = document.getElementById('pov-popup');
-    const maxW = popup.clientWidth;
-    const maxH = popup.clientHeight - 30;
-    const scale = Math.min(maxW / canvas.width, maxH / canvas.height);
-    povCanvas.width = Math.round(canvas.width * scale);
-    povCanvas.height = Math.round(canvas.height * scale);
-    const ctx2 = povCanvas.getContext('2d');
-    // Rotate 180° around center
-    ctx2.drawImage(canvas, 0, 0, povCanvas.width, povCanvas.height);
-
-    document.getElementById('pov-status').textContent = '— live (2s refresh)';
-    povRendering = false;
-  }).catch(e => {
-    handCards.forEach(({el, orig}) => { el.innerHTML = orig; });
-    if (povEl) povEl.style.display = povWas;
-    if (carryOrig && carryOrigSrc) carryOrig.src = carryOrigSrc;
-    if (draggedEl && draggedOrig) draggedEl.innerHTML = draggedOrig;
-    p1HandRestored.forEach(({el, savedFd, savedInner}) => { el.dataset.fd = savedFd; el.innerHTML = savedInner; });
-
-    document.getElementById('pov-status').textContent = '⚠ Fehler';
-    povRendering = false;
-  });
-}
-
-// Make POV popup draggable
-const povPopup = document.getElementById('pov-popup');
-const povHeader = document.getElementById('pov-header');
-povHeader.addEventListener('pointerdown', e => {
-  if (e.target.style.pointerEvents === 'all') return;
-  povDrag = {ox: e.clientX - povPopup.offsetLeft, oy: e.clientY - povPopup.offsetTop};
-  povHeader.setPointerCapture(e.pointerId);
-});
 povHeader.addEventListener('pointermove', e => {
   if (!povDrag) return;
   povPopup.style.left = Math.max(0, e.clientX - povDrag.ox) + 'px';
