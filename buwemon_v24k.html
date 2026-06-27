@@ -138,8 +138,8 @@ body{background:linear-gradient(160deg,#909aaa 0%,#d8dce8 45%,#a8aebb 75%,#e4e8f
 .color-pick-lbl{font-size:.7rem;font-weight:600;color:#333;}
 
 /* CARD POPUP - very big */
-#card-popup .modal-box{width:min(700px,96vw);align-items:center;padding:24px;}
-#popup-img{width:420px;height:588px;border-radius:16px;object-fit:cover;display:block;box-shadow:0 10px 40px rgba(0,0,0,0.3);}
+#card-popup .modal-box{width:min(700px,96vw);align-items:center;padding:24px;max-height:96vh;overflow-y:auto;}
+#popup-img{width:min(420px,60vh);height:min(588px,84vh);border-radius:16px;object-fit:cover;display:block;box-shadow:0 10px 40px rgba(0,0,0,0.3);}
 #popup-img-back{width:420px;height:588px;border-radius:16px;object-fit:cover;display:block;box-shadow:0 10px 40px rgba(0,0,0,0.3);}
 #card-popup h2{font-size:1.2rem;font-weight:800;color:#222;text-align:center;}
 #card-popup .card-type-lbl{font-size:.82rem;color:#888;text-align:center;}
@@ -322,6 +322,20 @@ body {
   font-style: normal;
 }
 
+
+@keyframes buweshake {
+  0%,100% { transform: translate(0,0) rotate(0deg); }
+  10% { transform: translate(-8px,4px) rotate(-1deg); }
+  20% { transform: translate(10px,-6px) rotate(1deg); }
+  30% { transform: translate(-12px,8px) rotate(-1.5deg); }
+  40% { transform: translate(8px,-4px) rotate(1deg); }
+  50% { transform: translate(-6px,10px) rotate(-0.5deg); }
+  60% { transform: translate(12px,-8px) rotate(1.5deg); }
+  70% { transform: translate(-10px,4px) rotate(-1deg); }
+  80% { transform: translate(6px,-6px) rotate(0.5deg); }
+  90% { transform: translate(-8px,8px) rotate(-1deg); }
+}
+.darkschah-win { animation: buweshake 0.3s infinite; }
 </style>
 </head>
 <body>
@@ -517,8 +531,8 @@ body {
 
 <!-- BROWSER CARD POPUP -->
 <div class="modal-bg" id="browser-card-popup">
-  <div class="modal-box" style="width:min(700px,96vw);align-items:center;padding:24px;">
-    <img id="bpopup-img" src="" alt="" style="width:420px;height:588px;border-radius:16px;object-fit:cover;display:block;box-shadow:0 10px 40px rgba(0,0,0,0.18);">
+  <div class="modal-box" style="width:min(700px,96vw);align-items:center;padding:24px;max-height:96vh;overflow-y:auto;">
+    <img id="bpopup-img" src="" alt="" style="width:min(420px,60vh);height:min(588px,84vh);border-radius:16px;object-fit:cover;display:block;box-shadow:0 10px 40px rgba(0,0,0,0.18);">
     <h2 id="bpopup-name"></h2>
     <p class="card-type-lbl" id="bpopup-type"></p>
     <div class="popup-btns">
@@ -536,8 +550,8 @@ body {
 ">
   <div id="win-lose-text" style="
     font-family:'AiSpec',sans-serif;font-style:italic;font-weight:900;
-    font-size:4rem;text-align:center;padding:20px 40px;
-    transition:opacity 2s ease;
+    font-size:18rem;text-align:center;padding:0 40px;
+    line-height:1.0;word-break:break-word;
   "></div>
 </div>
 
@@ -1314,6 +1328,8 @@ function rollDice(){
   btn.classList.remove('show-result');
   btn.classList.add('rolling');
   btn.textContent='?';
+  // Tell opponent to start rolling animation
+  if(NET.mode==='multi') netSend({t:'dice_roll'});
   let count=0;
   const interval=setInterval(()=>{
     btn.textContent=Math.floor(Math.random()*6)+1;
@@ -1336,6 +1352,7 @@ function lpDirectEdit(p) {
   G.lp[p] = val;
   el.textContent = val;
   if (NET.mode==='multi') netSend({t:'lp', p, val:G.lp[p]});
+  checkLPWin(p);
 }
 function lpDirectKey(e, p) {
   if (e.key === 'Enter') { e.preventDefault(); document.getElementById('p'+p+'-lp').blur(); }
@@ -1546,6 +1563,23 @@ function renderSlot(slotId) {
   img.src = 'karten/' + (cd.file || imgFileFor(cd.name));
   img.alt = cd.name;
   div.appendChild(img);
+  // Doppelklick Popup für ex-auto Karten
+  if (cd.type === 'ex-auto') {
+    let exClickCount = 0, exClickTimer = null;
+    div.addEventListener('click', () => {
+      exClickCount++;
+      if (exClickCount === 1) {
+        exClickTimer = setTimeout(() => { exClickCount = 0; }, 300);
+      } else if (exClickCount === 2) {
+        clearTimeout(exClickTimer); exClickCount = 0;
+        const fake = document.createElement('div');
+        fake.dataset.name = cd.name; fake.dataset.color = cd.color;
+        fake.dataset.ctype = cd.type; fake.dataset.fd = '0';
+        fake.dataset.file = cd.file || ''; fake.dataset.uid = cd.uid || 0;
+        openPopup(fake);
+      }
+    });
+  }
   el.appendChild(div);
   el.classList.add('has-card');
 }
@@ -1569,6 +1603,8 @@ function checkExBuwemon(player) {
     if (exFile) {
       G.slots[exSlot] = {name: 'EX', color: s1.color, type: 'ex-auto', file: exFile, uid: 0};
       renderSlot(exSlot);
+      // Check for Darkschah win
+      if (s1.color === '#111111') checkDarkschahWin(player);
       return;
     }
   }
@@ -1611,6 +1647,8 @@ function tryDockCard(el) {
       // check EX
       const player = sid.startsWith('p1') ? 'p1' : 'p2';
       if (!isExSlot) checkExBuwemon(player);
+      // Darkschah manual dock
+      if (isExSlot && cd.color === '#111111') checkDarkschahWin(player);
       return true;
     }
   }
@@ -1634,7 +1672,22 @@ function releaseSlot(slotId, x, y) {
 
   slotEl.addEventListener('pointerdown', (e) => {
     if (!G.slots[sid]) return;
-    if (G.slots[sid].type === 'ex-auto') return;
+    if (G.slots[sid].type === 'ex-auto') {
+      // Allow dblclick popup for ex-auto
+      clickCount++;
+      if (clickCount === 1) {
+        clickTimer = setTimeout(() => { clickCount = 0; clickTimer = null; }, 300);
+      } else if (clickCount === 2) {
+        clearTimeout(clickTimer); clickCount = 0; clickTimer = null;
+        const cd = G.slots[sid];
+        const fake = document.createElement('div');
+        fake.dataset.name = cd.name; fake.dataset.color = cd.color;
+        fake.dataset.ctype = cd.type; fake.dataset.fd = '0';
+        fake.dataset.file = cd.file || ''; fake.dataset.uid = cd.uid || 0;
+        openPopup(fake);
+      }
+      return;
+    }
     e.stopPropagation();
     clickCount++;
 
@@ -1882,6 +1935,48 @@ function openBrowserCardPopup(i) {
 }
 
 
+// ── DARKSCHAH WIN ──
+function checkDarkschahWin(player) {
+  const myPlayer = NET.mode === 'multi' ? NET.myPlayer : 1;
+  const isWinner = (NET.mode === 'multi') ? (myPlayer === parseInt(player.replace('p',''))) : true;
+  showDarkschahWinLose(isWinner);
+  if (NET.mode === 'multi') netSend({t:'darkschah', winner: player});
+}
+
+function showDarkschahWinLose(isWinner) {
+  const text = isWinner ? 'ABSOLUTE VERNICHTUNG' : 'DU WURDEST VERNICHTET!';
+  const overlay = document.getElementById('win-lose-overlay');
+  const el = document.getElementById('win-lose-text');
+  el.textContent = '';
+  el.style.opacity = '1';
+  el.style.transition = '';
+  if (isWinner) {
+    el.style.color = '#ffffff';
+    el.style.webkitTextStroke = '3px #000000';
+    el.style.textShadow = '0 4px 24px rgba(0,0,0,0.8), 0 2px 8px rgba(0,0,0,0.9)';
+  } else {
+    el.style.color = '#000000';
+    el.style.webkitTextStroke = '3px #ffffff';
+    el.style.textShadow = '0 4px 24px rgba(0,0,0,0.8), 0 2px 8px rgba(0,0,0,0.9)';
+  }
+  overlay.style.display = 'flex';
+  document.getElementById('board').classList.add('darkschah-win');
+  let i = 0;
+  const interval = setInterval(() => {
+    el.textContent = text.slice(0, i + 1);
+    i++;
+    if (i >= text.length) {
+      clearInterval(interval);
+      setTimeout(() => {
+        el.style.transition = 'opacity 2s ease';
+        el.style.opacity = '0';
+        document.getElementById('board').classList.remove('darkschah-win');
+        setTimeout(() => { overlay.style.display = 'none'; }, 2000);
+      }, 10000);
+    }
+  }, 60);
+}
+
 // ── WIN / LOSE ──
 const WIN_TEXTS = ["Du bist der Buwemeister!", "Du hast gewonnen!", "Epic Win!", "Buwemonspieler des Monats!", "What a save!", "EZ"];
 const LOSE_TEXTS = ["Epic Fail!", "L", "Du bist tot du Opfer!", "Du bist scheiße!", "Du hast verloren!", "WASTED", "Grandios gescheitert!", "Du wurdest geschlachtet!"];
@@ -1891,33 +1986,44 @@ function showWinLose(isWinner) {
   const text = texts[Math.floor(Math.random() * texts.length)];
   const overlay = document.getElementById('win-lose-overlay');
   const el = document.getElementById('win-lose-text');
-  el.textContent = text;
+  el.textContent = '';
+  el.style.opacity = '1';
+  el.style.transition = '';
   if (isWinner) {
     el.style.color = '#ffffff';
     el.style.webkitTextStroke = '3px #000000';
-    el.style.textStroke = '3px #000000';
+    el.style.textShadow = '0 4px 24px rgba(0,0,0,0.8), 0 2px 8px rgba(0,0,0,0.9)';
   } else {
     el.style.color = '#000000';
     el.style.webkitTextStroke = '3px #ffffff';
-    el.style.textStroke = '3px #ffffff';
+    el.style.textShadow = '0 4px 24px rgba(0,0,0,0.8), 0 2px 8px rgba(0,0,0,0.9)';
   }
   overlay.style.display = 'flex';
-  el.style.opacity = '1';
-  setTimeout(() => {
-    el.style.opacity = '0';
-    setTimeout(() => { overlay.style.display = 'none'; }, 2000);
-  }, 10000);
+  // Typewriter animation
+  let i = 0;
+  const interval = setInterval(() => {
+    el.textContent = text.slice(0, i + 1);
+    i++;
+    if (i >= text.length) {
+      clearInterval(interval);
+      // Start 10s timer after last character
+      setTimeout(() => {
+        el.style.transition = 'opacity 2s ease';
+        el.style.opacity = '0';
+        setTimeout(() => { overlay.style.display = 'none'; }, 2000);
+      }, 10000);
+    }
+  }, 60);
 }
 
 function checkLPWin(p) {
-  if (G.lp[p] <= 0) {
+  const other = p === 1 ? 2 : 1;
+  if (G.lp[p] <= 0 && G.lp[other] > 0) {
     G.lp[p] = 0;
     document.getElementById('p'+p+'-lp').textContent = '0';
-    // p is the loser
     const myPlayer = NET.mode === 'multi' ? NET.myPlayer : 1;
     showWinLose(myPlayer !== p);
     if (NET.mode === 'multi') {
-      // Tell other player too - they see opposite
       netSend({t:'winlose', loser: p});
     }
   }
@@ -1926,7 +2032,7 @@ function checkLPWin(p) {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v24f',
+    version: 'v24k',
     deck: G.deck,
     graves: G.graves,
     slots: G.slots,
@@ -2117,7 +2223,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v24f
+    v24k
   </div>
 </div>
 
@@ -2394,6 +2500,11 @@ function onNetData(d) {
     const myPlayer = NET.myPlayer;
     showWinLose(myPlayer !== d.loser);
   }
+  if (d.t === 'darkschah') {
+    const myPlayer = NET.myPlayer;
+    const winnerNum = parseInt(d.winner.replace('p',''));
+    showDarkschahWinLose(myPlayer === winnerNum);
+  }
   if (d.t === 'reveal') {
     G.reveal[d.p] = d.val;
     updateRevealBtn(d.p);
@@ -2419,11 +2530,30 @@ function onNetData(d) {
     const myPlayer = NET.myPlayer;
     showWinLose(myPlayer !== d.loser);
   }
+  if (d.t === 'darkschah') {
+    const myPlayer = NET.myPlayer;
+    const winnerNum = parseInt(d.winner.replace('p',''));
+    showDarkschahWinLose(myPlayer === winnerNum);
+  }
   if (d.t === 'reveal') {
     G.reveal[d.p] = d.val;
     updateRevealBtn(d.p);
     applyRevealToHand(d.p);
     applyP1HandVisibility();
+  }
+  if (d.t === 'dice_roll') {
+    // Show rolling animation on receiver side
+    const btn = document.getElementById('dice-btn');
+    if (btn.classList.contains('rolling')) return;
+    btn.classList.remove('show-result');
+    btn.classList.add('rolling');
+    btn.textContent = '?';
+    let c = 0;
+    const iv = setInterval(() => {
+      btn.textContent = Math.floor(Math.random()*6)+1;
+      c++;
+      if (c > 10) clearInterval(iv);
+    }, 60);
   }
   if (d.t === 'dice') {
     showDiceResult(d.result, false);
