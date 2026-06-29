@@ -7,7 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html,body{width:100%;height:100%;overflow:hidden;font-family:'Kievit','Segoe UI',system-ui,sans-serif;font-size:12px;user-select:none;-webkit-user-select:none;}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Kievit','Segoe UI',system-ui,sans-serif;font-size:15px;user-select:none;-webkit-user-select:none;}
 body{background:linear-gradient(160deg,#909aaa 0%,#d8dce8 45%,#a8aebb 75%,#e4e8f0 100%);transition:background 0.4s;}
 
 #topbar{position:fixed;top:0;left:0;right:0;height:30px;background:rgba(255,255,255,0.55);backdrop-filter:blur(8px);border-bottom:1px solid rgba(0,0,0,0.09);display:flex;align-items:center;padding:0 10px;gap:7px;z-index:500;}
@@ -37,7 +37,7 @@ body{background:linear-gradient(160deg,#909aaa 0%,#d8dce8 45%,#a8aebb 75%,#e4e8f
 .zone-effects{flex:1;min-width:0;}
 .zone-grave{width:var(--cw);height:var(--ch);flex-shrink:0;position:relative;overflow:hidden;cursor:pointer;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);}
 .zone-grave:hover{border-color:rgba(0,0,0,0.3);}
-.zone-ex{width:var(--slot);flex-shrink:0;}
+.zone-ex{width:var(--slot);flex-shrink:0;display:flex;justify-content:center;}
 .buw-group{display:flex;gap:5px;flex-shrink:0;}
 .buw-slot{width:var(--slot);background:rgba(0,0,0,0.05);border:1.5px solid rgba(0,0,0,0.13);border-radius:7px;position:relative;flex-shrink:0;}
 .push{flex:1;}
@@ -57,7 +57,7 @@ body{background:linear-gradient(160deg,#909aaa 0%,#d8dce8 45%,#a8aebb 75%,#e4e8f
 .lp-calc button:hover{background:rgba(0,0,0,0.18);}
 .lp-display{background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 4px;font-size:1.5rem;font-weight:800;color:#222;letter-spacing:1px;cursor:text;outline:none;min-width:60px;font-family:"AiSpec",sans-serif;font-style:italic;user-select:text;-webkit-user-select:text;}.lp-display:focus{border-color:#888;background:#fff;box-shadow:0 0 0 2px rgba(100,100,200,0.2);}
 
-.reveal-btn{position:absolute;bottom:5px;right:8px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:5px;padding:2px 8px;font-size:.72rem;cursor:pointer;color:#333;z-index:10;}
+.reveal-btn{position:absolute;bottom:5px;right:8px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:5px;padding:4px 8px;min-height:20px;font-size:.72rem;cursor:pointer;color:#333;z-index:10;}
 .reveal-btn.on{background:rgba(60,140,60,0.2);border-color:rgba(60,140,60,0.4);color:#1a5c1a;}
 
 /* CENTER */
@@ -354,6 +354,21 @@ body {
   box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
   color: #fff;
 }
+
+@keyframes sparkFly {
+  0%   { opacity:0; transform:translate(-50%,-50%) scale(0.3); }
+  20%  { opacity:1; transform:translate(-50%,-50%) scale(1.2); }
+  70%  { opacity:1; transform:translate(-50%,-50%) scale(0.9); }
+  100% { opacity:0; transform:translate(-50%,-50%) scale(0.2); }
+}
+.spark-particle {
+  position:fixed;
+  width:12px;height:12px;
+  pointer-events:none;
+  z-index:99999;
+  animation:sparkFly 1.0s ease-out forwards;
+  background:url('data:image/png;base64,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') center/contain no-repeat;
+}
 </style>
 </head>
 <body>
@@ -384,7 +399,8 @@ body {
   <div class="row-hand">
     <div class="zone zone-hand" id="p2-hand">
       <span class="zlbl">Hand – Spieler 1</span>
-      <button class="reveal-btn" id="p2-reveal" onclick="toggleReveal(2)">Hand verdeckt</button>
+      <button class="reveal-btn" onpointerdown="event.stopPropagation()" onclick="shuffleHand('p2')" style="bottom:32px;">🔀 Hand mischen</button>
+      <button class="reveal-btn" id="p2-reveal" onpointerdown="event.stopPropagation()" onclick="toggleReveal(2)">Hand verdeckt</button>
     </div>
   </div>
 
@@ -410,14 +426,14 @@ body {
       <div class="buw-slot" id="p2-buw3"><span class="zlbl">Buwemon</span></div>
     </div>
     <div class="push" style="flex:2;"></div>
-    <div class="zone zone-effects"><span class="zlbl">Effektkarten</span></div>
+    <div class="zone zone-effects" id="p2-effects"><span class="zlbl">Effektkarten</span></div>
   </div>
 
   <div class="row-ex" id="p2-ex-row" style="display:flex;align-items:stretch;flex:11;min-height:0;">
     <div id="p2-ex-space" style="flex:none;width:0;"></div><!-- grave spacer -->
     <div style="flex:1;"></div><!-- push spacer -->
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:calc(3*var(--slot) + 2*5px);align-self:stretch;">
-      <div class="zone zone-ex" id="p2-ex" style="width:var(--slot);flex:1;"><span class="zlbl">EX-Buwemon</span></div>
+      <div class="zone zone-ex" id="p2-ex" style="width:var(--slot);flex:1;"><span class="zlbl" style="left:0;right:0;text-align:center;">EX</span></div>
     </div>
     <div style="flex:1;"></div><!-- push spacer -->
     <div style="flex:1;min-width:0;"></div><!-- effects spacer -->
@@ -447,9 +463,11 @@ body {
     <div id="deck-side-outer">
       <div id="deck-side-btns">
         <button class="tbtn" onclick="openBrowser('deck','all')">🔍 Stapel ansehen</button>
-        <button class="tbtn" onclick="openBrowser('deck','top4')">👁 Gossip</button>
-        <button class="tbtn" onclick="openOverview()">🎴 Schicksal</button>
-        <button class="tbtn" onclick="openColorRemove()">☠️ Raum-Zeit-Genozid</button>
+        <button class="tbtn" onclick="openOverview()" style="background:rgba(180,30,30,0.5);color:#fff;">🎴 Schicksal</button>
+        <button class="tbtn" onclick="confirmLiiinks()" style="background:rgba(120,40,180,0.5);color:#fff;">↔️ Liiinks</button>
+        <button class="tbtn" onclick="openBrowser('deck','top4')" style="background:rgba(120,40,180,0.5);color:#fff;">👁 Gossip</button>
+        <button class="tbtn" onclick="confirmRecast()" style="background:rgba(0,180,200,0.5);color:#fff;">🎲 Recast</button>
+        <button class="tbtn" onclick="openColorRemove()" style="background:rgba(20,20,20,0.85);color:#fff;">☠️ Raum-Zeit-Genozid</button>
       </div>
     </div>
   </div>
@@ -458,14 +476,14 @@ body {
     <div id="p1-ex-space" style="flex:none;width:0;"></div><!-- effects spacer -->
     <div style="flex:1;"></div><!-- push spacer -->
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:calc(3*var(--slot) + 2*5px);align-self:stretch;">
-      <div class="zone zone-ex" id="p1-ex" style="width:var(--slot);flex:1;"><span class="zlbl">EX-Buwemon</span></div>
+      <div class="zone zone-ex" id="p1-ex" style="width:var(--slot);flex:1;"><span class="zlbl" style="left:0;right:0;text-align:center;">EX</span></div>
     </div>
     <div style="flex:1;"></div><!-- push spacer -->
     <div style="width:calc(var(--cw) + 4px);flex-shrink:0;"></div><!-- grave spacer -->
   </div>
 
   <div class="row-zones">
-    <div class="zone zone-effects"><span class="zlbl">Effektkarten</span></div>
+    <div class="zone zone-effects" id="p1-effects"><span class="zlbl">Effektkarten</span></div>
     <div class="push" style="flex:2;"></div>
     <div class="buw-group">
       <div class="buw-slot" id="p1-buw1"><span class="zlbl">Buwemon</span></div>
@@ -492,7 +510,8 @@ body {
   <div class="row-hand">
     <div class="zone zone-hand" id="p1-hand">
       <span class="zlbl">Hand – Spieler 2</span>
-      <button class="reveal-btn" id="p1-reveal" onclick="toggleReveal(1)">Hand verdeckt</button>
+      <button class="reveal-btn" onpointerdown="event.stopPropagation()" onclick="shuffleHand('p1')" style="bottom:32px;">🔀 Hand mischen</button>
+      <button class="reveal-btn" id="p1-reveal" onpointerdown="event.stopPropagation()" onclick="toggleReveal(1)">Hand verdeckt</button>
     </div>
   </div>
 </div>
@@ -623,13 +642,13 @@ body {
 // ── CARD → IMAGE MAPPING ──
 const IMG = {
   "Gilip der Glibbrige": "karten/Gilip_der_Glibbrige.png",
-  "Lord Phillipp": "karten/Lord_Phillipp.png",
+  "Lord Phillipp of Glencoe": "karten/Lord_Phillipp.png",
   "Phülügülüm": "karten/Phueluegueluem.png",
   "Baby Niko": "karten/Baby Niko.png",
   "Grünika": "karten/Gruenika.png",
   "Schwammika": "karten/Schwammika.png",
   "Antika": "karten/Antika.png",
-  "Marie": "karten/Marie.png",
+  "Marie die Königsgardistin": "karten/Marie.png",
   "Marzo der Gott": "karten/Marzo_Der_Gott.png",
   "Marcopter": "karten/Marcopter.png",
   "Marco der Hund": "karten/Marco_der_Hund.png",
@@ -637,11 +656,11 @@ const IMG = {
   "Kax Maufmann": "karten/Kax_Maufmann.png",
   "Maxodia": "karten/Maxodia.png",
   "Maxibu": "karten/Maxibu.png",
-  "Hoffi": "karten/Hoffi.png",
+  "Hoffi der rasierte Karnevalsprinz": "karten/Hoffi.png",
   "Barista Clarista": "karten/Barista_Clarista.png",
   "Clarry Pather": "karten/Clarry_Pather.png",
   "ClariSSIO": "karten/ClariSSIO.png",
-  "Alicia": "karten/Alicia.png",
+  "Alicia die ehrenlose Fettsau": "karten/Alicia.png",
   "Glorian Schniekel": "karten/Glorian_Schniekel.png",
   "Flosama Op Laden": "karten/Flosama_Op_Laden.png",
   "Klorian": "karten/Klorian.png",
@@ -654,7 +673,7 @@ const IMG = {
   "Giraffael": "karten/Giraffael.png",
   "Hannah im Bach": "karten/Hannah_im_Bach.png",
   "Alexerus Snape": "karten/Alexerus_Snape.png",
-  "DiePogofanten": "karten/Pogofanten.png",
+  "Die Pogofanten": "karten/Pogofanten.png",
   "L'Enderdragon": "karten/L_Enderdragon.png",
   "Golop der Grobe": "karten/Golop_der_Grobe.png",
   "Der Zeitführer": "karten/Zeitfuehrer.png",
@@ -730,13 +749,13 @@ function startGame(mode) {
 // ── CARD DB ──
 const CARD_DB=[
   {name:"Gilip der Glibbrige",count:3,color:"#cc3333",type:"buw"},
-  {name:"Lord Phillipp",count:3,color:"#cc3333",type:"buw"},
+  {name:"Lord Phillipp of Glencoe",count:3,color:"#cc3333",type:"buw"},
   {name:"Phülügülüm",count:3,color:"#cc3333",type:"buw"},
   {name:"Baby Niko",count:3,color:"#cc3333",type:"buw"},
   {name:"Grünika",count:3,color:"#2e8a2e",type:"buw"},
   {name:"Schwammika",count:3,color:"#2e8a2e",type:"buw"},
   {name:"Antika",count:3,color:"#2e8a2e",type:"buw"},
-  {name:"Marie",count:3,color:"#2e8a2e",type:"buw"},
+  {name:"Marie die Königsgardistin",count:3,color:"#2e8a2e",type:"buw"},
   {name:"Marzo der Gott",count:3,color:"#cc5500",type:"buw"},
   {name:"Marcopter",count:3,color:"#cc5500",type:"buw"},
   {name:"Marco der Hund",count:3,color:"#cc5500",type:"buw"},
@@ -744,11 +763,11 @@ const CARD_DB=[
   {name:"Kax Maufmann",count:3,color:"#1a44bb",type:"buw"},
   {name:"Maxodia",count:3,color:"#1a44bb",type:"buw"},
   {name:"Maxibu",count:3,color:"#1a44bb",type:"buw"},
-  {name:"Hoffi",count:3,color:"#1a44bb",type:"buw"},
+  {name:"Hoffi der rasierte Karnevalsprinz",count:3,color:"#1a44bb",type:"buw"},
   {name:"Barista Clarista",count:3,color:"#008899",type:"buw"},
   {name:"Clarry Pather",count:3,color:"#008899",type:"buw"},
   {name:"ClariSSIO",count:3,color:"#008899",type:"buw"},
-  {name:"Alicia",count:3,color:"#008899",type:"buw"},
+  {name:"Alicia die ehrenlose Fettsau",count:3,color:"#008899",type:"buw"},
   {name:"Glorian Schniekel",count:3,color:"#aa9900",type:"buw"},
   {name:"Flosama Op Laden",count:3,color:"#aa9900",type:"buw"},
   {name:"Klorian",count:3,color:"#aa9900",type:"buw"},
@@ -761,7 +780,7 @@ const CARD_DB=[
   {name:"Giraffael",count:3,color:"#6622aa",type:"buw"},
   {name:"Hannah im Bach",count:3,color:"#6622aa",type:"buw"},
   {name:"Alexerus Snape",count:3,color:"#6622aa",type:"buw"},
-  {name:"DiePogofanten",count:1,color:"#111111",type:"spec"},
+  {name:"Die Pogofanten",count:1,color:"#111111",type:"spec"},
   {name:"L'Enderdragon",count:1,color:"#111111",type:"spec"},
   {name:"Golop der Grobe",count:1,color:"#111111",type:"spec"},
   {name:"Der Zeitführer",count:1,color:"#111111",type:"spec"},
@@ -943,8 +962,10 @@ function sendToGrave(el,player){
   G.graves[player].push(cd);
   el.remove();G.cards=G.cards.filter(c=>c!==el);
   updGrave(player);
-  if (NET.mode === 'multi' && isEnemyCard) netSend({t:'card_remove', uid});
-  if (!isEnemyCard) netSendState();
+  if (NET.mode === 'multi') {
+    netSend({t:'card_remove', uid});
+    if (!isEnemyCard) netSendState();
+  }
 }
 
 function updGrave(player){
@@ -1040,7 +1061,7 @@ function shuffleAndClose(){shuffle(G.deck);updDeck();closeBrowser();if(NET.mode=
 function openOverview(){
   const grid=document.getElementById('overview-grid');grid.innerHTML='';
   const ALWAYS_LOCKED = new Set([
-    'DiePogofanten',"L'Enderdragon",'Golop der Grobe','Der Zeitführer','BOOM Clan',
+    'Die Pogofanten',"L'Enderdragon",'Golop der Grobe','Der Zeitführer','BOOM Clan',
     'FourAceFour-Feuer-Reverse-Blöff'
   ]);
   UNIQUE_CARDS.forEach(def=>{
@@ -1117,14 +1138,19 @@ function openColorRemove(){
       G.graves.p1=G.graves.p1.filter(c=>c.color!==cg.hex);updGrave('p1');
       G.graves.p2=G.graves.p2.filter(c=>c.color!==cg.hex);updGrave('p2');
       updBanish();
-      // clear matching buw slots, then recheck EX
+      // clear matching buw slots, add to banish, then recheck EX
       ['p1','p2'].forEach(p=>{
         ['buw1','buw2','buw3'].forEach(b=>{
           const sid=p+'-'+b;
-          if(G.slots[sid]&&G.slots[sid].color===cg.hex){G.slots[sid]=null;renderSlot(sid);}
+          if(G.slots[sid]&&G.slots[sid].color===cg.hex){
+            const sc=G.slots[sid];
+            G.banish.push({name:sc.name,color:sc.color,type:sc.type||sc.ctype,file:sc.file||''});
+            G.slots[sid]=null;renderSlot(sid);
+          }
         });
         checkExBuwemon(p);
       });
+      updBanish();
       netSendState();
     };
     sw.appendChild(btn);
@@ -1140,7 +1166,7 @@ function openPopup(el){
   document.getElementById('popup-img').src=imgFor(el.dataset.name,fd,el.dataset.file);
   document.getElementById('popup-img').alt=el.dataset.name;
   document.getElementById('popup-name').textContent=el.dataset.name;
-  const types={buw:'Buwemon-Karte',spec:'Spezial-Buwemon',eff:'Effektkarte',ereignis:'Ereigniskarte','ex-ereignis':'EX-Buwemon'};
+  const types={buw:'Buwemon-Karte',spec:'Spezial-Buwemon',eff:'Effektkarte',ereignis:'Ereigniskarte','ex-ereignis':'EX'};
   document.getElementById('popup-type').textContent=types[el.dataset.ctype]||'';
   document.getElementById('card-popup').classList.add('open');
 }
@@ -1231,7 +1257,7 @@ function onCarryDrop(e) {
     const sr = slot.getBoundingClientRect();
     if (e.clientX >= sr.left && e.clientX <= sr.right && e.clientY >= sr.top && e.clientY <= sr.bottom) {
       const isExSlot = sid.endsWith('-ex');
-      if (isExSlot && cd.type !== 'ex' && cd.type !== 'spec' && cd.type !== 'ex-ereignis') break;
+      if (isExSlot && cd.type !== 'ex' && cd.type !== 'ex-ereignis') break;
       if (!isExSlot && cd.type !== 'buw' && cd.type !== 'spec') break;
       if (G.slots[sid]) releaseSlot(sid, sr.left+4, sr.top+4);
       G.slots[sid] = {...cd, file: cd.file || imgFileFor(cd.name)};
@@ -1499,7 +1525,7 @@ function openEreignis() {
       sep.style.cssText = 'width:100%;border-top:1.5px solid #ddd;margin:4px 0 2px;flex-basis:100%;';
       const sepLbl = document.createElement('div');
       sepLbl.style.cssText = 'width:100%;font-size:.72rem;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:1px;flex-basis:100%;padding:2px 0;';
-      sepLbl.textContent = 'EX-Buwemon';
+      sepLbl.textContent = 'EX';
       grid.appendChild(sep);
       grid.appendChild(sepLbl);
       exSepAdded = true;
@@ -1537,9 +1563,10 @@ G.slots = {
 function renderSlot(slotId) {
   const el = document.getElementById(slotId);
   if (!el) return;
+  // Track if slot was empty before (for spark animation)
+  const existingCard = el.querySelector('.docked-card');
   // remove existing docked
-  const existing = el.querySelector('.docked-card');
-  if (existing) existing.remove();
+  if (existingCard) existingCard.remove();
   el.classList.remove('has-card');
   const cd = G.slots[slotId];
   if (!cd) return;
@@ -1568,6 +1595,31 @@ function renderSlot(slotId) {
   }
   el.appendChild(div);
   el.classList.add('has-card');
+  // Spark animation for spec buwemon - many small sparks around card
+  if (cd.type === 'spec' && !existingCard) {
+    requestAnimationFrame(() => {
+      const r = el.getBoundingClientRect();
+      const cx = r.left + r.width/2, cy = r.top + r.height/2;
+      const count = 14;
+      for (let k = 0; k < count; k++) {
+        const angle = (k / count) * Math.PI * 2 + Math.random() * 0.5;
+        const dist = r.width * 0.4 + Math.random() * 14;
+        const sx = cx + Math.cos(angle) * dist;
+        const sy = cy + Math.sin(angle) * dist;
+        const delay = Math.random() * 600;
+        const dur = 600 + Math.random() * 600;
+        const spark = document.createElement('div');
+        spark.className = 'spark-particle';
+        spark.style.left = sx + 'px';
+        spark.style.top = sy + 'px';
+        spark.style.animationDelay = delay + 'ms';
+        spark.style.animationDuration = dur + 'ms';
+        spark.style.transform = `translate(-50%,-50%) rotate(${Math.random()*360}deg)`;
+        document.documentElement.appendChild(spark);
+        setTimeout(() => spark.remove(), delay + dur + 100);
+      }
+    });
+  }
 }
 
 function imgFileFor(name) {
@@ -1579,6 +1631,52 @@ function imgFileFor(name) {
   return 'Rueckseite.png';
 }
 
+
+function checkZoneColor(player) {
+  const s1 = G.slots[player+'-buw1'];
+  const s2 = G.slots[player+'-buw2'];
+  const s3 = G.slots[player+'-buw3'];
+  let color = null;
+  if (s1 && s2 && s3 && s1.color === s2.color && s2.color === s3.color) {
+    color = s1.color;
+  }
+  // Apply to zones: buw1,buw2,buw3,ex,hand,effects,grave
+  const zones = [
+    document.getElementById(player+'-buw1'),
+    document.getElementById(player+'-buw2'),
+    document.getElementById(player+'-buw3'),
+    document.getElementById(player+'-ex'),
+    document.getElementById(player+'-hand'),
+    document.getElementById(player+'-effects'),
+    document.getElementById(player+'-grave'),
+  ].filter(Boolean);
+  // Also LP button
+  const lpBtn = document.querySelector('#'+player+'-lp-wrap .lp-ok');
+  zones.forEach(z => {
+    if (!z) return;
+    if (color) {
+      // Parse color as RGB and apply with transparency
+      const r = parseInt(color.slice(1,3),16);
+      const g = parseInt(color.slice(3,5),16);
+      const b = parseInt(color.slice(5,7),16);
+      z.style.background = `rgba(${r},${g},${b},0.18)`;
+      z.style.borderColor = `rgba(${r},${g},${b},0.5)`;
+    } else {
+      z.style.background = '';
+      z.style.borderColor = '';
+    }
+  });
+  if (lpBtn) {
+    if (color) {
+      const r = parseInt(color.slice(1,3),16);
+      const g = parseInt(color.slice(3,5),16);
+      const b = parseInt(color.slice(5,7),16);
+      lpBtn.style.background = `rgba(${r},${g},${b},0.7)`;
+    } else {
+      lpBtn.style.background = '';
+    }
+  }
+}
 function checkExBuwemon(player) {
   const s1 = G.slots[player+'-buw1'];
   const s2 = G.slots[player+'-buw2'];
@@ -1589,8 +1687,8 @@ function checkExBuwemon(player) {
     if (exFile) {
       G.slots[exSlot] = {name: 'EX', color: s1.color, type: 'ex-auto', file: exFile, uid: 0};
       renderSlot(exSlot);
-      // Check for Darkschah win
       if (s1.color === '#111111') checkDarkschahWin(player);
+      checkZoneColor(player);
       return;
     }
   }
@@ -1599,6 +1697,7 @@ function checkExBuwemon(player) {
     G.slots[exSlot] = null;
     renderSlot(exSlot);
   }
+  checkZoneColor(player);
 }
 
 function tryDockCard(el) {
@@ -1614,7 +1713,7 @@ function tryDockCard(el) {
       // check type compatibility
       const ctype = el.dataset.ctype;
       const isExSlot = sid.endsWith('-ex');
-      if (isExSlot && ctype !== 'ex' && ctype !== 'spec' && ctype !== 'ex-ereignis' && ctype !== 'ex-auto') continue;
+      if (isExSlot && ctype !== 'ex' && ctype !== 'ex-ereignis' && ctype !== 'ex-auto') continue;
       if (!isExSlot && ctype !== 'buw' && ctype !== 'spec') continue;
       // dock it
       const cd = {
@@ -1627,12 +1726,16 @@ function tryDockCard(el) {
       // if slot occupied, release old card to field
       if (G.slots[sid]) releaseSlot(sid, sr.left + 4, sr.top + 4);
       G.slots[sid] = cd;
+      // Always tell the other player to remove this card
+      if (NET.mode === 'multi') {
+        netSend({t:'card_remove', uid: el.dataset.uid});
+      }
       el.remove();
       G.cards = G.cards.filter(c => c !== el);
       renderSlot(sid);
       // check EX
       const player = sid.startsWith('p1') ? 'p1' : 'p2';
-      if (!isExSlot) checkExBuwemon(player);
+      if (!isExSlot) { checkExBuwemon(player); checkZoneColor(player); }
       // Darkschah manual dock
       if (isExSlot && cd.color === '#111111') checkDarkschahWin(player);
       return true;
@@ -1898,18 +2001,14 @@ document.getElementById('browser-card-popup').addEventListener('click', e => {
 });
 
 
-function openBrowserCardPopup(i) {
+function openBrowserCardPopup(realIdx) {
+  // realIdx is already the index in the original (non-reversed) array
   const isGrave=G.browserSource==='p1'||G.browserSource==='p2';
   const isBanish=G.browserSource==='banish';
-  const full=isGrave?G.graves[G.browserSource]:(isBanish?G.banish:G.deck);
-  const rawData=G.browserMode==='top4'?full.slice(0,4):full;
-  const data=(isGrave||isBanish)?[...rawData].reverse():rawData;
-  const cd = data[i];
+  const src = isGrave ? G.graves[G.browserSource] : (isBanish ? G.banish : G.deck);
+  const cd = src[realIdx];
   if (!cd) return;
-  const realIdx=(isGrave||isBanish)?(rawData.length-1-i):i;
   openBPopup(cd, () => {
-    // Pull card to field
-    const src = isGrave ? G.graves[G.browserSource] : (isBanish ? G.banish : G.deck);
     const pulled = src.splice(realIdx, 1)[0];
     if (isGrave) updGrave(G.browserSource);
     else if (isBanish) updBanish();
@@ -2021,10 +2120,129 @@ function checkLPWin(p) {
   }
 }
 
+
+// ── LIIINKS & RECAST ──
+function confirmLiiinks() {
+  if (!confirm('Liiinks! Alle Buwemon in den Buwemonfeldern werden getauscht. Wirklich?')) return;
+  doLiiinks();
+}
+
+function doLiiinks() {
+  // p1 sends left-first, p2 sends right-first. Spec stays. Overflow stays with original player.
+  const fillP1 = ['p1-buw3','p1-buw2','p1-buw1']; // right-to-left receive
+  const fillP2 = ['p2-buw1','p2-buw2','p2-buw3']; // left-to-right receive
+
+  // Collect normals to move
+  const fromP1 = ['p1-buw1','p1-buw2','p1-buw3'].map(s => G.slots[s] && G.slots[s].type !== 'spec' ? {...G.slots[s]} : null).filter(Boolean);
+  const fromP2 = ['p2-buw3','p2-buw2','p2-buw1'].map(s => G.slots[s] && G.slots[s].type !== 'spec' ? {...G.slots[s]} : null).filter(Boolean);
+
+  // Count free slots (non-spec)
+  const freeP1 = fillP1.filter(s => !G.slots[s] || G.slots[s].type !== 'spec').length;
+  const freeP2 = fillP2.filter(s => !G.slots[s] || G.slots[s].type !== 'spec').length;
+
+  // Split: how many go across, how many stay
+  const p2ToP1 = fromP2.slice(0, freeP1);
+  const p2StayP2 = fromP2.slice(freeP1);
+  const p1ToP2 = fromP1.slice(0, freeP2);
+  const p1StayP1 = fromP1.slice(freeP2);
+
+  // Clear normal slots
+  ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'].forEach(s => {
+    if (G.slots[s] && G.slots[s].type !== 'spec') { G.slots[s] = null; }
+  });
+
+  // Fill p1 right-to-left: incoming first, then overflow
+  const p1Cards = [...p2ToP1, ...p1StayP1];
+  fillP1.forEach(s => {
+    if (G.slots[s] && G.slots[s].type === 'spec') return;
+    G.slots[s] = p1Cards.shift() || null;
+    renderSlot(s);
+  });
+
+  // Fill p2 left-to-right: incoming first, then overflow
+  const p2Cards = [...p1ToP2, ...p2StayP2];
+  fillP2.forEach(s => {
+    if (G.slots[s] && G.slots[s].type === 'spec') return;
+    G.slots[s] = p2Cards.shift() || null;
+    renderSlot(s);
+  });
+
+  checkExBuwemon('p1');
+  checkExBuwemon('p2');
+  if (NET.mode === 'multi') netSendState();
+}
+
+function confirmRecast() {
+  if (!confirm('Recast! Alle Buwemon in den Buwemonfeldern werden zufällig neu verteilt. Wirklich?')) return;
+  doRecast();
+}
+
+function doRecast() {
+  const allSlots = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'];
+  // Only move normal buwemon, spec stays
+  const cards = allSlots.map(s => G.slots[s]).filter(c => c && c.type !== 'spec');
+  // Clear only normal slots
+  allSlots.forEach(s => { if (G.slots[s] && G.slots[s].type !== 'spec') { G.slots[s] = null; renderSlot(s); } });
+  // Shuffle
+  for (let i = cards.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [cards[i],cards[j]] = [cards[j],cards[i]];
+  }
+  // Assign randomly - 50/50 per card
+  const p1slots = ['p1-buw1','p1-buw2','p1-buw3'];
+  const p2slots = ['p2-buw1','p2-buw2','p2-buw3'];
+  cards.forEach(cd => {
+    const tryP1First = Math.random() < 0.5;
+    const order = tryP1First ? [...p1slots, ...p2slots] : [...p2slots, ...p1slots];
+    for (const sid of order) {
+      if (!G.slots[sid]) { G.slots[sid] = cd; renderSlot(sid); break; }
+    }
+  });
+  checkExBuwemon('p1');
+  checkExBuwemon('p2');
+  if (NET.mode === 'multi') netSendState();
+}
+
+
+function shuffleHand(player) {
+  const handEl = document.getElementById(player+'-hand');
+  if (!handEl) return;
+  const hr = handEl.getBoundingClientRect();
+  const W=1920,H=980,scale=Math.min(window.innerWidth/W,window.innerHeight/H);
+  const ox=(window.innerWidth-W*scale)/2, oy=(window.innerHeight-H*scale)/2;
+  const handCards = G.cards.filter(c => {
+    const cx = (parseFloat(c.style.left)+31)*scale + ox;
+    const cy = (parseFloat(c.style.top)+44)*scale + oy;
+    return cx>=hr.left && cx<=hr.right && cy>=hr.top && cy<=hr.bottom;
+  });
+  if (handCards.length < 2) return;
+  // Collect positions and shuffle them
+  const positions = handCards.map(c => ({x:parseFloat(c.style.left),y:parseFloat(c.style.top)}));
+  for (let i=positions.length-1;i>0;i--) {
+    const j=Math.floor(Math.random()*(i+1));
+    [positions[i],positions[j]]=[positions[j],positions[i]];
+  }
+  // Apply: pair each card UID with its new position
+  const moves = handCards.map((c,i) => ({uid:c.dataset.uid, x:positions[i].x, y:positions[i].y}));
+  moves.forEach(m => {
+    const c = G.cards.find(c => c.dataset.uid === m.uid);
+    if (c) { c.style.left = m.x+'px'; c.style.top = m.y+'px'; }
+  });
+  // Send moves directly so receiver can apply same positions
+  if (NET.mode==='multi') netSend({t:'shuffle_hand', moves});
+}
+
+function applyShuffleHand(moves) {
+  moves.forEach(m => {
+    const c = G.cards.find(c => c.dataset.uid === m.uid);
+    if (c) { c.style.left = m.x+'px'; c.style.top = m.y+'px'; }
+  });
+}
+
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v25d',
+    version: 'v26f',
     deck: G.deck,
     graves: G.graves,
     banish: G.banish,
@@ -2190,11 +2408,11 @@ document.querySelectorAll('.swatch').forEach(sw=>{
       box-shadow:0 2px 12px rgba(0,0,0,0.13),inset 0 1px 0 rgba(255,255,255,0.8);
       transition:transform .12s,box-shadow .12s;text-shadow:0 1px 2px rgba(255,255,255,0.7);">Raum erstellen</button>
     <div style="display:flex;gap:6px;">
-      <input id="lobby-code" type="text" placeholder="Code eingeben …" maxlength="6"
+      <input id="lobby-code" type="text" placeholder="Code eingeben …" maxlength="6" onkeydown="if(event.key==='Enter'){document.getElementById('btn-join').click()}"
         style="flex:1;background:linear-gradient(160deg,#c8ccd4 0%,#e8ecf2 40%,#d0d4dc 70%,#f0f2f6 100%);border:1px solid rgba(255,255,255,0.7);
         border-radius:8px;padding:10px 10px;font-size:.95rem;font-family:'Kievit',sans-serif;
         color:#2a2e3a;outline:none;text-align:center;letter-spacing:3px;text-transform:uppercase;">
-      <button onclick="multiJoin()" style="background:linear-gradient(160deg,#c8ccd4 0%,#e8ecf2 40%,#d0d4dc 70%,#f0f2f6 100%);
+      <button id="btn-join" onclick="multiJoin()" style="background:linear-gradient(160deg,#c8ccd4 0%,#e8ecf2 40%,#d0d4dc 70%,#f0f2f6 100%);
       border:1px solid rgba(255,255,255,0.7);border-radius:10px;padding:12px 24px;
       font-size:1rem;font-weight:700;font-family:'AiSpec',sans-serif;font-style:italic;
       letter-spacing:1px;color:#2a2e3a;cursor:pointer;width:100%;
@@ -2216,7 +2434,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v25d
+    v26f
   </div>
 </div>
 
@@ -2471,6 +2689,9 @@ function onNetData(d) {
     if (lbl) lbl.textContent = (NET.enemyName||'Gegner') + ' — ' + (d.handCount||0) + ' Karten';
 
     // Reveal state handled via separate event
+  }
+  if (d.t === 'shuffle_hand') {
+    applyShuffleHand(d.moves);
   }
   if (d.t === 'card_remove') {
     const toRemove = G.cards.find(c => String(c.dataset.uid) === String(d.uid));
