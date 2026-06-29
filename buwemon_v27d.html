@@ -7,7 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html,body{width:100%;height:100%;overflow:hidden;font-family:'Kievit','Segoe UI',system-ui,sans-serif;font-size:12px;user-select:none;-webkit-user-select:none;}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Kievit','Segoe UI',system-ui,sans-serif;font-size:15px;user-select:none;-webkit-user-select:none;}
 body{background:linear-gradient(160deg,#909aaa 0%,#d8dce8 45%,#a8aebb 75%,#e4e8f0 100%);transition:background 0.4s;}
 
 #topbar{position:fixed;top:0;left:0;right:0;height:30px;background:rgba(255,255,255,0.55);backdrop-filter:blur(8px);border-bottom:1px solid rgba(0,0,0,0.09);display:flex;align-items:center;padding:0 10px;gap:7px;z-index:500;}
@@ -37,27 +37,27 @@ body{background:linear-gradient(160deg,#909aaa 0%,#d8dce8 45%,#a8aebb 75%,#e4e8f
 .zone-effects{flex:1;min-width:0;}
 .zone-grave{width:var(--cw);height:var(--ch);flex-shrink:0;position:relative;overflow:hidden;cursor:pointer;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);}
 .zone-grave:hover{border-color:rgba(0,0,0,0.3);}
-.zone-ex{width:var(--slot);flex-shrink:0;}
+.zone-ex{width:var(--slot);flex-shrink:0;display:flex;justify-content:center;}
 .buw-group{display:flex;gap:5px;flex-shrink:0;}
 .buw-slot{width:var(--slot);background:rgba(0,0,0,0.05);border:1.5px solid rgba(0,0,0,0.13);border-radius:7px;position:relative;flex-shrink:0;}
 .push{flex:1;}
 .ex-left-space{flex-shrink:0;}
 .ex-right-fill{flex:1;}
 
-.grave-wrap{display:flex;flex-direction:column;gap:3px;flex-shrink:0;align-items:flex-start;}
+.grave-wrap{display:flex;flex-direction:row;gap:6px;flex-shrink:0;align-items:center;}
 
 .grave-preview{position:absolute;inset:0;border-radius:5px;overflow:hidden;pointer-events:none;}
 .grave-count{position:absolute;top:3px;right:4px;background:rgba(0,0,0,0.6);color:#fff;font-size:.65rem;font-weight:700;border-radius:3px;padding:1px 4px;z-index:3;pointer-events:none;}
 
-.lp-box{display:flex;flex-direction:column;gap:2px;width:var(--cw);flex-shrink:0;}
+.lp-box{display:flex;flex-direction:column;gap:4px;width:90px;flex-shrink:0;}
 .lp-calc{display:flex;gap:2px;}
-.lp-calc input{flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:4px;padding:2px 4px;font-size:.75rem;color:#333;outline:none;text-align:center;user-select:text;-webkit-user-select:text;}
+.lp-calc input{flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:4px;padding:4px 4px;font-size:.9rem;color:#333;outline:none;text-align:center;user-select:text;-webkit-user-select:text;}
 .lp-calc input:focus{border-color:#888;background:#fff;}
 .lp-calc button{background:rgba(0,0,0,0.1);border:1px solid rgba(0,0,0,0.15);border-radius:4px;padding:2px 5px;font-size:.72rem;cursor:pointer;color:#333;}
 .lp-calc button:hover{background:rgba(0,0,0,0.18);}
-.lp-display{background:rgba(255,255,255,0.75);border:1px solid rgba(0,0,0,0.15);border-radius:4px;text-align:center;padding:3px 4px;font-size:1rem;font-weight:800;color:#222;letter-spacing:1px;cursor:text;outline:none;min-width:40px;font-family:"AiSpec",sans-serif;font-style:italic;user-select:text;-webkit-user-select:text;}.lp-display:focus{border-color:#888;background:#fff;box-shadow:0 0 0 2px rgba(100,100,200,0.2);}
+.lp-display{background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 4px;font-size:1.5rem;font-weight:800;color:#222;letter-spacing:1px;cursor:text;outline:none;min-width:60px;font-family:"AiSpec",sans-serif;font-style:italic;user-select:text;-webkit-user-select:text;}.lp-display:focus{border-color:#888;background:#fff;box-shadow:0 0 0 2px rgba(100,100,200,0.2);}
 
-.reveal-btn{position:absolute;bottom:5px;right:8px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:5px;padding:2px 8px;font-size:.72rem;cursor:pointer;color:#333;z-index:10;}
+.reveal-btn{position:absolute;bottom:5px;right:8px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:5px;padding:4px 8px;min-height:20px;font-size:.72rem;cursor:pointer;color:#333;z-index:10;}
 .reveal-btn.on{background:rgba(60,140,60,0.2);border-color:rgba(60,140,60,0.4);color:#1a5c1a;}
 
 /* CENTER */
@@ -94,9 +94,9 @@ body{background:linear-gradient(160deg,#909aaa 0%,#d8dce8 45%,#a8aebb 75%,#e4e8f
 /* MODALS */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:8000;align-items:center;justify-content:center;}
 .modal-bg.open{display:flex;}
-.modal-box{background:#fff;border-radius:14px;padding:18px;box-shadow:0 8px 40px rgba(0,0,0,0.22);display:flex;flex-direction:column;gap:12px;max-height:90vh;}
+.modal-box{background:#fff;border-radius:14px;padding:18px;box-shadow:0 8px 40px rgba(0,0,0,0.22);display:flex;flex-direction:column;gap:12px;}
 
-#browser-modal .modal-box{width:min(720px,96vw);}
+#browser-modal .modal-box{width:min(720px,96vw);max-height:90vh;overflow:hidden;}
 #browser-modal h3{font-size:1rem;font-weight:700;}
 #browser-modal .sub{font-size:.78rem;color:#888;}
 #browser-list{overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:3px;}
@@ -138,7 +138,7 @@ body{background:linear-gradient(160deg,#909aaa 0%,#d8dce8 45%,#a8aebb 75%,#e4e8f
 .color-pick-lbl{font-size:.7rem;font-weight:600;color:#333;}
 
 /* CARD POPUP - very big */
-#card-popup .modal-box{width:min(700px,96vw);align-items:center;padding:24px;}
+#card-popup .modal-box{width:650px;align-items:center;padding:24px;gap:12px;}
 #popup-img{width:420px;height:588px;border-radius:16px;object-fit:cover;display:block;box-shadow:0 10px 40px rgba(0,0,0,0.3);}
 #popup-img-back{width:420px;height:588px;border-radius:16px;object-fit:cover;display:block;box-shadow:0 10px 40px rgba(0,0,0,0.3);}
 #card-popup h2{font-size:1.2rem;font-weight:800;color:#222;text-align:center;}
@@ -177,6 +177,21 @@ body.carrying * { cursor: grabbing !important; }
 
 
 /* EREIGNIS PANEL */
+
+#banish-outer{display:flex;flex-direction:column;align-items:center;gap:2px;}
+#banish-panel {
+  position: fixed;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 400;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  width: var(--cw);
+}
 #ereignis-panel {
   position: fixed;
   right: 8px;
@@ -307,6 +322,64 @@ body {
   font-style: normal;
 }
 
+
+@keyframes buweshake {
+  0%,100% { transform: translate(0,0) rotate(0deg); }
+  10% { transform: translate(-8px,4px) rotate(-1deg); }
+  20% { transform: translate(10px,-6px) rotate(1deg); }
+  30% { transform: translate(-12px,8px) rotate(-1.5deg); }
+  40% { transform: translate(8px,-4px) rotate(1deg); }
+  50% { transform: translate(-6px,10px) rotate(-0.5deg); }
+  60% { transform: translate(12px,-8px) rotate(1.5deg); }
+  70% { transform: translate(-10px,4px) rotate(-1deg); }
+  80% { transform: translate(6px,-6px) rotate(0.5deg); }
+  90% { transform: translate(-8px,8px) rotate(-1deg); }
+}
+.darkschah-win { animation: buweshake 0.3s infinite; }
+.card.darkschah-win, #ereignis-panel.darkschah-win, #banish-panel.darkschah-win { animation: buweshake 0.3s infinite; }
+
+.lobby-pick-btn {
+  background: linear-gradient(160deg,#c8ccd4 0%,#e8ecf2 40%,#d0d4dc 70%,#f0f2f6 100%) !important;
+  border: 1px solid rgba(255,255,255,0.7);
+  border-radius: 7px; padding: 7px;
+  font-size: .85rem; font-family: 'AiSpec', sans-serif;
+  font-style: italic; color: #2a2e3a; cursor: pointer;
+}
+.lobby-pick-btn:active, .lobby-pick-btn:focus {
+  background: linear-gradient(160deg,#686c74 0%,#888c92 40%,#707478 70%,#909296 100%) !important;
+  outline: none;
+}
+.lobby-pick-btn.selected {
+  background: linear-gradient(160deg,#686c74 0%,#888c92 40%,#707478 70%,#909296 100%) !important;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+  color: #fff;
+}
+
+@keyframes sparkFly {
+  0%   { opacity:0; transform:translate(-50%,-50%) scale(0.3); }
+  20%  { opacity:1; transform:translate(-50%,-50%) scale(1.2); }
+  70%  { opacity:1; transform:translate(-50%,-50%) scale(0.9); }
+  100% { opacity:0; transform:translate(-50%,-50%) scale(0.2); }
+}
+.spark-particle {
+  position:fixed;
+  width:12px;height:12px;
+  pointer-events:none;
+  z-index:99999;
+  animation:sparkFly 1.0s ease-out forwards;
+  background:url('data:image/png;base64,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') center/contain no-repeat;
+}
+
+/* ── 4-PLAYER BOARD ── */
+#board4 {
+  width: 1920px;
+  height: 980px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+#board4 .row-hand { height: 80px; flex-shrink: 0; position: relative; }
+#board4 > div:nth-child(2) { flex: 1; min-height: 0; }
 </style>
 </head>
 <body>
@@ -318,7 +391,7 @@ body {
   <button class="tbtn danger" id="btn-reset" onclick="openConfirm()">↺ Neue Runde</button>
   <span id="conn-dot" style="width:7px;height:7px;border-radius:50%;background:#d95555;display:none;flex-shrink:0;"></span>
   <button class="tbtn" id="btn-lobby">⌂ Startbildschirm</button>
-  <button class="tbtn" id="btn-pov" onclick="togglePOV()" style="display:none;">👁 Gegner POV</button>
+  
   <button class="tbtn" id="btn-save" style="color:#1a6a1a;border-color:rgba(30,120,30,0.3);">💾 Speichern</button>
   <button class="tbtn" id="btn-color">🎨 Tischfarbe</button>
   <div id="cpicker">
@@ -337,40 +410,41 @@ body {
   <div class="row-hand">
     <div class="zone zone-hand" id="p2-hand">
       <span class="zlbl">Hand – Spieler 1</span>
-      <button class="reveal-btn" id="p2-reveal" onclick="toggleReveal(2)">Hand verdeckt</button>
+      <button class="reveal-btn" onpointerdown="event.stopPropagation()" onclick="shuffleHand('p2')" style="bottom:32px;">🔀 Hand mischen</button>
+      <button class="reveal-btn" id="p2-reveal" onpointerdown="event.stopPropagation()" onclick="toggleReveal(2)">Hand verdeckt</button>
     </div>
   </div>
 
   <div class="row-zones">
-    <div class="grave-wrap">
+    <div class="grave-wrap" style="align-self:flex-start;">
+      <div class="lp-box">
+        <div class="lp-display" id="p2-lp" contenteditable="true" onblur="lpDirectEdit(2)" onkeydown="lpDirectKey(event,2)">300</div>
+        <div class="lp-calc">
+          <input type="text" id="p2-lp-input" placeholder="" onkeydown="lpKey(event,2)">
+          <button onclick="applyLP(2)">OK</button>
+        </div>
+      </div>
       <div class="zone zone-grave" id="p2-grave" onclick="openGraveBrowser('p2')" title="Friedhof ansehen">
         <span class="zlbl" style="font-size:.62rem;">Friedhof</span>
         <div class="grave-preview" id="p2-grave-preview"></div>
         <div class="grave-count" id="p2-grave-count" style="display:none;"></div>
       </div>
-      <div class="lp-box">
-        <div class="lp-calc">
-          <input type="text" id="p2-lp-input" placeholder="" onkeydown="lpKey(event,2)">
-          <button onclick="applyLP(2)">OK</button>
-        </div>
-        <div class="lp-display" id="p2-lp" contenteditable="true" onblur="lpDirectEdit(2)" onkeydown="lpDirectKey(event,2)">300</div>
-      </div>
     </div>
-    <div class="push"></div>
+    <div class="push" style="min-width:20px;"></div>
     <div class="buw-group">
       <div class="buw-slot" id="p2-buw1"><span class="zlbl">Buwemon</span></div>
       <div class="buw-slot" id="p2-buw2"><span class="zlbl">Buwemon</span></div>
       <div class="buw-slot" id="p2-buw3"><span class="zlbl">Buwemon</span></div>
     </div>
-    <div class="push"></div>
-    <div class="zone zone-effects"><span class="zlbl">Effektkarten</span></div>
+    <div class="push" style="flex:2;"></div>
+    <div class="zone zone-effects" id="p2-effects"><span class="zlbl">Effektkarten</span></div>
   </div>
 
   <div class="row-ex" id="p2-ex-row" style="display:flex;align-items:stretch;flex:11;min-height:0;">
-    <div style="width:calc(var(--cw) + 4px);flex-shrink:0;"></div><!-- grave spacer -->
+    <div id="p2-ex-space" style="flex:none;width:0;"></div><!-- grave spacer -->
     <div style="flex:1;"></div><!-- push spacer -->
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:calc(3*var(--slot) + 2*5px);align-self:stretch;">
-      <div class="zone zone-ex" id="p2-ex" style="width:var(--slot);flex:1;"><span class="zlbl">EX-Buwemon</span></div>
+      <div class="zone zone-ex" id="p2-ex" style="width:var(--slot);flex:1;"><span class="zlbl" style="left:0;right:0;text-align:center;">EX</span></div>
     </div>
     <div style="flex:1;"></div><!-- push spacer -->
     <div style="flex:1;min-width:0;"></div><!-- effects spacer -->
@@ -400,33 +474,40 @@ body {
     <div id="deck-side-outer">
       <div id="deck-side-btns">
         <button class="tbtn" onclick="openBrowser('deck','all')">🔍 Stapel ansehen</button>
-        <button class="tbtn" onclick="openBrowser('deck','top4')">👁 Gossip</button>
-        <button class="tbtn" onclick="openOverview()">🎴 Schicksal</button>
-        <button class="tbtn" onclick="openColorRemove()">☠️ Raum-Zeit-Genozid</button>
+        <button id="schicksal-btn" class="tbtn" onclick="openOverview()" style="background:rgba(180,30,30,0.5);color:#fff;">🎴 Schicksal</button>
+        <button class="tbtn" onclick="confirmLiiinks()" style="background:rgba(120,40,180,0.5);color:#fff;">↔️ Liiinks</button>
+        <button class="tbtn" onclick="openBrowser('deck','top4')" style="background:rgba(120,40,180,0.5);color:#fff;">👁 Gossip</button>
+        <button class="tbtn" onclick="confirmRecast()" style="background:rgba(0,180,200,0.5);color:#fff;">🎲 Recast</button>
+        <button class="tbtn" onclick="openColorRemove()" style="background:rgba(20,20,20,0.85);color:#fff;">☠️ Raum-Zeit-Genozid</button>
       </div>
     </div>
   </div>
 
   <div class="row-ex" id="p1-ex-row" style="display:flex;align-items:stretch;flex:11;min-height:0;">
-    <div style="flex:1;min-width:0;"></div><!-- effects spacer -->
+    <div id="p1-ex-space" style="flex:none;width:0;"></div><!-- effects spacer -->
     <div style="flex:1;"></div><!-- push spacer -->
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:calc(3*var(--slot) + 2*5px);align-self:stretch;">
-      <div class="zone zone-ex" id="p1-ex" style="width:var(--slot);flex:1;"><span class="zlbl">EX-Buwemon</span></div>
+      <div class="zone zone-ex" id="p1-ex" style="width:var(--slot);flex:1;"><span class="zlbl" style="left:0;right:0;text-align:center;">EX</span></div>
     </div>
     <div style="flex:1;"></div><!-- push spacer -->
     <div style="width:calc(var(--cw) + 4px);flex-shrink:0;"></div><!-- grave spacer -->
   </div>
 
   <div class="row-zones">
-    <div class="zone zone-effects"><span class="zlbl">Effektkarten</span></div>
-    <div class="push"></div>
+    <div class="zone zone-effects" id="p1-effects"><span class="zlbl">Effektkarten</span></div>
+    <div class="push" style="flex:2;"></div>
     <div class="buw-group">
       <div class="buw-slot" id="p1-buw1"><span class="zlbl">Buwemon</span></div>
       <div class="buw-slot" id="p1-buw2"><span class="zlbl">Buwemon</span></div>
       <div class="buw-slot" id="p1-buw3"><span class="zlbl">Buwemon</span></div>
     </div>
-    <div class="push"></div>
-    <div class="grave-wrap" style="justify-content:flex-end;">
+    <div class="push" style="min-width:20px;"></div>
+    <div class="grave-wrap" style="align-self:flex-end;">
+      <div class="zone zone-grave" id="p1-grave" onclick="openGraveBrowser('p1')" title="Friedhof ansehen">
+        <span class="zlbl" style="font-size:.62rem;">Friedhof</span>
+        <div class="grave-preview" id="p1-grave-preview"></div>
+        <div class="grave-count" id="p1-grave-count" style="display:none;"></div>
+      </div>
       <div class="lp-box">
         <div class="lp-display" id="p1-lp" contenteditable="true" onblur="lpDirectEdit(1)" onkeydown="lpDirectKey(event,1)" title="Meine LP">300</div>
         <div class="lp-calc">
@@ -434,21 +515,196 @@ body {
           <button onclick="applyLP(1)">OK</button>
         </div>
       </div>
-      <div class="zone zone-grave" id="p1-grave" onclick="openGraveBrowser('p1')" title="Friedhof ansehen">
-        <span class="zlbl" style="font-size:.62rem;">Friedhof</span>
-        <div class="grave-preview" id="p1-grave-preview"></div>
-        <div class="grave-count" id="p1-grave-count" style="display:none;"></div>
-      </div>
     </div>
   </div>
 
   <div class="row-hand">
     <div class="zone zone-hand" id="p1-hand">
       <span class="zlbl">Hand – Spieler 2</span>
-      <button class="reveal-btn" id="p1-reveal" onclick="toggleReveal(1)">Hand verdeckt</button>
+      <button class="reveal-btn" onpointerdown="event.stopPropagation()" onclick="shuffleHand('p1')" style="bottom:32px;">🔀 Hand mischen</button>
+      <button class="reveal-btn" id="p1-reveal" onpointerdown="event.stopPropagation()" onclick="toggleReveal(1)">Hand verdeckt</button>
     </div>
   </div>
 </div>
+
+<!-- 4-PLAYER BOARD -->
+<div id="board4" style="display:none;width:1920px;height:980px;flex-direction:column;overflow:hidden;background:linear-gradient(160deg,#909aaa 0%,#d8dce8 45%,#a8aebb 75%,#e4e8f0 100%);">
+
+  <!-- ROW 1: p2 hand (full width top) -->
+  <div style="height:68px;flex-shrink:0;padding:4px;">
+    <div id="p2-hand-4" style="border-radius:7px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(0,0,0,0.03);position:relative;width:calc(100% - 0px);height:60px;box-sizing:border-box;">
+      <span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Hand – Oben</span>
+      <button onpointerdown="event.stopPropagation()" id="p2-reveal-4" onclick="toggleReveal4(2)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:5px;padding:2px 6px;font-size:.6rem;cursor:pointer;color:#333;z-index:10;min-height:18px;">Hand verdeckt</button>
+    </div>
+  </div>
+
+  <!-- ROW 2: p2 zones -->
+  <div style="height:150px;flex-shrink:0;display:flex;align-items:flex-start;gap:6px;padding:2px 4px 4px 4px;">
+    <!-- grave + lp -->
+    <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;">
+      <div id="p2-grave-4" onclick="openGraveBrowser4('2')" style="width:63px;height:88px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;overflow:hidden;cursor:pointer;">
+        <span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Friedhof</span>
+        <div id="p2-grave-preview-4" style="position:absolute;inset:0;"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;">
+        <div id="p2-lp-4" contenteditable="true" onblur="lpDirectEdit4(2)" onkeydown="lpDirectKey4(event,2)" style="font-size:1.2rem;font-weight:800;min-width:44px;text-align:center;border-bottom:2px solid rgba(0,0,0,0.15);outline:none;">300</div>
+        <div style="display:flex;gap:2px;align-items:center;">
+          <input id="p2-lp-inp-4" type="number" style="width:36px;border:1px solid rgba(0,0,0,0.2);border-radius:3px;padding:1px 2px;font-size:.6rem;">
+          <button onclick="applyLP4(2)" style="padding:1px 4px;border-radius:3px;border:1px solid rgba(0,0,0,0.2);background:rgba(200,210,220,0.7);cursor:pointer;font-size:.6rem;">OK</button>
+        </div>
+      </div>
+    </div>
+    <!-- buw + ex centered -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;">
+      <div style="display:flex;gap:4px;flex-shrink:0;">
+        <div id="p2-buw1-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buwemon</span></div>
+        <div id="p2-buw2-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buwemon</span></div>
+        <div id="p2-buw3-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buwemon</span></div>
+      </div>
+      <div id="p2-ex-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px dashed rgba(0,0,0,0.2);background:rgba(0,0,0,0.03);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">EX</span></div>
+    </div>
+    <!-- effects (takes remaining space) -->
+    <div id="p2-effects-4" style="border-radius:7px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(0,0,0,0.03);position:relative;flex:1;height:100%;min-width:0;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Effektkarten</span></div>
+  </div>
+
+  <!-- ROW 3: middle (p3 | center | p4) -->
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <!-- P3 LEFT -->
+    <div style="width:195px;flex-shrink:0;display:flex;border-right:1.5px solid rgba(0,0,0,0.1);">
+      <!-- hand (left strip) -->
+      <div style="width:65px;padding:4px 2px 4px 4px;flex-shrink:0;">
+        <div id="p3-hand-4" style="border-radius:7px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(0,0,0,0.03);position:relative;height:100%;width:57px;box-sizing:border-box;">
+      <span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Hand – Links</span>
+      <button onpointerdown="event.stopPropagation()" id="p3-reveal-4" onclick="toggleReveal4(3)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:5px;padding:2px 6px;font-size:.6rem;cursor:pointer;color:#333;z-index:10;min-height:18px;">Hand verdeckt</button>
+    </div>
+      </div>
+      <!-- p3 zones top-to-bottom: grave, lp, buw(v), ex, effects -->
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px;padding:4px 4px 4px 2px;">
+        <div id="p3-grave-4" onclick="openGraveBrowser4('3')" style="width:63px;height:88px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;overflow:hidden;cursor:pointer;">
+        <span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Friedhof</span>
+        <div id="p3-grave-preview-4" style="position:absolute;inset:0;"></div>
+      </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;">
+        <div id="p3-lp-4" contenteditable="true" onblur="lpDirectEdit4(3)" onkeydown="lpDirectKey4(event,3)" style="font-size:1.2rem;font-weight:800;min-width:44px;text-align:center;border-bottom:2px solid rgba(0,0,0,0.15);outline:none;">300</div>
+        <div style="display:flex;gap:2px;align-items:center;">
+          <input id="p3-lp-inp-4" type="number" style="width:36px;border:1px solid rgba(0,0,0,0.2);border-radius:3px;padding:1px 2px;font-size:.6rem;">
+          <button onclick="applyLP4(3)" style="padding:1px 4px;border-radius:3px;border:1px solid rgba(0,0,0,0.2);background:rgba(200,210,220,0.7);cursor:pointer;font-size:.6rem;">OK</button>
+        </div>
+      </div>
+        <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;">
+        <div id="p3-buw1-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buw</span></div>
+        <div id="p3-buw2-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buw</span></div>
+        <div id="p3-buw3-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buw</span></div>
+      </div>
+        <div id="p3-ex-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px dashed rgba(0,0,0,0.2);background:rgba(0,0,0,0.03);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">EX</span></div>
+        <div id="p3-effects-4" style="border-radius:7px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(0,0,0,0.03);position:relative;flex:1;min-height:30px;width:100%;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Effektkarten</span></div>
+      </div>
+    </div>
+
+    <!-- CENTER -->
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:8px;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+        <div id="deck-card-4" onpointerdown="drawCard4(event)" style="width:63px;height:88px;border-radius:7px;overflow:hidden;cursor:grab;border:1.5px solid rgba(0,0,0,0.2);">
+          <img id="deck-vis-4" src="karten/Rueckseite.png" draggable="false" style="width:100%;height:100%;object-fit:cover;display:block;">
+        </div>
+        <span style="font-size:.62rem;color:rgba(0,0,0,0.5);">Ziehstapel</span>
+        <span id="deck-cnt-4" style="font-size:.62rem;color:rgba(0,0,0,0.4);">0 Karten</span>
+      </div>
+      <div id="dice-btn-4" onclick="rollDice4()" style="width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.7);border:2px solid rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;cursor:pointer;font-family:'AiSpec',sans-serif;">?</div>
+      <div style="width:140px;">
+        <button style="display:block;width:100%;padding:3px 6px;border-radius:5px;border:1px solid rgba(0,0,0,0.15);background:rgba(200,205,215,0.7);cursor:pointer;font-size:.62rem;font-family:inherit;text-align:left;margin-bottom:2px;" onclick="openBrowser('deck','all')">🔍 Stapel ansehen</button>
+        <button style="display:block;width:100%;padding:3px 6px;border-radius:5px;border:1px solid rgba(0,0,0,0.15);background:rgba(200,205,215,0.7);cursor:pointer;font-size:.62rem;font-family:inherit;text-align:left;margin-bottom:2px;background:rgba(180,30,30,0.5);color:#fff;" onclick="openOverview()">🎴 Schicksal</button>
+        <button style="display:block;width:100%;padding:3px 6px;border-radius:5px;border:1px solid rgba(0,0,0,0.15);background:rgba(200,205,215,0.7);cursor:pointer;font-size:.62rem;font-family:inherit;text-align:left;margin-bottom:2px;background:rgba(120,40,180,0.5);color:#fff;" onclick="openBrowser('deck','top4')">👁 Gossip</button>
+        <button style="display:block;width:100%;padding:3px 6px;border-radius:5px;border:1px solid rgba(0,0,0,0.15);background:rgba(200,205,215,0.7);cursor:pointer;font-size:.62rem;font-family:inherit;text-align:left;margin-bottom:2px;background:rgba(20,20,20,0.85);color:#fff;" onclick="openColorRemove()">☠️ Raum-Zeit-Genozid</button>
+      </div>
+    </div>
+
+    <!-- P4 RIGHT -->
+    <div style="width:195px;flex-shrink:0;display:flex;border-left:1.5px solid rgba(0,0,0,0.1);">
+      <!-- p4 zones top-to-bottom: effects, buw(v), ex, lp, grave -->
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px;padding:4px 2px 4px 4px;">
+        <div id="p4-effects-4" style="border-radius:7px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(0,0,0,0.03);position:relative;flex:1;min-height:30px;width:100%;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Effektkarten</span></div>
+        <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;">
+        <div id="p4-buw1-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buw</span></div>
+        <div id="p4-buw2-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buw</span></div>
+        <div id="p4-buw3-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buw</span></div>
+      </div>
+        <div id="p4-ex-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px dashed rgba(0,0,0,0.2);background:rgba(0,0,0,0.03);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">EX</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;">
+        <div id="p4-lp-4" contenteditable="true" onblur="lpDirectEdit4(4)" onkeydown="lpDirectKey4(event,4)" style="font-size:1.2rem;font-weight:800;min-width:44px;text-align:center;border-bottom:2px solid rgba(0,0,0,0.15);outline:none;">300</div>
+        <div style="display:flex;gap:2px;align-items:center;">
+          <input id="p4-lp-inp-4" type="number" style="width:36px;border:1px solid rgba(0,0,0,0.2);border-radius:3px;padding:1px 2px;font-size:.6rem;">
+          <button onclick="applyLP4(4)" style="padding:1px 4px;border-radius:3px;border:1px solid rgba(0,0,0,0.2);background:rgba(200,210,220,0.7);cursor:pointer;font-size:.6rem;">OK</button>
+        </div>
+      </div>
+        <div id="p4-grave-4" onclick="openGraveBrowser4('4')" style="width:63px;height:88px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;overflow:hidden;cursor:pointer;">
+        <span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Friedhof</span>
+        <div id="p4-grave-preview-4" style="position:absolute;inset:0;"></div>
+      </div>
+      </div>
+      <!-- hand (right strip) -->
+      <div style="width:65px;padding:4px 4px 4px 2px;flex-shrink:0;">
+        <div id="p4-hand-4" style="border-radius:7px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(0,0,0,0.03);position:relative;height:100%;width:57px;box-sizing:border-box;">
+      <span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Hand – Rechts</span>
+      <button onpointerdown="event.stopPropagation()" id="p4-reveal-4" onclick="toggleReveal4(4)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:5px;padding:2px 6px;font-size:.6rem;cursor:pointer;color:#333;z-index:10;min-height:18px;">Hand verdeckt</button>
+    </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ROW 4: p1 zones -->
+  <div style="height:150px;flex-shrink:0;display:flex;align-items:flex-end;gap:6px;padding:4px 4px 2px 4px;">
+    <div id="p1-effects-4" style="border-radius:7px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(0,0,0,0.03);position:relative;flex:1;height:100%;min-width:0;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Effektkarten</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;">
+      <div id="p1-ex-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px dashed rgba(0,0,0,0.2);background:rgba(0,0,0,0.03);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">EX</span></div>
+      <div style="display:flex;gap:4px;flex-shrink:0;">
+        <div id="p1-buw1-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buwemon</span></div>
+        <div id="p1-buw2-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buwemon</span></div>
+        <div id="p1-buw3-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buwemon</span></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;align-items:flex-end;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;">
+        <div id="p1-lp-4" contenteditable="true" onblur="lpDirectEdit4(1)" onkeydown="lpDirectKey4(event,1)" style="font-size:1.2rem;font-weight:800;min-width:44px;text-align:center;border-bottom:2px solid rgba(0,0,0,0.15);outline:none;">300</div>
+        <div style="display:flex;gap:2px;align-items:center;">
+          <input id="p1-lp-inp-4" type="number" style="width:36px;border:1px solid rgba(0,0,0,0.2);border-radius:3px;padding:1px 2px;font-size:.6rem;">
+          <button onclick="applyLP4(1)" style="padding:1px 4px;border-radius:3px;border:1px solid rgba(0,0,0,0.2);background:rgba(200,210,220,0.7);cursor:pointer;font-size:.6rem;">OK</button>
+        </div>
+      </div>
+      <div id="p1-grave-4" onclick="openGraveBrowser4('1')" style="width:63px;height:88px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;overflow:hidden;cursor:pointer;">
+        <span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Friedhof</span>
+        <div id="p1-grave-preview-4" style="position:absolute;inset:0;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 5: p1 hand (full width bottom) -->
+  <div style="height:68px;flex-shrink:0;padding:4px;">
+    <div id="p1-hand-4" style="border-radius:7px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(0,0,0,0.03);position:relative;width:calc(100% - 0px);height:60px;box-sizing:border-box;">
+      <span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Hand – Spieler</span>
+      <button onpointerdown="event.stopPropagation()" id="p1-reveal-4" onclick="toggleReveal4(1)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:5px;padding:2px 6px;font-size:.6rem;cursor:pointer;color:#333;z-index:10;min-height:18px;">Hand verdeckt</button>
+    </div>
+  </div>
+
+  <!-- Banish (top left fixed) -->
+  <div id="banish-panel-4" style="position:fixed;left:6px;top:42px;z-index:400;display:none;flex-direction:column;align-items:center;gap:2px;cursor:pointer;">
+    <div id="banish-zone-4" onclick="openBanishBrowser()" style="width:63px;height:88px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;overflow:hidden;cursor:pointer;">
+      <span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-size:.52rem;">Entfernt</span>
+      <div id="banish-preview-4" style="position:absolute;inset:0;"></div>
+    </div>
+    <div style="font-size:.52rem;color:rgba(0,0,0,0.4);">0 Karten</div>
+  </div>
+
+  <!-- Ereignis (top right fixed) -->
+  <div id="ereignis-panel-4" style="position:fixed;right:6px;top:42px;z-index:400;display:none;flex-direction:column;align-items:center;gap:2px;cursor:pointer;">
+    <img src="karten/Rueckseite_Ereigniskarten.png" onclick="openEreignis()" style="width:63px;height:88px;border-radius:6px;object-fit:cover;cursor:pointer;display:block;">
+    <div style="font-size:.52rem;color:rgba(0,0,0,0.4);">Ereignis</div>
+  </div>
+
+</div>
+
 
 <!-- BROWSER -->
 <div class="modal-bg" id="browser-modal">
@@ -500,6 +756,32 @@ body {
   </div>
 </div>
 
+<!-- BROWSER CARD POPUP -->
+<div class="modal-bg" id="browser-card-popup" style="z-index:9500;">
+  <div class="modal-box" style="width:650px;align-items:center;padding:24px;gap:12px;">
+    <img id="bpopup-img" src="" alt="" style="width:420px;height:588px;border-radius:16px;object-fit:cover;display:block;box-shadow:0 10px 40px rgba(0,0,0,0.18);">
+    <h2 id="bpopup-name"></h2>
+    <p class="card-type-lbl" id="bpopup-type"></p>
+    <div class="popup-btns">
+      <button class="field-btn" id="bpopup-field-btn">🃏 Aufs Spielfeld</button>
+      <button onclick="closeBPopup()">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<!-- WIN/LOSE OVERLAY -->
+<div id="win-lose-overlay" style="
+  position:fixed;inset:0;z-index:9999;
+  display:none;align-items:center;justify-content:center;
+  pointer-events:none;
+">
+  <div id="win-lose-text" style="
+    font-family:'AiSpec',sans-serif;font-style:italic;font-weight:900;
+    font-size:15rem;text-align:center;padding:0 40px;
+    line-height:1.0;word-break:break-word;
+  "></div>
+</div>
+
 <!-- CONFIRM -->
 <div class="modal-bg" id="confirm-modal">
   <div class="modal-box">
@@ -514,6 +796,17 @@ body {
 <div id="carry-card"><img id="carry-img" src="" alt=""></div>
 
 <!-- EREIGNIS PANEL -->
+
+
+<div id="banish-panel">
+  <div class="zone zone-grave" id="banish-zone" onclick="openBanishBrowser()" title="Entfernt-Stapel ansehen">
+    <span class="zlbl" style="font-size:.62rem;" id="banish-lbl">Entfernt</span>
+    <div class="grave-preview" id="banish-preview"></div>
+    <div class="grave-count" id="banish-count-lbl" style="display:none;"></div>
+  </div>
+  <div id="banish-count-text" style="font-size:.6rem;color:rgba(0,0,0,0.4);text-align:center;">0 Karten</div>
+</div>
+
 <div id="ereignis-panel">
   <img id="ereignis-back" src="karten/Rueckseite_Ereigniskarten.png" alt="Ereigniskarten" onclick="openEreignis()" title="Ereigniskarten">
   <div id="ereignis-lbl">Ereignis</div>
@@ -533,52 +826,19 @@ body {
 
 <div id="carry-card"><img id="carry-img" src="" alt=""></div>
 
-<!-- GEGNER POV POPUP -->
-<div id="pov-popup" style="
-  display:none;position:fixed;z-index:7000;
-  width:560px;height:340px;
-  background:#1a1a1a;
-  border:1px solid rgba(255,255,255,0.15);
-  border-radius:12px;
-  overflow:hidden;
-  box-shadow:0 8px 32px rgba(0,0,0,0.5);
-  top:60px;right:10px;
-  user-select:none;
-  display:none;
-  flex-direction:column;
-">
-  <div id="pov-header" style="
-    padding:5px 10px;
-    background:rgba(0,0,0,0.4);
-    display:flex;align-items:center;gap:8px;
-    font-size:.72rem;color:rgba(255,255,255,0.55);
-    font-family:'Kievit',sans-serif;
-    border-bottom:1px solid rgba(255,255,255,0.1);
-    cursor:move;flex-shrink:0;
-  ">
-    <span style="pointer-events:none;">👁 Gegner POV</span>
-    <span id="pov-status" style="color:rgba(255,255,255,0.3);font-size:.65rem;pointer-events:none;"></span>
-    <span style="flex:1;"></span>
-    <span onclick="togglePOV()" style="cursor:pointer;opacity:.6;font-size:.9rem;pointer-events:all;">✕</span>
-  </div>
-  <div style="flex:1;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;background:#111;">
-    <canvas id="pov-canvas" style="display:block;max-width:100%;max-height:100%;"></canvas>
-  </div>
-</div>
-
 <div id="ctx"></div>
 
 <script>
 // ── CARD → IMAGE MAPPING ──
 const IMG = {
   "Gilip der Glibbrige": "karten/Gilip_der_Glibbrige.png",
-  "Lord Phillipp": "karten/Lord_Phillipp.png",
+  "Lord Phillipp of Glencoe": "karten/Lord_Phillipp.png",
   "Phülügülüm": "karten/Phueluegueluem.png",
   "Baby Niko": "karten/Baby Niko.png",
   "Grünika": "karten/Gruenika.png",
   "Schwammika": "karten/Schwammika.png",
   "Antika": "karten/Antika.png",
-  "Marie": "karten/Marie.png",
+  "Marie die Königsgardistin": "karten/Marie.png",
   "Marzo der Gott": "karten/Marzo_Der_Gott.png",
   "Marcopter": "karten/Marcopter.png",
   "Marco der Hund": "karten/Marco_der_Hund.png",
@@ -586,11 +846,11 @@ const IMG = {
   "Kax Maufmann": "karten/Kax_Maufmann.png",
   "Maxodia": "karten/Maxodia.png",
   "Maxibu": "karten/Maxibu.png",
-  "Hoffi": "karten/Hoffi.png",
-  "Barista Clarista": "karten/Barista_Clarista.png",
-  "Clarry Pather": "karten/Clarry_Pather.png",
+  "Hoffi der rasierte Karnevalsprinz": "karten/Hoffi.png",
+  "Barista Clarista der Mister-Fister": "karten/Barista_Clarista.png",
+  "Clarry Pather der Maincharacter": "karten/Clarry_Pather.png",
   "ClariSSIO": "karten/ClariSSIO.png",
-  "Alicia": "karten/Alicia.png",
+  "Alicia die ehrenlose Fettsau": "karten/Alicia.png",
   "Glorian Schniekel": "karten/Glorian_Schniekel.png",
   "Flosama Op Laden": "karten/Flosama_Op_Laden.png",
   "Klorian": "karten/Klorian.png",
@@ -599,11 +859,11 @@ const IMG = {
   "Luis Münsters": "karten/Luis_Muensters.png",
   "Cedzilla": "karten/Cedzilla.png",
   "Griechischer Apored": "karten/Griechischer_ApoRed.png",
-  "Fabio": "karten/Fabio.png",
+  "Fabio das Berlin-City-Girl": "karten/Fabio.png",
   "Giraffael": "karten/Giraffael.png",
   "Hannah im Bach": "karten/Hannah_im_Bach.png",
   "Alexerus Snape": "karten/Alexerus_Snape.png",
-  "DiePogofanten": "karten/Pogofanten.png",
+  "Die Pogofanten": "karten/Pogofanten.png",
   "L'Enderdragon": "karten/L_Enderdragon.png",
   "Golop der Grobe": "karten/Golop_der_Grobe.png",
   "Der Zeitführer": "karten/Zeitfuehrer.png",
@@ -618,8 +878,8 @@ const IMG = {
   "Ablehnt": "karten/Ablehnt.png",
   "Dinkelmehl": "karten/Dinkelmehl.png",
   "Wanze": "karten/Wanze.png",
-  "UwU": "karten/UwU.png",
-  "Tut mir leid": "karten/Tut_Mir_Leid.png",
+  "UwU ": "karten/UwU.png",
+  "Tut mir leid…": "karten/Tut_Mir_Leid.png",
   "Ragequit": "karten/Ragequit.png",
   "Random Vote": "karten/Randon_Vote.png",
   "Neue BESSERE Karte": "karten/Neue_BESSERE_Karte.png",
@@ -640,17 +900,20 @@ const BACK = "karten/Rueckseite.png";
 function startGame(mode) {
   NET.mode = mode;
   document.getElementById('lobby').style.display = 'none';
+  G.deck=buildDeck();updDeck();
+  const _sch=document.getElementById('schicksal-btn');if(_sch)_sch.style.display=erweiterungAN?'':'none';
   // Update zone labels
   const myDefault = (mode==='multi' && !NET.isHost) ? 'Spieler 2' : 'Spieler 1';
   NET.myName = getLobbyName() || myDefault;
   // Set MY hand label based on which player I am
   const myHandId = (NET.myPlayer === 2) ? '#p2-hand' : '#p1-hand';
   const myHandZlbl = document.querySelector(myHandId + ' .zlbl');
-  if (myHandZlbl) myHandZlbl.textContent = 'Hand – ' + NET.myName;
+  if (myHandZlbl) myHandZlbl.textContent = 'Hand – ' + (NET.myName || ('Spieler ' + NET.myPlayer));
   // Reset enemy hand label
   const enemyHandId = (NET.myPlayer === 2) ? '#p1-hand' : '#p2-hand';
   const enemyHandZlbl = document.querySelector(enemyHandId + ' .zlbl');
-  if (enemyHandZlbl) enemyHandZlbl.textContent = 'Hand – Gegner';
+  const enemyNum = NET.myPlayer === 2 ? 1 : 2;
+  if (enemyHandZlbl) enemyHandZlbl.textContent = 'Hand – Spieler ' + enemyNum;
   const playerLabel = document.getElementById('player-label');
   if (mode === 'multi') {
     playerLabel.textContent = 'Du: ' + NET.myName + ' (Spieler ' + NET.myPlayer + ')';
@@ -660,7 +923,6 @@ function startGame(mode) {
   }
   document.querySelector('#p1-grave .zlbl').textContent = 'Friedhof';
   if (mode === 'multi') {
-    document.getElementById('btn-pov').style.display = 'inline-block';
     updateConnDot(true);
     // Show enemy name placeholder
     const eZone = (NET.myPlayer === 2) ? '#p1-hand' : '#p2-hand';
@@ -680,13 +942,13 @@ function startGame(mode) {
 // ── CARD DB ──
 const CARD_DB=[
   {name:"Gilip der Glibbrige",count:3,color:"#cc3333",type:"buw"},
-  {name:"Lord Phillipp",count:3,color:"#cc3333",type:"buw"},
+  {name:"Lord Phillipp of Glencoe",count:3,color:"#cc3333",type:"buw"},
   {name:"Phülügülüm",count:3,color:"#cc3333",type:"buw"},
   {name:"Baby Niko",count:3,color:"#cc3333",type:"buw"},
   {name:"Grünika",count:3,color:"#2e8a2e",type:"buw"},
   {name:"Schwammika",count:3,color:"#2e8a2e",type:"buw"},
   {name:"Antika",count:3,color:"#2e8a2e",type:"buw"},
-  {name:"Marie",count:3,color:"#2e8a2e",type:"buw"},
+  {name:"Marie die Königsgardistin",count:3,color:"#2e8a2e",type:"buw"},
   {name:"Marzo der Gott",count:3,color:"#cc5500",type:"buw"},
   {name:"Marcopter",count:3,color:"#cc5500",type:"buw"},
   {name:"Marco der Hund",count:3,color:"#cc5500",type:"buw"},
@@ -694,11 +956,11 @@ const CARD_DB=[
   {name:"Kax Maufmann",count:3,color:"#1a44bb",type:"buw"},
   {name:"Maxodia",count:3,color:"#1a44bb",type:"buw"},
   {name:"Maxibu",count:3,color:"#1a44bb",type:"buw"},
-  {name:"Hoffi",count:3,color:"#1a44bb",type:"buw"},
-  {name:"Barista Clarista",count:3,color:"#008899",type:"buw"},
-  {name:"Clarry Pather",count:3,color:"#008899",type:"buw"},
+  {name:"Hoffi der rasierte Karnevalsprinz",count:3,color:"#1a44bb",type:"buw"},
+  {name:"Clarry Pather der Maincharacter",count:3,color:"#008899",type:"buw"},
+  {name:"Barista Clarista der Mister-Fister",count:3,color:"#008899",type:"buw"},
   {name:"ClariSSIO",count:3,color:"#008899",type:"buw"},
-  {name:"Alicia",count:3,color:"#008899",type:"buw"},
+  {name:"Alicia die ehrenlose Fettsau",count:3,color:"#008899",type:"buw"},
   {name:"Glorian Schniekel",count:3,color:"#aa9900",type:"buw"},
   {name:"Flosama Op Laden",count:3,color:"#aa9900",type:"buw"},
   {name:"Klorian",count:3,color:"#aa9900",type:"buw"},
@@ -707,11 +969,11 @@ const CARD_DB=[
   {name:"Luis Münsters",count:3,color:"#666666",type:"buw"},
   {name:"Cedzilla",count:3,color:"#666666",type:"buw"},
   {name:"Griechischer Apored",count:3,color:"#666666",type:"buw"},
-  {name:"Fabio",count:3,color:"#6622aa",type:"buw"},
+  {name:"Fabio das Berlin-City-Girl",count:3,color:"#6622aa",type:"buw"},
   {name:"Giraffael",count:3,color:"#6622aa",type:"buw"},
   {name:"Hannah im Bach",count:3,color:"#6622aa",type:"buw"},
   {name:"Alexerus Snape",count:3,color:"#6622aa",type:"buw"},
-  {name:"DiePogofanten",count:1,color:"#111111",type:"spec"},
+  {name:"Die Pogofanten",count:1,color:"#111111",type:"spec"},
   {name:"L'Enderdragon",count:1,color:"#111111",type:"spec"},
   {name:"Golop der Grobe",count:1,color:"#111111",type:"spec"},
   {name:"Der Zeitführer",count:1,color:"#111111",type:"spec"},
@@ -726,8 +988,8 @@ const CARD_DB=[
   {name:"Ablehnt",count:6,color:"#aaaaaa",type:"eff"},
   {name:"Dinkelmehl",count:6,color:"#aaaaaa",type:"eff"},
   {name:"Wanze",count:4,color:"#aaaaaa",type:"eff"},
-  {name:"UwU",count:4,color:"#aaaaaa",type:"eff"},
-  {name:"Tut mir leid",count:4,color:"#aaaaaa",type:"eff"},
+  {name:"UwU ",count:4,color:"#aaaaaa",type:"eff"},
+  {name:"Tut mir leid…",count:4,color:"#aaaaaa",type:"eff"},
   {name:"Ragequit",count:3,color:"#aaaaaa",type:"eff"},
   {name:"Random Vote",count:3,color:"#aaaaaa",type:"eff"},
   {name:"Neue BESSERE Karte",count:3,color:"#aaaaaa",type:"eff"},
@@ -753,9 +1015,11 @@ const COLOR_GROUPS=[
   {label:"Grau",hex:"#666666"},{label:"Cyan",hex:"#008899"},{label:"Schwarz",hex:"#111111"},
 ];
 
-const G={deck:[],nid:1,cards:[],reveal:{1:false,2:false},lp:{1:300,2:300},graves:{p1:[],p2:[]},browserSource:null,browserMode:null,popupCardEl:null};
+const G={deck:[],nid:1,cards:[],reveal:{1:false,2:false},lp:{1:300,2:300},graves:{p1:[],p2:[]},banish:[],browserSource:null,browserMode:null,popupCardEl:null};
 
-function buildDeck(){let d=[];CARD_DB.forEach(def=>{for(let i=0;i<def.count;i++)d.push({name:def.name,color:def.color,type:def.type,uid:G.nid++});});return shuffle(d);}
+let erweiterungAN = true;
+const NO_DLC = {'Gilip der Glibbrige':3,'Lord Phillipp of Glencoe':3,'Phülügülüm':3,'Baby Niko':0,'Grünika':3,'Schwammika':3,'Antika':3,'Marie die Königsgardistin':0,'Marzo der Gott':3,'Marcopter':3,'Marco der Hund':3,'Leonie Norris':0,'Kax Maufmann':3,'Maxodia':3,'Maxibu':3,'Hoffi der rasierte Karnevalsprinz':0,'Barista Clarista der Mister-Fister':3,'Clarry Pather der Maincharacter':3,'ClariSSIO':3,'Alicia die ehrenlose Fettsau':0,'Glorian Schniekel':3,'Flosama Op Laden':3,'Klorian':3,'Lisa aus Australien':0,'Suffia':3,'Luis Münsters':3,'Cedzilla':3,'Griechischer Apored':0,'Fabio das Berlin-City-Girl':3,'Giraffael':3,'Hannah im Bach':3,'Alexerus Snape':0,'Die Pogofanten':1,"L'Enderdragon":1,'Golop der Grobe':0,'Der Zeitführer':1,'BOOM Clan':1,'Glaskuppel':6,'Calgon':6,'Clubmate':5,'Eine Runde noch':5,'RGB':5,'Nachschlag':5,'Mecces':5,'Ablehnt':5,'Dinkelmehl':5,'Wanze':2,'UwU ':2,'Tut mir leid…':2,'Ragequit':2,'Random Vote':2,'Neue BESSERE Karte':2,'Discord Meeting':2,'Zeitmaschinen Veruntreuung':2,'Sigma Transformation':0,'Tristanverbot':2,'Elefanten Aufstand':2,'Stein':2,'13er Bogen':2,'Vertragsbruch':2,'FourAceFour-Feuer-Reverse-Blöff':1};
+function buildDeck(){let d=[];CARD_DB.forEach(def=>{let cnt=erweiterungAN?def.count:(NO_DLC[def.name]??0);for(let i=0;i<cnt;i++)d.push({name:def.name,color:def.color,type:def.type,uid:G.nid++});});return shuffle(d);}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 G.deck=buildDeck();updDeck();
 
@@ -765,6 +1029,8 @@ function updDeck(){
 }
 
 window.addEventListener('load',()=>setTimeout(alignEX,0));
+setTimeout(alignEX,200);
+setTimeout(alignEX,500);
 window.addEventListener('resize',alignEX);
 
 // ── DRAW – card spawns at deck position and starts drag ──
@@ -774,7 +1040,8 @@ function drawCard(e){
   const cd=G.deck.shift();updDeck();
   if(e && e.clientX){
     const gp=clientToGame(e.clientX, e.clientY);
-    const el=spawnCard(cd, clampX(gp.x-31), clampY(gp.y-44), false);
+    const el=spawnCard(cd, clampX(gp.x-31), clampY(gp.y-44), true);
+    el.dataset.drawnFromDeck='1';
     el.classList.add('dragging');
     drag={el, ox:31, oy:44};
     el.setPointerCapture(e.pointerId);
@@ -794,7 +1061,7 @@ function spawnCard(cd,x,y,faceDown){
   if(cd.file)el.dataset.file=cd.file;
   el.dataset.fd=faceDown?'1':'0';
   el.style.left=clampX(x)+'px';el.style.top=clampY(y)+'px';
-  el.style.zIndex=100+G.nid++;
+  el.style.zIndex=Math.min(100+G.nid++, 7000);
   renderCard(el);makeDraggable(el);
   el.addEventListener('dblclick',e=>{e.stopPropagation();openPopup(el);});
   el.addEventListener('contextmenu',e=>{e.preventDefault();e.stopPropagation();openCtx(e,el);});
@@ -852,9 +1119,20 @@ function makeDraggable(el){
   el.addEventListener('pointerup',e=>{
     if(!drag||drag.el!==el)return;
     el.classList.remove('dragging');
-    if(!tryDockCard(el)) checkDropOnGrave(el);
+    // Release deck-drawn card - let applyP1HandVisibility decide fd (no premature flip)
+    if (el.dataset.drawnFromDeck) {
+      delete el.dataset.drawnFromDeck;
+      if (NET.mode === 'multi') {
+        applyP1HandVisibility();
+      } else {
+        el.dataset.fd = '0';
+        renderCard(el);
+      }
+    }
+    const wasBanished = !tryDockCard(el) && checkDropOnBanish(el);
+    if(!wasBanished) { if(document.body.contains(el)) checkDropOnGrave(el); }
     drag=null;
-    if (!el.dataset.netEnemy) netSendState();
+    if (!wasBanished && !el.dataset.netEnemy) netSendState();
   });
 }
 
@@ -874,10 +1152,15 @@ function sendToGrave(el,player){
     return;
   }
   const cd={name:el.dataset.name,color:el.dataset.color,type:el.dataset.ctype,uid:parseInt(el.dataset.uid)};
+  const isEnemyCard = el.dataset.netEnemy === '1';
+  const uid = el.dataset.uid;
   G.graves[player].push(cd);
   el.remove();G.cards=G.cards.filter(c=>c!==el);
   updGrave(player);
-  if (!el.dataset.netEnemy) netSendState();
+  if (NET.mode === 'multi') {
+    netSend({t:'card_remove', uid});
+    if (!isEnemyCard) netSendState();
+  }
 }
 
 function updGrave(player){
@@ -897,8 +1180,10 @@ function openBrowser(source,mode){
   G.browserSource=source;G.browserMode=mode;
   const isGrave=source==='p1'||source==='p2';
   document.getElementById('browser-shuffle-btn').style.display=isGrave?'none':'inline-block';
-  const titles={deck:{all:'Ziehstapel',top4:'Gossip'},p1:'Friedhof Spieler 1',p2:'Friedhof Spieler 2'};
-  document.getElementById('browser-title').textContent=isGrave?titles[source]:titles.deck[mode];
+  const isBanish=source==='banish';
+  document.getElementById('browser-shuffle-btn').style.display=(isGrave||isBanish)?'none':document.getElementById('browser-shuffle-btn').style.display;
+  const titles={deck:{all:'Ziehstapel',top4:'Gossip'},p1:'Friedhof Spieler 1',p2:'Friedhof Spieler 2',banish:'Entfernt-Stapel'};
+  document.getElementById('browser-title').textContent=(isGrave||isBanish)?(isBanish?titles.banish:titles[source]):titles.deck[mode];
   renderBrowserList();
   document.getElementById('browser-modal').classList.add('open');
 }
@@ -907,23 +1192,39 @@ document.getElementById('browser-modal').addEventListener('click',e=>{if(e.targe
 
 function renderBrowserList(){
   const isGrave=G.browserSource==='p1'||G.browserSource==='p2';
-  const full=isGrave?G.graves[G.browserSource]:G.deck;
-  const data=G.browserMode==='top4'?full.slice(0,4):full;
+  const isBanish=G.browserSource==='banish';
+  const full=isGrave?G.graves[G.browserSource]:(isBanish?G.banish:G.deck);
+  const rawData=G.browserMode==='top4'?full.slice(0,4):full;
+  // Reverse order for grave/banish: newest first
+  const data=(isGrave||isBanish)?[...rawData].reverse():rawData;
   document.getElementById('browser-sub').textContent=full.length+' Karten';
   const list=document.getElementById('browser-list');list.innerHTML='';
   if(!data.length){list.innerHTML='<p style="color:#aaa;font-size:.82rem;padding:8px;">Leer.</p>';return;}
   data.forEach((cd,i)=>{
+    // Real index in original array (for grave/banish reversed)
+    const realIdx=(isGrave||isBanish)?(rawData.length-1-i):i;
     const row=document.createElement('div');row.className='deck-row';
     row.innerHTML=`<span class="deck-row-num">${i+1}</span>
       <img class="deck-row-thumb" src="${thumbFor(cd.name)}" alt="${cd.name}">
       <span class="deck-row-name">${cd.name}</span>
       <div class="deck-row-btns">
-        ${!isGrave?`<button onclick="moveBCard(${i},-1)" ${i===0?'disabled':''}>↑</button>
-        <button onclick="moveBCard(${i},1)" ${i===data.length-1?'disabled':''}>↓</button>
-        <button onclick="moveBCardTop(${i})">⤒</button>`:''}
-        <button class="field-btn" onclick="bCardToField(${i})">🃏 Aufs Spielfeld</button>
-        <button class="rm-btn" onclick="bRemoveCard(${i})">✕</button>
+        ${(!isGrave&&!isBanish)?`<button onclick="moveBCard(${realIdx},-1)" ${realIdx===0?'disabled':''}>↑</button>
+        <button onclick="moveBCard(${realIdx},1)" ${realIdx===rawData.length-1?'disabled':''}>↓</button>
+        <button onclick="moveBCardTop(${realIdx})">⤒</button>`:''}
+        <button class="field-btn" onclick="bCardToField(${realIdx})">🃏 Aufs Spielfeld</button>
+        <button class="rm-btn" onclick="bRemoveCard(${realIdx})">✕</button>
       </div>`;
+    // Double-click to show popup
+    let clickCount=0,clickTimer=null;
+    row.addEventListener('click',()=>{
+      clickCount++;
+      if(clickCount===1){
+        clickTimer=setTimeout(()=>{clickCount=0;},300);
+      } else if(clickCount===2){
+        clearTimeout(clickTimer);clickCount=0;
+        openBrowserCardPopup(realIdx);
+      }
+    });
     list.appendChild(row);
   });
 }
@@ -939,10 +1240,14 @@ function bRemoveCard(i){
 }
 function bCardToField(i){
   const isGrave=G.browserSource==='p1'||G.browserSource==='p2';
+  const isBanish=G.browserSource==='banish';
   let cd;
   if(isGrave){cd=G.graves[G.browserSource].splice(i,1)[0];updGrave(G.browserSource);}
+  else if(isBanish){cd=G.banish.splice(i,1)[0];updBanish();}
   else{cd=G.deck.splice(i,1)[0];updDeck();}
+  cd = {...cd, uid: G.nid++};
   closeBrowser();
+  if(NET.mode==='multi') netSendState();
   startCarry(cd);
 }
 function shuffleAndClose(){shuffle(G.deck);updDeck();closeBrowser();if(NET.mode==='multi')netSendState();}
@@ -951,7 +1256,7 @@ function shuffleAndClose(){shuffle(G.deck);updDeck();closeBrowser();if(NET.mode=
 function openOverview(){
   const grid=document.getElementById('overview-grid');grid.innerHTML='';
   const ALWAYS_LOCKED = new Set([
-    'DiePogofanten',"L'Enderdragon",'Golop der Grobe','Der Zeitführer','BOOM Clan',
+    'Die Pogofanten',"L'Enderdragon",'Golop der Grobe','Der Zeitführer','BOOM Clan',
     'FourAceFour-Feuer-Reverse-Blöff'
   ]);
   UNIQUE_CARDS.forEach(def=>{
@@ -970,14 +1275,28 @@ function openOverview(){
       wrap.appendChild(gone);
     }
     if(!depleted){
-      wrap.onclick=()=>{
-        const deckIdx=G.deck.findIndex(c=>c.name===def.name);
-        if(deckIdx<0)return;
-        const cd=G.deck.splice(deckIdx,1)[0];
-        updDeck();
-        document.getElementById('overview-modal').classList.remove('open');
-        startCarry(cd);
-      };
+      let schClickCount=0,schClickTimer=null;
+      wrap.addEventListener('click',()=>{
+        schClickCount++;
+        if(schClickCount===1){
+          schClickTimer=setTimeout(()=>{schClickCount=0;},300);
+        } else if(schClickCount===2){
+          clearTimeout(schClickTimer);schClickCount=0;
+          const deckIdx=G.deck.findIndex(c=>c.name===def.name);
+          if(deckIdx<0)return;
+          const cd=G.deck[deckIdx];
+          // Don't close overview-modal, just show bpopup on top
+          openBPopup(cd, ()=>{
+            document.getElementById('overview-modal').classList.remove('open');
+            const idx2=G.deck.findIndex(c=>c.name===def.name);
+            if(idx2<0)return;
+            const pulled=G.deck.splice(idx2,1)[0];
+            updDeck();
+            startCarry({...pulled, uid:G.nid++});
+            if(NET.mode==='multi') netSendState();
+          });
+        }
+      });
     }
     grid.appendChild(wrap);
   });
@@ -994,18 +1313,39 @@ function openColorRemove(){
     btn.onclick=()=>{
       document.getElementById('color-remove-modal').classList.remove('open');
       if(!confirm(`Alle ${cg.label}-Karten komplett aus dem Spiel entfernen?`))return;
+      // Add removed deck cards to banish
+      G.deck.filter(c=>c.color===cg.hex).forEach(c=>{
+        const bcd={name:c.name,color:c.color,type:c.type,file:c.file||''};
+        G.banish.push(bcd);
+      });
       G.deck=G.deck.filter(c=>c.color!==cg.hex);updDeck();
-      G.cards.filter(c=>c.dataset.color===cg.hex).forEach(c=>removeCardSynced(c));
+      // Add field cards to banish and remove them
+      G.cards.filter(c=>c.dataset.color===cg.hex).forEach(c=>{
+        const bcd={name:c.dataset.name,color:c.dataset.color,type:c.dataset.ctype,file:c.dataset.file||''};
+        G.banish.push(bcd);
+        removeCardSynced(c);
+      });
+      // Add grave cards to banish
+      [...G.graves.p1.filter(c=>c.color===cg.hex), ...G.graves.p2.filter(c=>c.color===cg.hex)].forEach(c=>{
+        const bcd={name:c.name,color:c.color,type:c.type,file:c.file||''};
+        G.banish.push(bcd);
+      });
       G.graves.p1=G.graves.p1.filter(c=>c.color!==cg.hex);updGrave('p1');
       G.graves.p2=G.graves.p2.filter(c=>c.color!==cg.hex);updGrave('p2');
-      // clear matching buw slots, then recheck EX
+      updBanish();
+      // clear matching buw slots, add to banish, then recheck EX
       ['p1','p2'].forEach(p=>{
         ['buw1','buw2','buw3'].forEach(b=>{
           const sid=p+'-'+b;
-          if(G.slots[sid]&&G.slots[sid].color===cg.hex){G.slots[sid]=null;renderSlot(sid);}
+          if(G.slots[sid]&&G.slots[sid].color===cg.hex){
+            const sc=G.slots[sid];
+            G.banish.push({name:sc.name,color:sc.color,type:sc.type||sc.ctype,file:sc.file||''});
+            G.slots[sid]=null;renderSlot(sid);
+          }
         });
         checkExBuwemon(p);
       });
+      updBanish();
       netSendState();
     };
     sw.appendChild(btn);
@@ -1021,7 +1361,7 @@ function openPopup(el){
   document.getElementById('popup-img').src=imgFor(el.dataset.name,fd,el.dataset.file);
   document.getElementById('popup-img').alt=el.dataset.name;
   document.getElementById('popup-name').textContent=el.dataset.name;
-  const types={buw:'Buwemon-Karte',spec:'Spezial-Buwemon',eff:'Effektkarte',ereignis:'Ereigniskarte','ex-ereignis':'EX-Buwemon'};
+  const types={buw:'Buwemonkarte',spec:'Spezial-Buwemonkarte',eff:'Effektkarte',ereignis:'Ereigniskarte','ex-ereignis':'Ereignis-EX-Buwemonkarte'};
   document.getElementById('popup-type').textContent=types[el.dataset.ctype]||'';
   document.getElementById('card-popup').classList.add('open');
 }
@@ -1030,7 +1370,14 @@ document.getElementById('card-popup').addEventListener('click',e=>{if(e.target==
 document.getElementById('popup-remove-btn').onclick=()=>{
   if(!G.popupCardEl)return;
   if(!confirm('Diese Karte wirklich aus dem Spiel entfernen?'))return;
-  removeCardSynced(G.popupCardEl);
+  const el=G.popupCardEl;
+  const ctype=el.dataset.ctype;
+  if(ctype!=='ereignis'&&ctype!=='ex-ereignis') {
+    const bcd={name:el.dataset.name,color:el.dataset.color,type:ctype,file:el.dataset.file||''};
+    G.banish.push(bcd);
+    updBanish();
+  }
+  removeCardSynced(el);
   closePopup();
 };
 
@@ -1068,11 +1415,25 @@ function onCarryDrop(e) {
   const cd = carryData;
   carryData = null;
 
+  // Check if dropped on banish zone
+  const banishZoneEl = document.getElementById('banish-zone');
+  if (banishZoneEl) {
+    const bz = banishZoneEl.getBoundingClientRect();
+    if (e.clientX >= bz.left && e.clientX <= bz.right && e.clientY >= bz.top && e.clientY <= bz.bottom) {
+      if (cd.type !== 'ereignis' && cd.type !== 'ex-ereignis') {
+        const bcd = {name:cd.name, color:cd.color, type:cd.type, file:cd.file||''};
+        G.banish.push(bcd);
+        updBanish();
+      }
+      if (NET.mode==='multi') netSendState();
+      return;
+    }
+  }
+
   // Check if dropped on a grave zone
   for (const p of ['p1','p2']) {
     const gz = document.getElementById(p+'-grave').getBoundingClientRect();
     if (e.clientX >= gz.left && e.clientX <= gz.right && e.clientY >= gz.top && e.clientY <= gz.bottom) {
-      // EX and ereignis cards disappear, others go to grave
       if (cd.type==='ex'||cd.type==='ex-ereignis'||cd.type==='ex-auto'||cd.type==='ereignis') {
         if (NET.mode==='multi') netSendState();
         return;
@@ -1091,13 +1452,15 @@ function onCarryDrop(e) {
     const sr = slot.getBoundingClientRect();
     if (e.clientX >= sr.left && e.clientX <= sr.right && e.clientY >= sr.top && e.clientY <= sr.bottom) {
       const isExSlot = sid.endsWith('-ex');
-      if (isExSlot && cd.type !== 'ex' && cd.type !== 'spec' && cd.type !== 'ex-ereignis') break;
+      if (isExSlot && cd.type !== 'ex' && cd.type !== 'ex-ereignis') break;
       if (!isExSlot && cd.type !== 'buw' && cd.type !== 'spec') break;
       if (G.slots[sid]) releaseSlot(sid, sr.left+4, sr.top+4);
       G.slots[sid] = {...cd, file: cd.file || imgFileFor(cd.name)};
       renderSlot(sid);
       const player = sid.startsWith('p1') ? 'p1' : 'p2';
       if (!isExSlot) checkExBuwemon(player);
+      if (isExSlot && cd.color === '#111111') checkDarkschahWin(player);
+      if (NET.mode==='multi') netSendState();
       return;
     }
   }
@@ -1134,24 +1497,34 @@ applyLetterbox();
 
 // ── EX ALIGNMENT ──
 function alignEX() {
-  ['p1','p2'].forEach(p => {
-    const buw2 = document.getElementById(p+'-buw2');
-    const exEl = document.getElementById(p+'-ex');
-    const space = document.getElementById(p+'-ex-space');
-    if (!buw2 || !exEl || !space) return;
-    const bRect = buw2.getBoundingClientRect();
-    const eRect = exEl.getBoundingClientRect();
-    const rowRect = exEl.closest('.row-ex').getBoundingClientRect();
-    // center of buw2 relative to row
-    const buw2Center = bRect.left + bRect.width/2 - rowRect.left;
-    // EX should be centered on buw2
-    const exWidth = eRect.width;
-    const targetLeft = buw2Center - exWidth/2;
-    space.style.width = Math.max(0, targetLeft) + 'px';
-  });
+  const scale = Math.min(window.innerWidth/1920, window.innerHeight/980);
+  void document.body.offsetHeight;
+
+  // p1: use spacer approach (works for p1)
+  const buw2p1 = document.getElementById('p1-buw2');
+  const spacep1 = document.getElementById('p1-ex-space');
+  const exp1 = document.getElementById('p1-ex');
+  if (buw2p1 && spacep1 && exp1) {
+    for (let i = 0; i < 2; i++) {
+      void document.body.offsetHeight;
+      const diff = buw2p1.getBoundingClientRect().left - exp1.getBoundingClientRect().left;
+      spacep1.style.width = Math.max(0, (parseFloat(spacep1.style.width)||0) + diff/scale) + 'px';
+    }
+  }
+
+  // p2: use marginLeft approach (works for p2)
+  const buw2p2 = document.getElementById('p2-buw2');
+  const exp2 = document.getElementById('p2-ex');
+  if (buw2p2 && exp2) {
+    void document.body.offsetHeight;
+    const diff = buw2p2.getBoundingClientRect().left - exp2.getBoundingClientRect().left;
+    exp2.style.marginLeft = ((parseFloat(exp2.style.marginLeft)||0) + diff/scale) + 'px';
+  };
 }
 window.addEventListener('resize', alignEX);
 setTimeout(alignEX, 100);
+setTimeout(alignEX, 500);
+setTimeout(alignEX, 1000);
 
 // ── DICE ──
 let diceTimer=null;
@@ -1162,6 +1535,9 @@ function rollDice(){
   btn.classList.remove('show-result');
   btn.classList.add('rolling');
   btn.textContent='?';
+  const result=Math.floor(Math.random()*6)+1;
+  // Send result immediately so receiver can show same number after animation
+  if(NET.mode==='multi') netSend({t:'dice_roll', result});
   let count=0;
   const interval=setInterval(()=>{
     btn.textContent=Math.floor(Math.random()*6)+1;
@@ -1170,8 +1546,7 @@ function rollDice(){
   },60);
   setTimeout(()=>{
     clearInterval(interval);
-    const result=Math.floor(Math.random()*6)+1;
-    showDiceResult(result, NET.mode==='multi');
+    showDiceResult(result, false);
   },700);
 }
 
@@ -1184,6 +1559,7 @@ function lpDirectEdit(p) {
   G.lp[p] = val;
   el.textContent = val;
   if (NET.mode==='multi') netSend({t:'lp', p, val:G.lp[p]});
+  checkLPWin(p);
 }
 function lpDirectKey(e, p) {
   if (e.key === 'Enter') { e.preventDefault(); document.getElementById('p'+p+'-lp').blur(); }
@@ -1204,6 +1580,7 @@ function applyLP(p){
   document.getElementById('p'+p+'-lp').textContent=G.lp[p];
   inp.value='';
   if (NET.mode==='multi') netSend({t:'lp', p, val:G.lp[p]});
+  checkLPWin(p);
 }
 
 // ── REVEAL ──
@@ -1215,27 +1592,28 @@ function toggleReveal(p){
     btn.style.background = G.reveal[p] ? 'rgba(180,50,50,0.5)' : '';
     btn.style.color = G.reveal[p] ? '#fff' : '';
   }
-  // Directly set fd on all cards in this hand zone
-  const handEl = document.getElementById('p'+p+'-hand');
-  if (handEl) {
-    const hr = handEl.getBoundingClientRect();
-    const W=1920,H=980,scale=Math.min(window.innerWidth/W,window.innerHeight/H);
-    const ox=(window.innerWidth-W*scale)/2, oy=(window.innerHeight-H*scale)/2;
-    G.cards.forEach(el => {
-      const cx = parseFloat(el.style.left)+31, cy = parseFloat(el.style.top)+44;
-      const gx=(hr.left-ox)/scale, gx2=(hr.right-ox)/scale;
-      const gy=(hr.top-oy)/scale, gy2=(hr.bottom-oy)/scale;
-      if (cx>=gx && cx<=gx2 && cy>=gy && cy<=gy2) {
-        el.dataset.fd = G.reveal[p] ? '0' : '1';
-        renderCard(el);
-      }
-    });
-  }
+  applyRevealToHand(p);
   if (NET.mode === 'multi') {
     netSend({t:'reveal', p, val: G.reveal[p]});
-    netSendState();
   }
   applyP1HandVisibility();
+}
+
+function applyRevealToHand(p) {
+  const handEl = document.getElementById('p'+p+'-hand');
+  if (!handEl) return;
+  const W=1920,H=980,scale=Math.min(window.innerWidth/W,window.innerHeight/H);
+  const ox=(window.innerWidth-W*scale)/2, oy=(window.innerHeight-H*scale)/2;
+  const hr = handEl.getBoundingClientRect();
+  const gx=(hr.left-ox)/scale, gx2=(hr.right-ox)/scale;
+  const gy=(hr.top-oy)/scale, gy2=(hr.bottom-oy)/scale;
+  G.cards.forEach(el => {
+    const cx = parseFloat(el.style.left)+31, cy = parseFloat(el.style.top)+44;
+    if (cx>=gx && cx<=gx2 && cy>=gy && cy<=gy2) {
+      el.dataset.fd = G.reveal[p] ? '0' : '1';
+      renderCard(el);
+    }
+  });
 }
 
 function updateRevealBtn(p) {
@@ -1251,7 +1629,7 @@ function closeConfirm(){document.getElementById('confirm-modal').classList.remov
 function resetLocalState(){
   G.cards.forEach(el=>el.remove());G.cards=[];
   G.nid=1;G.deck=buildDeck();updDeck();
-  G.graves={p1:[],p2:[]};updGrave('p1');updGrave('p2');
+  G.graves={p1:[],p2:[]};updGrave('p1');updGrave('p2');G.banish=[];updBanish();
   G.lp={1:300,2:300};
   document.getElementById('p2-lp').textContent='300';
   document.getElementById('p1-lp').textContent='300';
@@ -1342,7 +1720,7 @@ function openEreignis() {
       sep.style.cssText = 'width:100%;border-top:1.5px solid #ddd;margin:4px 0 2px;flex-basis:100%;';
       const sepLbl = document.createElement('div');
       sepLbl.style.cssText = 'width:100%;font-size:.72rem;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:1px;flex-basis:100%;padding:2px 0;';
-      sepLbl.textContent = 'EX-Buwemon';
+      sepLbl.textContent = 'EX';
       grid.appendChild(sep);
       grid.appendChild(sepLbl);
       exSepAdded = true;
@@ -1380,9 +1758,10 @@ G.slots = {
 function renderSlot(slotId) {
   const el = document.getElementById(slotId);
   if (!el) return;
+  // Track if slot was empty before (for spark animation)
+  const existingCard = el.querySelector('.docked-card');
   // remove existing docked
-  const existing = el.querySelector('.docked-card');
-  if (existing) existing.remove();
+  if (existingCard) existingCard.remove();
   el.classList.remove('has-card');
   const cd = G.slots[slotId];
   if (!cd) return;
@@ -1392,8 +1771,50 @@ function renderSlot(slotId) {
   img.src = 'karten/' + (cd.file || imgFileFor(cd.name));
   img.alt = cd.name;
   div.appendChild(img);
+  // Doppelklick Popup für ex-auto Karten
+  if (cd.type === 'ex-auto') {
+    let exClickCount = 0, exClickTimer = null;
+    div.addEventListener('click', () => {
+      exClickCount++;
+      if (exClickCount === 1) {
+        exClickTimer = setTimeout(() => { exClickCount = 0; }, 300);
+      } else if (exClickCount === 2) {
+        clearTimeout(exClickTimer); exClickCount = 0;
+        const fake = document.createElement('div');
+        fake.dataset.name = cd.name; fake.dataset.color = cd.color;
+        fake.dataset.ctype = cd.type; fake.dataset.fd = '0';
+        fake.dataset.file = cd.file || ''; fake.dataset.uid = cd.uid || 0;
+        openPopup(fake);
+      }
+    });
+  }
   el.appendChild(div);
   el.classList.add('has-card');
+  // Spark animation for spec buwemon - many small sparks around card
+  if (cd.type === 'spec' && !existingCard) {
+    requestAnimationFrame(() => {
+      const r = el.getBoundingClientRect();
+      const cx = r.left + r.width/2, cy = r.top + r.height/2;
+      const count = 14;
+      for (let k = 0; k < count; k++) {
+        const angle = (k / count) * Math.PI * 2 + Math.random() * 0.5;
+        const dist = r.width * 0.4 + Math.random() * 14;
+        const sx = cx + Math.cos(angle) * dist;
+        const sy = cy + Math.sin(angle) * dist;
+        const delay = Math.random() * 600;
+        const dur = 600 + Math.random() * 600;
+        const spark = document.createElement('div');
+        spark.className = 'spark-particle';
+        spark.style.left = sx + 'px';
+        spark.style.top = sy + 'px';
+        spark.style.animationDelay = delay + 'ms';
+        spark.style.animationDuration = dur + 'ms';
+        spark.style.transform = `translate(-50%,-50%) rotate(${Math.random()*360}deg)`;
+        document.documentElement.appendChild(spark);
+        setTimeout(() => spark.remove(), delay + dur + 100);
+      }
+    });
+  }
 }
 
 function imgFileFor(name) {
@@ -1405,6 +1826,52 @@ function imgFileFor(name) {
   return 'Rueckseite.png';
 }
 
+
+function checkZoneColor(player) {
+  const s1 = G.slots[player+'-buw1'];
+  const s2 = G.slots[player+'-buw2'];
+  const s3 = G.slots[player+'-buw3'];
+  let color = null;
+  if (s1 && s2 && s3 && s1.color === s2.color && s2.color === s3.color) {
+    color = s1.color;
+  }
+  // Apply to zones: buw1,buw2,buw3,ex,hand,effects,grave
+  const zones = [
+    document.getElementById(player+'-buw1'),
+    document.getElementById(player+'-buw2'),
+    document.getElementById(player+'-buw3'),
+    document.getElementById(player+'-ex'),
+    document.getElementById(player+'-hand'),
+    document.getElementById(player+'-effects'),
+    document.getElementById(player+'-grave'),
+  ].filter(Boolean);
+  // Also LP button
+  const lpBtn = document.querySelector('#'+player+'-lp-wrap .lp-ok');
+  zones.forEach(z => {
+    if (!z) return;
+    if (color) {
+      // Parse color as RGB and apply with transparency
+      const r = parseInt(color.slice(1,3),16);
+      const g = parseInt(color.slice(3,5),16);
+      const b = parseInt(color.slice(5,7),16);
+      z.style.background = `rgba(${r},${g},${b},0.18)`;
+      z.style.borderColor = `rgba(${r},${g},${b},0.5)`;
+    } else {
+      z.style.background = '';
+      z.style.borderColor = '';
+    }
+  });
+  if (lpBtn) {
+    if (color) {
+      const r = parseInt(color.slice(1,3),16);
+      const g = parseInt(color.slice(3,5),16);
+      const b = parseInt(color.slice(5,7),16);
+      lpBtn.style.background = `rgba(${r},${g},${b},0.7)`;
+    } else {
+      lpBtn.style.background = '';
+    }
+  }
+}
 function checkExBuwemon(player) {
   const s1 = G.slots[player+'-buw1'];
   const s2 = G.slots[player+'-buw2'];
@@ -1415,6 +1882,8 @@ function checkExBuwemon(player) {
     if (exFile) {
       G.slots[exSlot] = {name: 'EX', color: s1.color, type: 'ex-auto', file: exFile, uid: 0};
       renderSlot(exSlot);
+      if (s1.color === '#111111') checkDarkschahWin(player);
+      checkZoneColor(player);
       return;
     }
   }
@@ -1423,6 +1892,7 @@ function checkExBuwemon(player) {
     G.slots[exSlot] = null;
     renderSlot(exSlot);
   }
+  checkZoneColor(player);
 }
 
 function tryDockCard(el) {
@@ -1438,7 +1908,7 @@ function tryDockCard(el) {
       // check type compatibility
       const ctype = el.dataset.ctype;
       const isExSlot = sid.endsWith('-ex');
-      if (isExSlot && ctype !== 'ex' && ctype !== 'spec' && ctype !== 'ex-ereignis' && ctype !== 'ex-auto') continue;
+      if (isExSlot && ctype !== 'ex' && ctype !== 'ex-ereignis' && ctype !== 'ex-auto') continue;
       if (!isExSlot && ctype !== 'buw' && ctype !== 'spec') continue;
       // dock it
       const cd = {
@@ -1451,12 +1921,18 @@ function tryDockCard(el) {
       // if slot occupied, release old card to field
       if (G.slots[sid]) releaseSlot(sid, sr.left + 4, sr.top + 4);
       G.slots[sid] = cd;
+      // Always tell the other player to remove this card
+      if (NET.mode === 'multi') {
+        netSend({t:'card_remove', uid: el.dataset.uid});
+      }
       el.remove();
       G.cards = G.cards.filter(c => c !== el);
       renderSlot(sid);
       // check EX
       const player = sid.startsWith('p1') ? 'p1' : 'p2';
-      if (!isExSlot) checkExBuwemon(player);
+      if (!isExSlot) { checkExBuwemon(player); checkZoneColor(player); }
+      // Darkschah manual dock
+      if (isExSlot && cd.color === '#111111') checkDarkschahWin(player);
       return true;
     }
   }
@@ -1480,7 +1956,22 @@ function releaseSlot(slotId, x, y) {
 
   slotEl.addEventListener('pointerdown', (e) => {
     if (!G.slots[sid]) return;
-    if (G.slots[sid].type === 'ex-auto') return;
+    if (G.slots[sid].type === 'ex-auto') {
+      // Allow dblclick popup for ex-auto
+      clickCount++;
+      if (clickCount === 1) {
+        clickTimer = setTimeout(() => { clickCount = 0; clickTimer = null; }, 300);
+      } else if (clickCount === 2) {
+        clearTimeout(clickTimer); clickCount = 0; clickTimer = null;
+        const cd = G.slots[sid];
+        const fake = document.createElement('div');
+        fake.dataset.name = cd.name; fake.dataset.color = cd.color;
+        fake.dataset.ctype = cd.type; fake.dataset.fd = '0';
+        fake.dataset.file = cd.file || ''; fake.dataset.uid = cd.uid || 0;
+        openPopup(fake);
+      }
+      return;
+    }
     e.stopPropagation();
     clickCount++;
 
@@ -1517,7 +2008,7 @@ function releaseSlot(slotId, x, y) {
       if (!sid.endsWith('-ex')) checkExBuwemon(player);
       const gp0 = clientToGame(e.clientX, e.clientY);
       const el = spawnCard(cd, clampX(gp0.x-31), clampY(gp0.y-44), false);
-      el.style.zIndex = 100 + (G.nid++);
+      el.style.zIndex = Math.min(100 + (G.nid++), 7000);
       el.classList.add('dragging');
       drag = { el, ox: 31, oy: 44 };
       el.setPointerCapture(e.pointerId);
@@ -1531,7 +2022,7 @@ function releaseSlot(slotId, x, y) {
         if (!drag || drag.el !== el) return;
         el.classList.remove('dragging');
         const docked = tryDockCard(el);
-        if (!docked) checkDropOnGrave(el);
+        if (!docked) { if (!checkDropOnBanish(el)) checkDropOnGrave(el); }
         drag = null;
         if (!el.dataset.netEnemy) netSendState();
       });
@@ -1577,6 +2068,9 @@ function applyP1HandVisibility() {
   const myHR = myEl ? screenToGame(myEl.getBoundingClientRect()) : null;
 
   G.cards.forEach(el => {
+    // Skip card being dragged from deck - keep it face-down while dragging
+    if (el.dataset.drawnFromDeck === '1') return;
+
     // style.left/top are game coords
     const cx = parseFloat(el.style.left) + 31;
     const cy = parseFloat(el.style.top) + 44;
@@ -1586,10 +2080,13 @@ function applyP1HandVisibility() {
 
     if (inEnemyHand && !G.reveal[revealKey]) {
       if (el.dataset.fd !== '1') { el.dataset.fd = '1'; renderCard(el); }
-    } else if (!inMyHand && !inEnemyHand) {
+    } else if (inMyHand) {
+      // Own hand: always face up
+      if (el.dataset.fd !== '0') { el.dataset.fd = '0'; renderCard(el); }
+    } else if (!inEnemyHand) {
+      // On field: always face up
       if (el.dataset.fd !== '0') { el.dataset.fd = '0'; renderCard(el); }
     }
-    // In own hand: don't touch
   });
 }
 setInterval(applyP1HandVisibility, 300);
@@ -1613,12 +2110,457 @@ function removeCardSynced(el) {
   }
 }
 
+
+// ── BANISH (ENTFERNT-STAPEL) ──
+function updBanish() {
+  const txt = document.getElementById('banish-count-text');
+  if (txt) txt.textContent = G.banish.length + ' Karten';
+  const lbl = document.getElementById('banish-lbl');
+  if (lbl) lbl.style.display = G.banish.length > 0 ? 'none' : '';
+  // Show top card preview like grave
+  const preview = document.getElementById('banish-preview');
+  const cntEl = document.getElementById('banish-count-lbl');
+  if (preview) {
+    preview.innerHTML = '';
+    if (G.banish.length > 0) {
+      const cd = G.banish[G.banish.length - 1];
+      const img = document.createElement('img');
+      img.src = imgFor(cd.name, false, cd.file);
+      img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:4px;opacity:0.45;';
+      preview.appendChild(img);
+    }
+  }
+  if (cntEl) {
+    if (G.banish.length > 1) {
+      cntEl.style.display = '';
+      cntEl.textContent = '×' + G.banish.length;
+    } else {
+      cntEl.style.display = 'none';
+    }
+  }
+}
+
+function addToBanish(cd) {
+  G.banish.push({name:cd.name, color:cd.color, type:cd.type||cd.ctype, file:cd.file||''});
+  updBanish();
+}
+
+function openBanishBrowser() {
+  if (!G.banish.length) return;
+  openBrowser('banish', 'all');
+}
+
+function checkDropOnBanish(el){
+  const r=el.getBoundingClientRect();
+  const cx=r.left+r.width/2,cy=r.top+r.height/2;
+  const bz=document.getElementById('banish-zone').getBoundingClientRect();
+  if(cx>=bz.left&&cx<=bz.right&&cy>=bz.top&&cy<=bz.bottom){
+    const ctype=el.dataset.ctype;
+    const isEnemy=el.dataset.netEnemy==='1';
+    const uid=el.dataset.uid;
+    if(ctype!=='ereignis'&&ctype!=='ex-ereignis'){
+      const cd={name:el.dataset.name,color:el.dataset.color,type:ctype,file:el.dataset.file||''};
+      G.banish.push(cd);
+      updBanish();
+    }
+    el.remove();
+    G.cards=G.cards.filter(c=>c!==el);
+    if(NET.mode==='multi'){
+      // Always tell the other player to remove this card
+      netSend({t:'card_remove', uid});
+    }
+    if(!isEnemy) netSendState();
+    return true;
+  }
+  return false;
+}
+
+
+function openBPopup(cd, onField) {
+  document.getElementById('bpopup-img').src = imgFor(cd.name, false, cd.file||'');
+  document.getElementById('bpopup-name').textContent = cd.name;
+  const _btypes={buw:'Buwemonkarte',spec:'Spezial-Buwemonkarte',eff:'Effektkarte',ereignis:'Ereigniskarte','ex-ereignis':'Ereignis-EX-Buwemonkarte'};
+  document.getElementById('bpopup-type').textContent = _btypes[cd.type||cd.ctype] || cd.type || '';
+  document.getElementById('browser-card-popup').classList.add('open');
+  document.getElementById('bpopup-field-btn').onclick = () => {
+    closeBPopup();
+    closeBrowser();
+    if (onField) onField();
+  };
+}
+
+function closeBPopup() {
+  document.getElementById('browser-card-popup').classList.remove('open');
+}
+document.getElementById('browser-card-popup').addEventListener('click', e => {
+  if (e.target === document.getElementById('browser-card-popup')) closeBPopup();
+});
+
+
+function openBrowserCardPopup(realIdx) {
+  // realIdx is already the index in the original (non-reversed) array
+  const isGrave=G.browserSource==='p1'||G.browserSource==='p2';
+  const isBanish=G.browserSource==='banish';
+  const src = isGrave ? G.graves[G.browserSource] : (isBanish ? G.banish : G.deck);
+  const cd = src[realIdx];
+  if (!cd) return;
+  openBPopup(cd, () => {
+    const pulled = src.splice(realIdx, 1)[0];
+    if (isGrave) updGrave(G.browserSource);
+    else if (isBanish) updBanish();
+    else updDeck();
+    pulled.uid = G.nid++;
+    if (NET.mode==='multi') netSendState();
+    if (pulled) startCarry(pulled);
+  });
+}
+
+
+// ── DARKSCHAH WIN ──
+function checkDarkschahWin(player) {
+  const myPlayer = NET.mode === 'multi' ? NET.myPlayer : 1;
+  const isWinner = (NET.mode === 'multi') ? (myPlayer === parseInt(player.replace('p',''))) : true;
+  showDarkschahWinLose(isWinner);
+  if (NET.mode === 'multi') netSend({t:'darkschah', winner: player});
+}
+
+function showDarkschahWinLose(isWinner) {
+  const text = isWinner ? 'ABSOLUTE VERNICHTUNG' : 'DU WURDEST VERNICHTET!';
+  const overlay = document.getElementById('win-lose-overlay');
+  const el = document.getElementById('win-lose-text');
+  el.textContent = '';
+  el.style.opacity = '1';
+  el.style.transition = '';
+  if (isWinner) {
+    el.style.color = '#ffffff';
+    el.style.webkitTextStroke = '8px #000000';
+    el.style.textShadow = '0 4px 24px rgba(0,0,0,0.8), 0 2px 8px rgba(0,0,0,0.9)';
+  } else {
+    el.style.color = '#000000';
+    el.style.webkitTextStroke = '8px #ffffff';
+    el.style.textShadow = '0 4px 24px rgba(0,0,0,0.8), 0 2px 8px rgba(0,0,0,0.9)';
+  }
+  overlay.style.display = 'flex';
+  document.getElementById('board').classList.add('darkschah-win');
+  G.cards.forEach(c => c.classList.add('darkschah-win'));
+  document.getElementById('ereignis-panel').classList.add('darkschah-win');
+  if(document.getElementById('banish-panel')) document.getElementById('banish-panel').classList.add('darkschah-win');
+  let i = 0;
+  const interval = setInterval(() => {
+    el.textContent = text.slice(0, i + 1);
+    i++;
+    if (i >= text.length) {
+      clearInterval(interval);
+      setTimeout(() => {
+        el.style.transition = 'opacity 2s ease';
+        el.style.opacity = '0';
+        document.getElementById('board').classList.remove('darkschah-win');
+        G.cards.forEach(c => c.classList.remove('darkschah-win'));
+        document.getElementById('ereignis-panel').classList.remove('darkschah-win');
+        if(document.getElementById('banish-panel')) document.getElementById('banish-panel').classList.remove('darkschah-win');
+        setTimeout(() => { overlay.style.display = 'none'; }, 2000);
+      }, 10000);
+    }
+  }, 60);
+}
+
+// ── WIN / LOSE ──
+const WIN_TEXTS = ["Du bist der Buwemeister!", "Du hast gewonnen!", "Epic Win!", "Buwemonspieler des Monats!", "What a save!", "EZ"];
+const LOSE_TEXTS = ["Epic Fail!", "L", "Du bist tot du Opfer!", "Du bist scheiße!", "Du hast verloren!", "WASTED", "Grandios gescheitert!", "Du wurdest geschlachtet!"];
+
+function showWinLose(isWinner) {
+  const texts = isWinner ? WIN_TEXTS : LOSE_TEXTS;
+  const text = texts[Math.floor(Math.random() * texts.length)];
+  const overlay = document.getElementById('win-lose-overlay');
+  const el = document.getElementById('win-lose-text');
+  el.textContent = '';
+  el.style.opacity = '1';
+  el.style.transition = '';
+  if (isWinner) {
+    el.style.color = '#ffffff';
+    el.style.webkitTextStroke = '8px #000000';
+    el.style.textShadow = '0 4px 24px rgba(0,0,0,0.8), 0 2px 8px rgba(0,0,0,0.9)';
+  } else {
+    el.style.color = '#000000';
+    el.style.webkitTextStroke = '8px #ffffff';
+    el.style.textShadow = '0 4px 24px rgba(0,0,0,0.8), 0 2px 8px rgba(0,0,0,0.9)';
+  }
+  overlay.style.display = 'flex';
+  // Typewriter animation
+  let i = 0;
+  const interval = setInterval(() => {
+    el.textContent = text.slice(0, i + 1);
+    i++;
+    if (i >= text.length) {
+      clearInterval(interval);
+      // Start 10s timer after last character
+      setTimeout(() => {
+        el.style.transition = 'opacity 2s ease';
+        el.style.opacity = '0';
+        setTimeout(() => { overlay.style.display = 'none'; }, 2000);
+      }, 10000);
+    }
+  }, 60);
+}
+
+function checkLPWin(p) {
+  const other = p === 1 ? 2 : 1;
+  if (G.lp[p] <= 0 && G.lp[other] > 0) {
+    G.lp[p] = 0;
+    document.getElementById('p'+p+'-lp').textContent = '0';
+    const myPlayer = NET.mode === 'multi' ? NET.myPlayer : 1;
+    showWinLose(myPlayer !== p);
+    if (NET.mode === 'multi') {
+      netSend({t:'winlose', loser: p});
+    }
+  }
+}
+
+
+// ── LIIINKS & RECAST ──
+function confirmLiiinks() {
+  if (!confirm('Liiinks! Alle Buwemon in den Buwemonfeldern werden getauscht. Wirklich?')) return;
+  doLiiinks();
+}
+
+function doLiiinks() {
+  // p1 sends left-first, p2 sends right-first. Spec stays. Overflow stays with original player.
+  const fillP1 = ['p1-buw3','p1-buw2','p1-buw1']; // right-to-left receive
+  const fillP2 = ['p2-buw1','p2-buw2','p2-buw3']; // left-to-right receive
+
+  // Collect normals to move
+  const fromP1 = ['p1-buw1','p1-buw2','p1-buw3'].map(s => G.slots[s] && G.slots[s].type !== 'spec' ? {...G.slots[s]} : null).filter(Boolean);
+  const fromP2 = ['p2-buw3','p2-buw2','p2-buw1'].map(s => G.slots[s] && G.slots[s].type !== 'spec' ? {...G.slots[s]} : null).filter(Boolean);
+
+  // Count free slots (non-spec)
+  const freeP1 = fillP1.filter(s => !G.slots[s] || G.slots[s].type !== 'spec').length;
+  const freeP2 = fillP2.filter(s => !G.slots[s] || G.slots[s].type !== 'spec').length;
+
+  // Split: how many go across, how many stay
+  const p2ToP1 = fromP2.slice(0, freeP1);
+  const p2StayP2 = fromP2.slice(freeP1);
+  const p1ToP2 = fromP1.slice(0, freeP2);
+  const p1StayP1 = fromP1.slice(freeP2);
+
+  // Clear normal slots
+  ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'].forEach(s => {
+    if (G.slots[s] && G.slots[s].type !== 'spec') { G.slots[s] = null; }
+  });
+
+  // Fill p1 right-to-left: incoming first, then overflow
+  const p1Cards = [...p2ToP1, ...p1StayP1];
+  fillP1.forEach(s => {
+    if (G.slots[s] && G.slots[s].type === 'spec') return;
+    G.slots[s] = p1Cards.shift() || null;
+    renderSlot(s);
+  });
+
+  // Fill p2 left-to-right: incoming first, then overflow
+  const p2Cards = [...p1ToP2, ...p2StayP2];
+  fillP2.forEach(s => {
+    if (G.slots[s] && G.slots[s].type === 'spec') return;
+    G.slots[s] = p2Cards.shift() || null;
+    renderSlot(s);
+  });
+
+  checkExBuwemon('p1');
+  checkExBuwemon('p2');
+  if (NET.mode === 'multi') netSendState();
+}
+
+function confirmRecast() {
+  if (!confirm('Recast! Alle Buwemon in den Buwemonfeldern werden zufällig neu verteilt. Wirklich?')) return;
+  doRecast();
+}
+
+function doRecast() {
+  const allSlots = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'];
+  // Only move normal buwemon, spec stays
+  const cards = allSlots.map(s => G.slots[s]).filter(c => c && c.type !== 'spec');
+  // Clear only normal slots
+  allSlots.forEach(s => { if (G.slots[s] && G.slots[s].type !== 'spec') { G.slots[s] = null; renderSlot(s); } });
+  // Shuffle
+  for (let i = cards.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [cards[i],cards[j]] = [cards[j],cards[i]];
+  }
+  // Assign randomly - 50/50 per card
+  const p1slots = ['p1-buw1','p1-buw2','p1-buw3'];
+  const p2slots = ['p2-buw1','p2-buw2','p2-buw3'];
+  cards.forEach(cd => {
+    const tryP1First = Math.random() < 0.5;
+    const order = tryP1First ? [...p1slots, ...p2slots] : [...p2slots, ...p1slots];
+    for (const sid of order) {
+      if (!G.slots[sid]) { G.slots[sid] = cd; renderSlot(sid); break; }
+    }
+  });
+  checkExBuwemon('p1');
+  checkExBuwemon('p2');
+  if (NET.mode === 'multi') netSendState();
+}
+
+
+function shuffleHand(player) {
+  const handEl = document.getElementById(player+'-hand');
+  if (!handEl) return;
+  const hr = handEl.getBoundingClientRect();
+  const W=1920,H=980,scale=Math.min(window.innerWidth/W,window.innerHeight/H);
+  const ox=(window.innerWidth-W*scale)/2, oy=(window.innerHeight-H*scale)/2;
+  const handCards = G.cards.filter(c => {
+    const cx = (parseFloat(c.style.left)+31)*scale + ox;
+    const cy = (parseFloat(c.style.top)+44)*scale + oy;
+    return cx>=hr.left && cx<=hr.right && cy>=hr.top && cy<=hr.bottom;
+  });
+  if (handCards.length < 2) return;
+  // Collect positions and shuffle them
+  const positions = handCards.map(c => ({x:parseFloat(c.style.left),y:parseFloat(c.style.top)}));
+  for (let i=positions.length-1;i>0;i--) {
+    const j=Math.floor(Math.random()*(i+1));
+    [positions[i],positions[j]]=[positions[j],positions[i]];
+  }
+  // Apply: pair each card UID with its new position
+  const moves = handCards.map((c,i) => ({uid:c.dataset.uid, x:positions[i].x, y:positions[i].y}));
+  moves.forEach(m => {
+    const c = G.cards.find(c => c.dataset.uid === m.uid);
+    if (c) { c.style.left = m.x+'px'; c.style.top = m.y+'px'; }
+  });
+  // Send moves directly so receiver can apply same positions
+  if (NET.mode==='multi') netSend({t:'shuffle_hand', moves});
+}
+
+function applyShuffleHand(moves) {
+  moves.forEach(m => {
+    const c = G.cards.find(c => c.dataset.uid === m.uid);
+    if (c) { c.style.left = m.x+'px'; c.style.top = m.y+'px'; }
+  });
+}
+
+
+// ── 4-PLAYER MODE TOGGLE ──
+let fourPlayerMode = false;
+function toggle4PMode() {
+  fourPlayerMode = !fourPlayerMode;
+  const btn = document.getElementById('lobby-4p-toggle');
+  if (btn) {
+    btn.textContent = '4-Spieler: ' + (fourPlayerMode ? 'AN' : 'AUS');
+    btn.style.background = fourPlayerMode ? 'rgba(0,150,80,0.7)' : 'rgba(180,185,195,0.75)';
+    btn.style.color = fourPlayerMode ? '#fff' : '#2a2e3a';
+  }
+  document.getElementById('board').style.display = fourPlayerMode ? 'none' : '';
+  document.getElementById('board4').style.display = fourPlayerMode ? 'flex' : 'none';
+  const bp4 = document.getElementById('banish-panel-4');
+  const ep4 = document.getElementById('ereignis-panel-4');
+  if (bp4) bp4.style.display = fourPlayerMode ? 'flex' : 'none';
+  if (ep4) ep4.style.display = fourPlayerMode ? 'flex' : 'none';
+  if (fourPlayerMode) { G4.deck = buildDeck(); updDeck4(); }
+}
+
+
+// ── 4-PLAYER FUNCTIONS ──
+const G4 = {
+  cards: [], nid: 1,
+  deck: [], graves: {p1:[],p2:[],p3:[],p4:[]},
+  banish: [], slots: {},
+  lp: {1:300,2:300,3:300,4:300},
+  reveal: {1:false,2:false,3:false,4:false}
+};
+
+function applyLP4(p) {
+  const inp = document.getElementById('p'+p+'-lp-inp-4') || document.getElementById('p'+p+'-lp-inp');
+  if (!inp) return;
+  const n = parseInt(inp.value);
+  if (isNaN(n)) return;
+  G4.lp[p] = Math.max(0, G4.lp[p] + n);
+  const el = document.getElementById('p'+p+'-lp-4') || document.getElementById('p'+p+'-lp');
+  if (el) el.textContent = G4.lp[p];
+  inp.value = '';
+}
+
+function lpDirectEdit4(p) {
+  const el = document.getElementById('p'+p+'-lp-4') || document.getElementById('p'+p+'-lp');
+  if (!el) return;
+  let val = parseInt(el.textContent.trim());
+  if (isNaN(val) || val < 0) val = 0;
+  G4.lp[p] = val;
+  el.textContent = val;
+}
+
+function lpDirectKey4(e, p) {
+  if (e.key === 'Enter') { e.preventDefault(); lpDirectEdit4(p); }
+}
+
+function toggleReveal4(p) {
+  G4.reveal[p] = !G4.reveal[p];
+  const btn = document.getElementById('p'+p+'-reveal-4') || document.getElementById('p'+p+'-reveal');
+  if (btn) {
+    btn.textContent = G4.reveal[p] ? 'Hand offen' : 'Hand verdeckt';
+    btn.style.background = G4.reveal[p] ? 'rgba(180,50,50,0.5)' : '';
+    btn.style.color = G4.reveal[p] ? '#fff' : '';
+  }
+}
+
+function shuffleHand4(player) {
+  const handId = player+'-hand-4';
+  const handEl = document.getElementById(handId) || document.getElementById(player+'-hand');
+  if (!handEl) return;
+  const hr = handEl.getBoundingClientRect();
+  const W=1920,H=980,scale=Math.min(window.innerWidth/W,window.innerHeight/H);
+  const ox=(window.innerWidth-W*scale)/2, oy=(window.innerHeight-H*scale)/2;
+  const handCards = G4.cards.filter(c => {
+    const cx=(parseFloat(c.style.left)+31)*scale+ox;
+    const cy=(parseFloat(c.style.top)+44)*scale+oy;
+    return cx>=hr.left&&cx<=hr.right&&cy>=hr.top&&cy<=hr.bottom;
+  });
+  if (handCards.length < 2) return;
+  const pos = handCards.map(c=>({x:parseFloat(c.style.left),y:parseFloat(c.style.top)}));
+  for(let i=pos.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pos[i],pos[j]]=[pos[j],pos[i]];}
+  handCards.forEach((c,i)=>{c.style.left=pos[i].x+'px';c.style.top=pos[i].y+'px';});
+}
+
+function openGraveBrowser4(player) {
+  // Reuse existing grave browser with G4 graves
+  G.graves[player] = G4.graves[player];
+  openGraveBrowser(player);
+}
+
+function rollDice4() {
+  const btn = document.getElementById('dice-btn-4');
+  if (!btn) return;
+  let count = 0;
+  const iv = setInterval(()=>{
+    btn.textContent = Math.floor(Math.random()*6)+1;
+    count++;
+    if(count>10){clearInterval(iv);btn.textContent=Math.floor(Math.random()*6)+1;}
+  },60);
+}
+
+function drawCard4(e) {
+  if (!G4.deck.length) return;
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  const cd = G4.deck.shift();
+  updDeck4();
+  const gp = clientToGame(e.clientX, e.clientY);
+  const el = spawnCard(cd, clampX(gp.x-31), clampY(gp.y-44), false);
+  el.classList.add('dragging');
+  drag = {el, ox:31, oy:44};
+  el.setPointerCapture(e.pointerId);
+  G4.cards = G.cards; // share card array
+}
+
+function updDeck4() {
+  const vis = document.getElementById('deck-vis-4');
+  const cnt = document.getElementById('deck-cnt-4');
+  if (vis) vis.style.opacity = G4.deck.length ? '1' : '0.25';
+  if (cnt) cnt.textContent = G4.deck.length + ' Karten';
+}
+
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v22l',
+    version: 'v26r',
     deck: G.deck,
     graves: G.graves,
+    banish: G.banish,
     slots: G.slots,
     bg: document.body.style.background || '',
     cards: G.cards.map(el => ({
@@ -1718,15 +2660,16 @@ document.querySelectorAll('.swatch').forEach(sw=>{
 <!-- LOBBY SCREEN -->
 <div id="lobby" style="
   position:fixed;inset:0;z-index:2000;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:linear-gradient(160deg,#909aaa 0%,#d8dce8 45%,#a8aebb 75%,#e4e8f0 100%);
-  gap:24px;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:60px;
+  background:url(bilder/Hintergrundbild_Startbildschirm.png) center/cover no-repeat;
+  gap:20px;
 ">
   <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAukAAAKNCAYAAACdofVHAAB4SUlEQVR4nO3d73XayNvG8Wuf83u/SgWRK4hcgeUKFlcQUUFwBZYrwKlApAJIBSIVoFSAtgK0FfC8kHEcB9vAzGhG4vs5Z87+SRAjIcStW/fMSAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADg0l++OwAAAxc/NklKJS0f/71+bAAA/IEgHQDMRZKSxxZJunr2/97SSFpI+v74TwAAJBGkA8AxUv3KjH9SG4inlrZdS7qXNLO0PQBAjxGkA8DvUv3Kgn9UG5Anj/+vC5Wk8eM/AQBniiAdwDlK9CsL/vfjf8f6VTvuWyPpVmTVAeBsEaQDGKpYv2fBrxRWIH6IsQjUAeAsEaQD6LtUv9eJx3p/wGaf3IhBpQAAAOiBTNJc0vYM2kb9yv4DAADgzGSS1vIfOHfdSgvHDgAAALAqkbSS/2DZZ0sNjyEAAABgzUhtyYfvINl3Kw2PIwAAAGBFJv/BcUgtMTmYAID++D/fHQCAVySSpr47EZiR7w4AALrxP98dAIA9IrWzt0R+uxGcK98dAAYs1a+VhpNn/7+S9J+k5WMDAOBsTeW/tCTUBsCeRFKhw8e9bNQmEDKRRAAAnJlY/gPhkBsAc7HsrLVAwA4AOBuF/AfCIbf05CMLQGqD6o3sfzdXkiZi8TFY8pfvDgDAM5HaxYoiv90wlySJoihSmqb6+++/lSSJ6rrWeDw23fS1qIsFTlWoDdJdqyR9U/tdrTp4PwwQA0cBhCRVjwL0OI4Vx/FTQH51dfX0//ZZLped9g/Ab7oK0KW21j15/Pda0kJt0F519P4YAIJ0ACG58t2Bl6IoUpIkT8H3p0+fngJzTxpfbwz0WK7uAvSXYrVlMBP9Cth/PP4TeBVBOoCQJL7eOE3Tp4D806dPT6UqNv348cPGZiobG4EX6Yt/Sr+XLlXiJsyFVNKd7048ivUrYG/UBurfRcCOPQjSAYQkdrnxXUY8SRJ9/Pjxt1IVwIFI7QJU/+j1haheCx7rxya1wdzPZ3+2fOXvYb/CdwdeEanN7mdqP+OlfgXsjY8OISwE6QBCEhtv4LEs5fmAzbfqxAFHcklfdPoYi1i/fx9Gz/79tcC+0e9PWn6oDeCXOt9APlM/ZluJ1H7GI7U3FQsRsJ89gnQAg5Hnue7uQnmqDQPJY4sP+LvLN/6sUvcBTqJ27uy44/eV2kAvffbfz/+9lvRV0kznFfT19YIw0q+AvVI76HSh873ZOksE6QCAEMRqM88jHRfgnhqENXq7vv+tAQT1i7aTKdzSiljtSr53aoP13GdnOpKoH1n09ySPbar2nN1l2CtP/UFHCNIBAD7FagPHrOP3jfT2wlBv/dlzjdqA6V/1I2sbqe3nP5LGGnagN/LdAQeSx3YnpnYcvP/z3QEAwNnK1K7SmPnthpFIbf/7EKA/l0gq5XFGpQ4EN6WrZbHaWWJWaheBKzTMG5OzRSYdCFOkNpN3pV+PbONnf97o8MxJJem/A/7esdtsDvy7wD5dLiyD/SK1gfq1hpmJTX13oEOxfp8pZqFfK56ipwjSIbVBYPTsn3/r/exKo19TglVqH7tVlvt1jmId9ug/0uE/QIf+PdsqtefJbtGOylM/EB4C9HBEGmagnvjugEeRfgXsS0m3GtZnezYI0s9LpPbClUr6pDYgTAy2N9rz/6rH9kPnPe3XsSK1g4Iyv92wKnn8Z6pf9ZPfJD2ILPw5G9p5PgSR2hunS8/9sCkx3UAcx6rr2rwnfqVqy2HudR6DhYHeiPVrtoGVpK2Htlb7o5y43NGeSyVt5Ofz8dE2ej1IM9p2nufbkOV5buP49dlI/s8/2ustf+2D66FChsejLMvtZrPZFkWxHY1Gvj8bG22u0+ftB2BBqjYoXsn/BeFlW6sd5BK52fVeyuT/cwnpB8NomwTpQYt0XjejfWwbDef6vJLh8dhsNr99fzebzXY+n2+zLNtGUeT7szq1rTSczxjohZHarMFG/i8Ah7ZCw5i/1kQm/5+D7/byB8NoewTpQcvl/3yjvd8m+z++3jE6DkmSvPt97nHAXlg6xnCMKRj7K9WvwHyuNuCL/HXnaJl+TRkVe+2JH4naJx7nLlE7aC3y2w104IvvDuAgQ/icUtMNJEny7t8ZjUYqikKbzUar1UqTyURxHJu+dRcytTfNidde4F0E6f0Sq/1irdUGNpn6H9xkarOpud9udK5Q/z87WxK1N5qD1zSN6SZq8154kYnzvS9i9T9xkphu4NOnT8e9YZJoOp1qvV4/BeyHBPoe3elXSdAuYTYS31PgaCO1QYzvR2Su21rnMa9tLv/HOsQ2Nd1G6OUuaZqaHqPyjfMqZHP5P79oh7ds76fYH8bnW1mWVr7z6/V6O51Ot0mS+P5Mj2ml2rKnxMJnAQxSpF8lIb6/sF23qfHRC1ekfo0d6FWbz+dWflhdOeMgnXO+Xy3f+yn2x1qGx8CFXcDes5li1mp/k0c2Phgch3nSwxOrDc6/6HwfO03UZtRv1N/H+6/JdL6fq3NRFPnuAv4Ui3P+D+v1Wk3TPJVA1XWtf//9V1JbFlVV1dPfrarKRqnUMT51+WaWRTIs10nT1EY//hDHsSaTiSaTiZqm0WKx0Pfv37VYLJy8nyWx2t/kyeN/L/Rrgbq6++6cF4L0cMQ6bKXJc5GorZcb2ip4n313AOhY4rsDocmy7OQBhnVdPy2w0zSNfv78+fRny+VSkpWgPjJ5sWep6Qa6qCWPokhZlinLMjVNo+Vy+RSwd3xDdqzRY5uqDdIX+hW0A4MTy8KiCwNv2YnHNjSR/B/LQTdbdaSunGm5S64Azo2Q2nq9Dv08Wx/1CYcll+HnUxSF08/nPbupHeM49n6uHtnmajPusfGnCElk0n1K1WbOU7/d6IXi8Z8zn52wIPHdAcCDK9MNrNfrvZnn51nlfX78+PHqn72VbX5ZbmJTF9P0JUnylFU/UWynJ14Yn2++Z2UZjUYajUaS2vP027dvWiwWb57rgRiJLDt6LlabDfN9x9vHlh19tMOSy/8xHHQjkx6kjQz2OYoi3x/bb8qyNNqXl6tYumBp0azIwbnQhUGdb8+tVqttnud9mylmq9/Xc4nNP+LzwTzp3YnVZoTXInt+qkL9D9SBcxLJMNjzndV8KU3TkwcWTiaTTgY3f/z40cZmEhsb6VisgZ1vzyVJoru7O61WK63Xa02n06D7+0ykXyujr9WON5uKWOhdlLu4F4sBoTYVah+jLf12w488zyW9/5j/OcPH3oCJxHQDrmbaMHF3d3f09yqKIn358sVNh17oyaqXLqTGGwjwfNvn+Uwxf/31l+/uHCt5bBNJjdrf8++P/6x9dChUBOnuRGpPwC/q4WPDOI7fvNB7DvzmGt6sLwf5/Pmzsx/gYwL/t2p967rWbDaz0yn0XWq6gWNXfuzCLpt+zHWwqyy6ZG0q0lT9S4bEphsI8XwbuEi/atml9nd9qV9BO2DdRD1YvCOKom2apts8z7dFUWzLsjy6XrIsy21RFD5Goq/Uv5ufXIb7PZ1OndQ62rTZbLyd09SkB2cuw8/U9UwopyqK4qhrbRe16M+ZHnf1c0GjUob73fXnZIOF60qobaNftezRiecE8GSkgFcIjaJoOxqNttPpdLtarZxcLFar1XYymXQVsM+NP7FuZTLc59Fo5ORzs83XwCaC9OAYXQ9DHsS33W4Pvs7led5530yOu/p5fZUMg/Q4jjv/nGzo2QqmJm2l9uYxOenswNlKFOiMLUmSbPM8dxaUv6Uoii6C9ZH5x9eZRBb2uQ8mk4mX850gPSiRDD/PNE19f2RvOiSb7iOLvt2e3bm2U8pgn5Mk6fxzssHSbD59a2u1VQvR8adJfzC7i5lI7UDGlQIapZwkiabTqdbrtVarle7u7ryMAM+yTOv1WkVRuBzINHW1YQcqWRgUE/gS0pKkq6sr312Af4npBkIfxHfIyqFd1qJbFvvuQNeqqtLFxUXvxtRYms2nb2K1v/9r9StZh47kCqjuPI7jbZ7nwdZvbjYbl9nV3NJn2oVChvubZZnvj/NdvurSQ8+kW3iy1Keb0lyGn+d8Pvf9kb3rrWy6ryz6dmvtaVbflLJ0LYnjOPjryY7J3P0DaoUGnlXHYVIFVHc+Go16cyHZbtvljqMosn0c1vY+XudGMtzfvtRN+qhLD/27YGEfcwvnYFfmMtzfUJMOL7128+WjFn3nTBc0msryNSVN0+CvK+v1+qh9SpJkO51Oh1jLvlL/zllYEsvCj46NFkVR0Fnz96xWKxe16pm9j9qpSBb218cYg2P5qEsP/cfUwj7m5qdgZ9YyvM71xb5sus8s+mt9OqGlTs8Q+zI5uraEHqwfsy8vn8bO5/MuJ3xw3VYiUD87uQIobYnjeFsURS+niHpps9nYzrSWVj9xt+Yy3N8+TMU4n887/46E/CO63Z5VkB7JcF9DHzT60ssApygKr/2xVAKRujxJHIjl+BoTarB+zO/pW0941uv1ELLs82NPHPRTqgBKW5Ik8X7Bd8FBoB7b/PAdmsjCD0UfmO7nsS30JwwW9jG3cP51IZXhvvosFTnF8/KSEErSVqvVOZ1vz63UwbUmtLFBx8zmc8xYjx5n2SfHnzroi0gWBviZtlDv2G1ar9c2a9QnVs8Cd2JZ2N8+PFHpepGN0FnYx9zC+deFXIb72rfExGazebqWhdJ3089A/TnfnsvUwbVmMpn4/nh/c8wYhFOTGavVajudTvuyeNJGAyh7YQrGP2Vqs+eZrw6kaaqyLFWWZfBTkJmK41hlWdra3JWtDTlW60ymYhz6+YtXfTLdgI9pY01EUaTJZKI4jpVlme/u2GL8OXowk4Xr63s+ferjoWmd+t1KkkSTyURlWWqz2Wg+nx80DaknkfqTuMMBEnlekOgcMuevsTQTwcb2SeHQVIb7G9rj1n26nhosdBb2Mbdy9rm31sA/y302m01Q00ae6YJGkoVyq/daaKV1h15rXZViBZpl3xidRQhCJAuPZk1an+ZjdeX5o2LDFtk9PZxJZbivfZn9wnQ/j2mhs7CPuY2Tz7FIhvvZlzEXobMQMK2dny3uFHJ0nQnx2nvoGIQuvlu7m9Usy0KoZR+Zn0r+nHu5S6p2kMmdjzeP41hFUWi9Xp99WUAURRqNRjY2ldjYSAeWkhqTDTRNo6qqbPTFqXM/t89QYryBnpW6hMrCcYzNe+HNrdpVnq0L8fw8tE9d9H33e76Lb1arlabTqa/jduXjTW051yA9UjtFTykPF6EoipTnudbr9ZBqF439888/NjYT29hIR5amG/j27ZuFbrhFkH52UtMN9LneNyRRFNnYTGxjIx40kq7lIFAP9Zp2SG24pXPiKLta9tVqpc1mo6IolGVZV31Ju3gTV/7nuwMeTNRmziMfb57nub58+eLlixI6S3fZsY2NdOS7DB/FLZdLKx1x6eqq14mMIUqP+Lu1jh+EZxxhh5ip7KOPHz/a2EysDgZiOtKoDdQLWSx7CPUmMo5j1XX95t/xfT2OokhZlinLMhVFoaqq9P37dy0WC1dPhhMXG4V9iTwODB2NRr1dIbRLFo51bvvEcSiWhXOrD+eVjf08pIXOwj7mB55bqdqExFTtdW9t+L6bx+0Uj31I9Xqiw/S9fH9Mg2Fp4PbowHMudBNZWpQw1OlvD1nlObQBr89tNpttURTbLMtsTs28dXI2deRcyl0mamvP067fOEkSlWWp+Xwe6jRF8KeWhUexfcimWxpvgP0itYHUVL8Wcikf/3ui9roXW3iPVO3UtHeP29+oDciLx/8fP/49o/cKtZSgjyw9sU1sbCQAD5IuTTcSx3GwT8IP6VfIT6l2WfaiKLTZbLRarc7+enAOQXqh9seqU1EUqSgKTjK857vxBr4bb8I5349YB6R5/GesX8mHjdoxNhN1H1DFagP0Qm3AvjLdYMhBRN9wLP8Qm24g5GP6XhlOyH3fJ0mS3vXZtqEH6bsMT6cmkwmDQnGohfEGWNSoFyw98fikNhBeq00+JDY2alFsuoFQ633P2JDusBPTDYSccHgvkx7qE4C39OFJsUtDDtJzdRygp2n6NNVQH78M8KKS4VSMUviBepIkfCfsyBReYG7VuWfObOMG+TfGd4Ahn5/vfdZ9OxcsTTNcm/fEn6EG6ak6nPt8V9pSlmXQX+DQNU3juwu+LEw38OPHDwvdcKtvPxDwg2tocBLfHbAoNd5A4Next5Ihf//9d3cdscDSbC9WNuLLUIP0zmrQKW2x54y/kMZF5aFn0qWwHxMjDKEHQH1k4aYnMu9FECIZlmP14QbyrT72of/PWUo+hZ/BesMQg/RMHdz572ZtobTFHktBemNjIx1bmm6gruvgVx8lAMN7+hZE9MGZL2j0XGK8gR6cn2993n2bYc5SPbqVjfgyxCD9i8uNR1Gk6XTKrC0O/Pz508Zmahsb6UCk9tFrqvbGsjbdYOgDbKhLx3sYNGqfxQWN+i413UAfnga+dSNxhkF6o34+XX8ytCA9kcMs+mg00mq10mQycfUWXtV1rdlspvv7e11fX+vy8lJ//fXXU7u4uNB4PH53RbNTWcoE1zY2ovY8St9o0RHbivRrmrrdPNa7xWF281nHJp2V+jEV46E3tlEUKc9zp31BePqQqewbS4FZZGMjng160OjOazdlfUsqWko6VTY24tP/fHfAspGLjcZxrOl0OsgFWaqq0rdv37RcLt8NkndB/GKxsD5I1tIo7kq/siWJ/vxh+aj9wXC65/8dolY76POb9l8MYrUDmEd7+mLdcrlU0zRBZ6uvrq4Oqp+fTCa6u7vTcrk8+GLdhx9QvI3P0D6LCxotbGzIo9R0A304P1+7KQv5d2Ef6tGHqZTlZcYnk0mwSwCfarPZbKfT6TaO45OPS5qmVvs0n8+tfm4eWqnffwRyWVqC+pg2n8+tfi62rdfrg/ZjvV4//f1Dl4e2fU7aZmmJ9sG20D+/PrPw+eTqt1hncn5uNpu9/c/z3HfXjjIajWyct6m7U6obQyt3iW1tKEmSwc15Xte1xuOxPnz4oNvbW6OylV3W1pY+lGq8I1UbqM/VlrTcycMj4tCPYxzH7z5+z7Ls6e/Ecay7uzv3HYN3fchSnrEr3x0wlJhuoC/lIq/FK5bGJnSGQaMtgvQXng8MHcqPxnK51M3NjS4uLjSbzaxt1+ZsIqEPejzCSB7nFe7DVIzv/dh9/vz5t/+eTCa9+YHE6Rg06g7fH/ObjD6dn/s+7z4NGq2qykYScGneE/+GFqQb2a0YOpSBocvlUtfX17q+vg46eKuqytlg1HNjqbbfqbdmSEiSZO8PTFEUg3mihf2GkhQZqMTgtbHaJ4252sHzpaS1DitX2OjXE8pcp0+xfMprft9Az8/PPvXfUtJuEPXoBOnPhD7o7lDPg3OXGWpbd+bfvn2zsh20Qi95eSur9+XLl73/P47jwdw8Y78+BRF90/GCRrGkidrAeqM2IC/VlgBmagP2+Ij3TdU+obzT7zNklWoD9+SA7aQHvt9eh5TphWTfNbZPsY2l6ZgrGxvxbWizuxipqkrj8Vjz+dx3V06yXC51f3/fWemIrYuWzRIctCUvIddx737wXj49iaLozZV77+7utFgsgn9SEKI0TRVFkZIk0d9//31Q0FbXtf7991/Vda26rp1eVyjHcMvigkb1K3+WSPqsNpiObbzZAdLHdqd2PuyF2tWbFy/+XmL6Rn27gfz7779/++++fb+oR/9laEF6JcMv5GKx0Gw2ezNYCFFVVbq+vu7s/Wx96ReLhdUBqPhVPhRy5idN0z9uzg7JlBdFocvLSzedcqyr8zyKIqVpqqurK6VpajXAqKpKVVXpx48fVr+7fQuC+sbigkb1i//+om4D89dEarP0mdqAfSbpq9r+pqYb79v5+bK/If8WvLRLChiq1M/Vx/8wtHKXysZGTGc+8SFJkk4vJLaC9NBLM/oq9IG4++rSXw4Y3SdJkt4ucmTpEe5eURRpMpmoLEttNhvN53NNJhPr14QkSZRlmYqi0Gaz0Wq1UpZlxpnaPg3K6yPLCxqN9KuufCL/AfpLkdp+7cps/jHdYB9WGn3u5efdpyCdLPqwZTrjOXuLorCy74e01Wpl3N/X5nOlmbfRaGR+Qjn0cr70LMuOen2SJL37zuZ57uRzDmVu/KIotmmanrQfZVn67v6grVYrG+dbqcMHfA6q9dHz/odyjThElmU2PrNMCFIki1/Mvk3+v91ujRYoOrTFcWylry6CFlrboiiy8hm59PxcPTZI2xd0nFOQnmXZ04JPoSnL8uhgHe75vib1tSVJ4vujO4nJ9dWnfQmYE1qsgRhauUujthbNijzPezdI7bXZMUJ8DwaMutM0TdDTbkrSaDSS1D6KPbZ8qs9lLyayLNN6vVZRFME+wk7TVGVZqizLg8pt+lbvi/PS1/Pz+fWhLwNHLU0hXOv1Ac69M7QgXZKszuc3Ho9tbs45G/Whh7yHqcVi0bu6/7758SPsaWJ3dZ6nzkRzd3fX2x/QY6VpGnxw/tJu3Yn3bqbO5TP0rS+BWmj6Vo++s/te9WnqRerR/zS02V2k9gOayVJNUlVVur+/D3pKu+d2A8hcZRlt3QR8/frVvDNnLEkSRVH0NK2e9OvHpC9z+u6mBdxl1E/R59leDhFFkYqiMDpGvt3d3emff/7ReDzemyVj0ChC1tebyN3vdJ/6bymxFHZ26khDDNIl6VbtCPTIxsbyPNc///zTm5P98+fPzoJ0Gzcry+Uy+NlHfHkeYO8yXx8/flQcx78F5EMQRZGm06nRTd+u7GWIpS+j0WgwK60mSaKyLHV7e/tHmduQzumQJUnCdfcEfT0/d0mbPvXfUnmxlY2EYqhBeiPpWu3KZFaMx2OtVtY251Qcx8qyzHrN92g0spKhZYXR1mg0eqrvP9dH0TZKp3aLHA3JdDod3Aqru6cCnz590u3t7dP/P9dzv2tDuNnr2hDOzT597hZuIhsRpPdGpTajPrWysZ6VvXz58sV6kG5jwGhd114HjO676O4rD9m3KuO3b9+s9v2UAZPYryiK3wK/voqi6OABl331/Jwf8n6GxtKCRmelz9fnXd/7UlNPPfp+Qw7SJelB7UIGqY2N9ansJUkSpWlq7fFmmqZWLliLxUJpmhqN4s6y7LegelcO8pyL0pCmaawG6X2bOShkSZJoOrVyP+7NriSkT5mvY9V1/dvKyH24lg5FH8aphKbv4yV245b6gHr0/YYepEvSWG3ZS2RlYz0qe7m7u7MWpNt6gjCZTH57jL9cLlVVlb5//35wXz9//uwlw2H7Ykd9qF19DvjOIUBvmkY3Nzdqmubp//U9COqTIZ9brvT5miJ1vxK5CUu/h5WNjYRkiFMwvlSrDdStqKqqN4/V0zS1kj2xlUV/bdsvlzPvYhrJUDANJc4hQJekm5ubP54e9SWAGAKO9XGiKOr904c+letQ7rLfOWTSJWnx2EY2Nvbw8KB//vmnF1+Au7s747neuyoj2E3HNxqNNJ1ONZvN9PXr12ACWRefd1VVvf8hwOl2NehDD9DH4/HeH+E+XENh164U8b2pYnclkXVde/kNGMK52Zd6dEuln0sbGwnNuQTpUptNT2W57CX0H9csy3R/f3/yRS7LMi8ZmN1871mW6evXr3p4ePjtMflQ/Pz5s9dzYMPMUKZYfMtsNts7loPMbvdsjlM6VBzHGo1Gurq6egrOj7UL2H/8+KHFYtHJeJ4hnJ992QdL5+Tg6tGl8yh32WlkseylruveLMhjMs2d79lsoijS3d2dVqtVEJkN2wEVg0fPx8vPevfUaMgWi8WrT/L6EkDgeHEcK89zrVYrrddrTadToyl8oyhSmqZPvwW7bbo8h/qShX5LXxIAlgaNLm1sBP7NJW1ttdVqtQ3dZrPZRlF09L7lee6763+YTqdej3maptbOHUnbJEm87Qu69fzciaJou9lsfHfJqdVq9eZ1Zzqd+u7i2ZlMJlavXy9blmXbsiw73aeyLLej0cj6vgz9+xmSU+KTPW2QzimTvjNWm1W3s7Ej6r2Xy6WX2rpTll6PosjKvOi2TSaTQWXgyKSfp8lk0pss1ymaptH19fWbJWpD+h73hYtzbleauF6vVRRF50880zTVfD63+rQ1SZJBfz9DUte1jVLWyrwnYTrHIL2Rh9lemqbReDw2HsR5qmPLVkyXax8qFz9AoQyMRTdc3wDv5vMfj8e6vLzUX3/99Vu7vr7W7e2tsxvEQwJ0aRgD8/rG9oJGu+B8Op16HwC/myWpLEvjvnAD2R1mdcFrrJa9vPeIL8/zg/+uK1mWHbQvaZp66V8fPP8cuzp3MAy7chdXZWTr9XqbZdlRj44nk4n1fhxynaHMy4+yLK1cs0aj0Xa9XvvenVdtNhuj0h5KsbpzaFzyThsJgxNJ2shSoBXH8as1bC9rwn0FwYdeoPtQZ+9LURTWg/QQa/9hX5qmzmrRT7l5jKLI+nf90MAoyzKr74vDrFYr49+5PiUVyrI8qd6Z38DuxHFs43c00kCdY7nLTiPLs73c39/v/bOvX7/+9uh3uVx6WW3ykEWJ8jznUd8bfD/SRb+NRiPrZWTj8Vh5nh/9uqIorH7XZ7OZHh4eDvq7rDTqh8nnPZlMgpll61Bpmmq9Xh/dZ34Du2FpDvxaFscZIjxTWcyKvswyvDaziq/HvfP5/M0sCd5mmona1ygvOg9pmlrP0J36qNj24/xjyyj6lI0dmmPPlb5lz19DuWd43opHjmjFnrhuMM45k75zr/ZOzIrxePxb1nw2m+0dQFVV1d4FPlx7a67aohj0uW4FGRacKkkSq+fPYrE46RqSZZkmk4m1flRVpZubm6Ne06ds7NAcc+xHo1HvsuevKYrioN84rvHdsTQ/+iAXMcLvUlnMjI5Go6c7xbfqrXxlrvfVVbsYQDZUluZ0/a1h+GwOtDt17YMkSazWxG82m22SJEf3Af4cutbDUAdPvjd+Yz6f++7i2Tj22vFKi1+J6zAwc1kMuoqiOGiQYVEUXr4cz3/g3xr0ij/ZXtBIBOk40qkDRW1/z0/5kWXQqF/vDe6NomgQ5S1veWvxo5BnrRmSzWZj47dz/UZMNwiUu/xifZGjQ+ZEf22wqWvPH3cXRcGc6EdwMXjUwmIOOBNN0xw8QHMniiKVZWn1ez4ej0+aa51Bo369dQ7szhNf5S1VVenh4UE3Nzd/zPF/c3NjrUS0KIq91/EoipgcoCOW1mmwspGQEaT/0sjibC+HemtWGJd2i6lMJpNB1Bt2ycVFnJVHcajFYnH0Td10OrVaa3t/f39ywETNr1+vLWi0C9C7/nx2v4EXFxe6vLzU7e2tFovF0zUxyzKt12vN53NlWWblPaMo2lufzm9hd6hHx6mmslzK8F5zNXfye/I8p8zlBC7mSh/642XY89aj+n3N9ngT0/Ofa45fr83E03Xp5W7xrbd+F11fF1+WLrJmRXcslY0mrwVyGK5IbZ1Tp4E6F4f+sLVq3/NGkI5DHXNePR/EbsNqtTIaOM00r/7tm0a269+f6XT65nnkYqGtfV5ey7kOd8fC7+bm1ShuQCh3+VMjD2UvDw8P1CX3BI/r4csxZVFJklidVrWua11fXxtdp/ju+PfyM0jTVHd3d528d9M0urm50e3t7Zvnke2Ftl6Tpulv78P52Q1LizlWNjYSOoL0/ZaSHrp8w6ZpvA0ixXGiKLI+0JaadBzi0AB5V3Nr6zzdBVemiYQ+BEGLxcJ3FzrzWm22C03T6Pr6+t3jm2WZRqNRJ32SpM+fP0tqz00mUOgG9eiHI0h/ndVFjg7x8PBgY4nczjVNY+vOuDdsBxv//fef1e3hvM3nc6vn6M3NjZUbyaurK/POOPb169fB3zTvBkhOJpNOZjPZBeiHHFfTrP6xv0W7G4I+3EAOhaXv19LGRkJHkP66RtJxy+hZ0Mds+v39va6vr/Xhw4eTp2XrmyFc0CmvGqbpdGp1lorxePxm4BNF0cHfhz58b5bLpb5+/eq7G87FcdxZmcuhAXqSJEY3Dcvl8ugsbRzHSpKEqUE7ZCmpZ2UjoSNIf1ulNqPemdls1qts+nK5fJqzuWkazWYzXV5e6ubmplf7cazXpjHrk6qqCNQHJsuy39ZAMDWbzd6danE6nR5UWhPHcfDlBLtAcjabDfq7kSRJZwH67e3twYkb0zKX29vbk67NaZoy/WJHLP3uLM170g8E6e/L1fEJcXt72+XbnaxpmlcXbFosFrq4uND9/f0gf+xsZwR9lQGcU/3t0NkeKLpYLN5dkC1NU2VZdtB79yGL/jyYHHI2/dOnT9bmHH/L8ySOa7ubgVMy8VdXV704P4fAUhb9LOrRJYL0Q92ow5HEi8WiFzXe4/H43Wx5nue6vLwcXAnMUC7olgbwoCOvZft2C9HYUlXVuwH6y0GHo9FI0+n01b/fh+/Mz58/n/7d1uqWIeoiQJeOL9889QnlbDZ7uhk45WlNlwNVz93z75iBysZG+oAg/TCN2kC96eoNQ69Nv7+/PzgLW9e1Li8vO8uodGEoy0eTSe+fl+fdLkC3OZPLIVMtTqfTP/oymUxeDQD7MGj0eTKhrmujQH2xWAy65O89dV0fnWz6999/j36f2Wz22w1lH24Gzxn16MchSD9cLelCHd3BLZfLYLPps9lMeZ4f/brb29t3s3N9YvPHwFet7jnOzNN3L7Pp0+nU2rl4aICeZdmrwfhr/elD8PTyu/Dt27eTtrMrBTznIP2UBMCxx+vlbwp15WGr69rGd6JShwlT3wjSj9NIupY06+LNQsymv8xadP36kNjMDPoMYL5//+7tvXG85+fdW5nrUxwyyC9JkjfLWvZl9vs0aPS55XJ5Uqnee4v1nINTSukOnTjhtaezBOlhI4t+PIL04zVqVyS9luN51JfLZVB1kbYC7NlsFuQNyLGG8oNAJr1fdvWz79WAH+v29vbd602SJAeV1ryske9DFv21YPzYAaTPr9vnHKifuu/X19evXpPqutZ4PNbFxcXez+uff/456T3RDUtjoKwUteN8pJLmkrYuWhzH2xBkWWZ939brte/dMhZFkfFxSNPUS9/LshzUZ3FOsizbbjYba9sriuLd8zSKou1qtTppu3meW+urK29d4w491pvNZhvH8dPr+rDfrqRpanRdTJJkm2XZNs/zbZZl2yRJevFbide99xke2GKdETLp5pZqB5X+pTa7fqt2bvUHGxs3Hbxki4uM0BAGLfY5m/48q0E2vV8OmZf8UMvl8t0nZLsM+rEZ8d287X0bNPrSodn0+/v7s65Dt6mqqqfxT7PZ7N2yo67mfcdpmqaxMctbrY5XgveNIN2updrgPFcbrC9tbDSE0pAvX75Y3+YQpv+z8Xg1hECfuvTzVFWVbm7eXlj51AB9x+bAVpfeCiAOmZmqyznB+6DL61oURUyjGDjq0U9DkO6Wlei6rmvvF/80Ta1POTiEek0bP0QhrF46hKcaOM5uBpK3voeTyUSr1co4ax/6oNH3Aojdaspv/fm+pxHn/ISqy/rwu7u74M+xc2cpKdf/zN6RCNLdWspiNt13UGs7mz6Ei2ocx8aBuq/51l+eTwTq5+X6+vrV7HEcxyrL0urA1JAd8hj+rZIXylz+lCRJJ9n0OI41mUycvw/MWFrQ0MpG+oQg3T0r8w02TeN9mWrbq9T14RH4IT5//mz0el/lLi8vmkMoP8JhxuPx3h/NOI5VFIXW63UQZVhdOWQVxKqq9mbGKXN5XRc3ec9XvUW4LDxVakSQDgdqWZpX/eHhwWs2PYoiq4H6p0+frG3Lp9FodPJTgZBWLSWTfh7u7+//KN0YjUZPwXlXS8aH5NAs377Fjd4adHvu2fUkSZwG0Xmen9XNZF9Rj346gvRuWKlNDyGbbrPkZSgX1yiKTn7c6vNpwssAoq5rW48kEahdNjjPc+V5rrIstd1uNZ/PzzI43zn0vH+52M57ZS7nHqRLb69Oa2I0GjGjS09Qj44+KDSQ+cVtzHU6Go287oNt6/X6pDnTfc6jvK8/0+nUW38AH56vF3DMd3a1Wh3099GaTqdWfv/0OIe6zXUC4JbpnPmPLX0ltho0MunduVVbU2XM95SMNrLppnXcoTl18JKv+aNfyxwyFSPOzbFPj3b154euvux7wH8oJpOJ5vO58YQBWZZZmXEI3aHc5XQE6d1pJFmpVXn5yLVrWZYZXSDjOB7knLZfvnw5usbcV7nLa4HJcrkkqMBZOWTQ6HNN07y6LP0+lJD9MhqNtF6vT7r+R1Gk6XTKQNGesXT+L21spI8I0rv1oIFk001qDId6kY2i6Kh9S5LEWzborRpBBpDinJwSRFBrfrooijSfz1WW5cHjknbZc6Za7B9LWfSzrUcnSO9WI4vZdJ8LZZxa8jKZTAYzYHSfNE0P/iHxeRzeCsSZihHnhEy3H2maqixLrddrTadTjUYjpWn61HYzDm02GxVFEdRMWDicpd+TpY2N9NFfvjtwhiJJ68d/Gtld5Hy5ubk5KuuaJIlWq5W7DgXk8vLy3R//+XzupeynqipdXl6++udRFGmz2XTYI8CP5XKp6+trp+8xnU7JAONsffjwwUYJ5dnGqmTSu9eoHURqbLlces2mHzP4M0kSrzcUXSvL8s1SFp91+fvmen6uaRqyizgLXZzn//33n/P3AEJU17WNAL0y70l/EaT7MVO7yJExn7Xpo9HooEeQu1rtcxqNH0XRm4G6zfnmj/VyIZt93gvkcZyqqhiQG6BjB40CLgz12sCsLuYI0v2xEl0vl0uvA/3eCzZ3warPRXt82T09eLnvSZJ4e/w9m80O+kHw+YRmiEJYiAx/6iKTziBTvGeo11sWMTJ3tnU+gVhLik03Esex1uu1eW9O0DSNPnz4sPfPdkHqOWXQ99kFaMvl0vtThevr64N/ENbrNYO1LFkul7q5udFqteKYBuSvv9z/BPoeO4TwXV9fD/Icubi4sHGT+kGWZsXrIzLpfh22GsY76ro+qITBhSiK9k7HuPthOvcAXWqP0d3dncqytLKYx6l2S8IfaqjZHR925S63t1aGo8ACzm+EoGmaQZ6LdV3bCNBrnXGALhGk+7aUpXorn7XpLweQZllGgB6gY8stWH3Unt3gwcVi4e2GGr9jcDRCsDsPh1aXziJGdhCk+2cluvaZTU/T9GlhnqIoBrtYUZ+dcn4MMbsTgtvbWwLEAHQ1aJTvEd6yq9se2jWBenQ7CNL9W8rS3eLt7a23u/HpdKqyLI1WIoU7pzxpaZqG1UcdaJpG19fXg/tR3lkul73Ytz70EcM31Js4ZnaxgyA9DFYKVX3OILHLpiM8y+Xy5KcsrD7qxhAD9d3CQNfX170odRvSsUd/7YLZIZ2PltbaqGVpquo+I0gPQ6V27nRjDw8Pg6ttgxmT8QohZtKHcn7vAvUQj/ExZrOZLi8vf5s5KPQZbLrOXg4pAIM9z8/DIS16Zel8t7KRvvuf7w7gyb2kzHQju2z63d2deY/Qe7PZzCgg2Y3QDyXo2gW2QxmY3DSNbm5uNBqNerXgV1VV+vbt26vz7u+b2jCO43fPo93YlrdcXV29+edRFL37VK/roHkoN5aw6/l5OKRzhHp0DFUhaWvaoijartfrLc7bZrPZRlFkfD5Np1Pfu/JkPp9vJW0nk4nvrhwlz/ODvrd5nm83m43v7u61Wq220+l0mySJ8Tl1bq0sS98f39nbbDbb+Xzuuxu/GY1GT+dImqa+u2NNmqY2vjeJQLlLYO5lYU7Qpmm8TsmIMNzf31vJzoQ0FeOuLw8PD70vE3mpaRrlea4PHz5oPB57H1C2Gzh8e3uri4sLXV5eMjPNiVh11L/xeBzME8Ed399xVyzsVyPKXRCoXJayN2TTW+d4HHYZZ1stlOzu8ycDURQF06/3HJJJ39fiON5mWbadz+fOz+PVarUtimI7mUzIlltueZ47/ezwtjzPt1EU+e7Gb1ar1W/nSGj9O1VZlja+M6UgiZr0ED1I+iIpMt3Q/f392c9ZXte1Li8vNZ1Oz2Z6yLquNR5bWcz2yXK51Gg0srrNU/rw/MnArp57iMtp7+zmt9/NzrOr607TVB8/fnzKDKZpetC2dhndqqr033//qaoq1XVNdhyDNZvNlOf5Qd+RLr38zg2lJp16dJyDXJYyOKvVyveNtTebzea3jOA5HIuX+2yrZVnme9e2k8mkt1nKUzPptGG0PpyjQ1QURbCfQZZlf5wnfXky+JbndfYGLRUkUZMeqgdZqE2X2gWOztXL+tmhzUu9z3g8drKPIdR/v9aHPM8H/7mi34Zaexyy2Wz22xPFT58+eezNn/adE0O4jrGIkV0E6WFq1A4iNbZcLs/yB+L29vaPBXyGuIDMc+Px2FkwbWlxipPtyjJec3NzM5jHxQDMvAzQpcNKwrryvPRsSKqqsnEdXpr3ZDgI0sP1IEurbZ3bTC+z2UwPDw97/2wXqA/pxmVXm33qqqKH8jnLy3ufV13XZ/3UCEDr/v7+jwA9juOg1iB4LeHR9wSSpd9V6tHRG5ks1USeyzy9z2sQ32shzf99qtVq1dlMHEmSeNvPQ/exKApvfVyv19uyLLfT6XSb5/k2TVNmSaFtpeHM3BGyzWazt85b0nY0Gvnu3m/6PL7mLa8d/yPbSECPrGXhRyKOY9/fX+eOCdB3LU3T3k7R6GMwoo9jtV6vjwqGXPaRQJx2aoM76/X6ze9haAmZ1/rat0XaXorj2MZ3JRLQIyNZ+pHwmWV07ZQAfddCX+nxpbIsvQWGPs6hYz9b04z/arXalmW5zfN8O5lMCMRpVhrcmM/n766sHNKT5M1m82o/+7zq6DHJlDfaSkAPlbLwIzHUbLpJgP7y+IQcrK9WK1vLLZ/cfDw2PmVKr/ceG+8LxC1lgWjDbCvTbYR6XdnpWxJns9m8WjbysoXkrcV++hykW/odngrooVSWfmz6diF+j4uSjyiKtpPJJJgymPl87j04f35suvRW1umQc51AnGbYNmrHBo1MtxVSNnefNE23o9Eo+JuJ7bYNdA/9LvscS7PPW79ZfR67YKkePRPQU6Us/Oj0aSn191i6KLx7gZ9Op50H7KvVajuZTIIMKrsMNubzuff9pZ1tW0tK1EpNt+fjOnKMXfAYx3GwC7+t1+ujn6yFVuf9XsKlryyVBMYCeiqVpR+fvo8gf2+QkKuWJMl2Mpls5/O59Rud1Wq1nU6n2yzL3q2v9N26/NHr4kaMRnvRNmpXfX4utbX9KIq2aZpu8zzflmUZTNLkZYY3pNK/zWazzfP8pGtjaE+P3+tvKMf8GCZPPJ+1tfCHv3x3AEcpZOFxUBRFWq/XQc0be6jFYqHxeBzEwjVRFClJEiVJoiiK9OnTp4OOaVVV+u+//54W6Onb3LhxHGu97uZ6+uHDhyA+a7yrlrSQ9K9en53h0xt/tpNa6s8pKknfJM3054rPsRwGEXEcP11Lrq6unq4pXVosFrq5ufmjX3d3d8qyrNO+7DRNo69fv+rh4eHk68BqtVKSJFb7darlcqnr6+s3/05ZlkEtvHSIfefOCWaSxu/9pXPzP98dwFHuZSFI31347u7uzHvUkaZp9q4i6lPTNGe5oututbw4jp2+j6XV6+BOrTYw/6Y2wO1CpF8lKK+Jddxj8+qx1W/8nbf+zNjuO/V8xeCuA/d9267rWuPxWPf3950G68vlUt++fTO+3u8SKaHoW0LmUD9+WFl/iEWMMAiFLD1y7ctjtWMGCdG6aV3MO3zozA20ztpG0lzSROdZO1rK82cQx/F2NBo5KZU5ZAq9OI63k8nESc16WZbWx+GENlvKIfX0oc3pfghLExskx30dgTDFsnQBy7LM93f7TcdMsUXrtnUxFeOZ35htHpvPPqzVJgUm4gdUauvUfZ8XfzSbgfux75tl2dMsSsfYLQq2WxDM1Tic0MZfHbKfofX5EBY+q80B37+zRE16P+WS7mxsaL1eOy9bOMVyudR4PFZd1767MkRLWaj93Ww2zh6/13Wti4sLJ9vugUbStdoSjFhtgJxIutJh5R7Hqh7f88fjPyu15wh+F6sng9tOLZUxHQPyXnlJ0zSdlnzM53ONRqPO3u8tVVXp8vLy3b83mUw0nU476JEdh9TZH2AhybiofYioSe+nB0lfZGH53Pv7exVFYboZa5qm0f39vR4eHnx3ZajGagforGVYsrBcLk/6AdzV8Nd1rX///fe3/9f1j3iAKrWfUfX437V+1X4/F+lXsB7r8M9y+cq/4321LN3gunZqjXuSJEZjbHbjdELRx3r0vl3/qEd3iyC9nxpJX2Uhmz6bzXR3dxdENn2xWOj29pbsuRuNfmVnpTbYyEw2+P3799+C9LeC713QgDct1AbozQF/txFBtg/36kGQvs8hgfuQBmrHcRzE79qOpWA2OJZuyiobGwFCEslSzarvwTXr9TqYFTUH2ub686nLyHS7URSde924rVaqp4HfmZrL/zlDe6d1MW7mGIdeK/u26qilzwsYpIksXdB8LFm92WxYrMZt26gNxl/ju3/n3NaSpmJAZh9Faj8/3+cQ7Y0W0gDMQ2bOed76YrVa2fisSuFV/+e7AzDyIEvz997f39vYzEF2decXFxdBzXs+MDNJF/qzlvm5t/4MdizVHud7taUs15I+qP1sbsVj3j5q1A5ya/x2A2+5urry3YUnx9aZ96XsyFKpyzDrgIBHmSxlHrrIpk+nU1/L3hdqZ8XZeHjvLlupw7OzkwD6O4RWqi2ByNV+H1NZGNSN4CUa/vWkty0kx04l7OPJ9ikOmff9gJYKGLi1LFzUkiRx9mUuisJn/XL+7FhFGmawXur4i10cQL/70koRiONPiSh9Ca65/C07RZIkR/W/L0G6pYRbJGDgMlm6uBVFYfVLXJalz0GhG71ekx09HreVp77ZaoXM6pr7vv82WykCcRwvUju+wPf5S3tsIS3Ut9lsju5/H1YdPbbO/pW2EnAmSlm4uMVxbO0L7HnGlpUOnzs6URvsbjz299h9m8hOADkJYH+6bKUIxOFGKmZ+CaLZTjaZKMvy6P6HNOj1NUVR2PispgLORKoALnDr9TqEGVtyg+M4Uhuwrz3vw8u2UhtQxwb7tk+k/tycvNc2am+40j0tMj1QwIFitd/VuYbz3epVW61W1oJRU3meH93/yWTiu9vvsvQ7PxJwRkpZuMDFcbzdbDZHfWE3m802z3Nfg0J3bS27U9ol8vdju1J7s5DJfYA56XjfXLXM7mEBrIjVBiO52mt019eSs2shOeWJsu+1Sw5haYxZJOCMpLJ0kTvmcZvHGVuet6ncf+Fj/fqxncvOD+7qcTtTtcFy6ngfXrPa07c+tcz6EQHciUXg7qSFFuAOYR9eslSPvhZwhuaycKGLoujdbLrnGVuef9FTy8fwFLH2l1nsa0mH/TpUrP4GCpn1owF0LxaBu3ELqZ77lHp0KfxVR+fzuY3Pqnj5BQDOQSzHFzvPM7Y8b1PxuMymRP0KDNYK84YHsCUWgftRbT6fdxuxvmE6nZ68HyE7dt73V1q253wHzkIhCxe7l9n09Xpta/EC07ZWGNnzIUoUfiCwkdngYKDPYrWB+1SWxiGd0GxfIzaP+7I23dZ6vfYWvL5k8nsZ0n68dOy876+0+NUzHE/+8t0BOBHLUr3XZDLR3d2dbm9vNZvNbGzS1L0I0FyL1d7opX678YeFpO+SZn67AQQneWyf9GuGI1ce1F6HG/2aOSl5/LOrA15fS/r38fXV43/Xj3+2NelYHMdar6389Fnx4cMHNU1z0mvLslSaplb7Y0PTNPrw4YPxZiQZbwTos6ksZTkCGBS6VZtlia0eIbxnom6z6uVjK9TeiOUKt4YfCF2itqRgKjsZ91Juv4uJaR9Ho5HvJPOT1WpltC+hrjp6ap39iza3fvYM1P98dwDO3MvS9H2nZgIsqSWNJS19duJMPajNWo8kfdFpP9CN2myZHv/5357/15ywXQBvq/Tre7aT6LiMe6X22vtVv7LdrqSmG0iSxLwXllRVZfT6Hz9+BJlJ//Hjh5XN2NjIOSBIH65G7YX1znM/TlWrvdGY+e3G2WvUfgYztU8yksf2Ub+ebFQi+Ab6oNL+wD165e82Dvvy0ifTDVxdXdnohxWWgtngLJdLK5uxsRGg7yKFPwjwZduImnMAODcrGf5+hMR0euIsy3zvwl6mn5Ha33gc6P98dwBONWqz6X1xL+lCBOkAcG4SoxcHVOpS17XqujbeRmgsZdErGxs5FwTpw5fLfS2hqZl+BeeNz44AAPonpCDdtB49VNSjd48g/Tzc++7AK5aSLtUODK299gQA4EtquoGh1aNbylpbZenmY2ljI+eCedLPx1rhTGFYSboVX1YAgKW1PeI4Vpqmurq6UpIk3rLrl5eXVgLatgQ8HCbzvj9D3AnsMZL/QaFrsRQwAOBP1n9zoijapmm6zfN8W5blbytou7LZbKz1P6RVR03nfX9spcXzBRicufwE5xsxGBQA8LqNOvg9SpJkO5lMtkVROAmCLS32s5XCWtBoOp3a2KepnVPlfDBP+nkZ69dc1125V7soTtPhewIA+qWShdr0d9+kqn4rRYmi6LcSGdMFhIY6P/rPnz9tbGaYBwewKFE3GYtC4dTAAwDCNpGfJ71/tDRNt5PJZDufz48ukUnT1Fo/8jx3kxY/gem8748tMjg/gLORqK0Pd3GBK9Vtph4A0H+xAgjQ97U4jrdZlm2n0+l2tVq9GczafN9QgvT1em1jf1YnnhfAWYpkt0Z9pQ4eVQIABqtUAEH5e+21Aak269GlcFYdLYrCxv5MTzojgDM3kllWfS1mbAEAmEsVQBB+SkuSZJskidVtpmnqOz7fbrfbbZZlNvYnO+5UAPBcpuMy63PxpQMA2HXM79CgWyhBuqWbj/i40wASk8rjT5HamvL08b//fvznf4//XKodhd901iMAwLmI1D6hjfx2IwxbzwsaNU2jDx8+mG6mlnRh3pvzwxSMeKlRG4gvvfYCAHCOGkk3YuGbICyXSyubsbGRc/R/vjsAAADwzFLtuh5nr65rr+9vad53K5OsnyOCdAAAEJqZ2ox647cbfvkO0p8v/GRgaWMj54ggHQAAhGgh6VrtOCh4YKHcpRGf38kI0gEAQKgqSZdqy19qrz3xwFK5yUmoR/ePIB0AAIRupnaGkJvHf2889uUsWLpB8HeXMQAE6QAAoC8WarPqH9QG7WO1QXvlrUcO+axJt5RJr2xs5FwxTzoAABiCSL/W+bjSr/U+eitNU5Wln9ko//rLSohInGmAedIBAMAQNPpznY9EbbD+6fGfcZcd6itmdQkDQToAABiqSr+XXMRqA/cr/b66dpAslZz4el/q0Q0RpAMAgHNRP7bFs/+X6vdse9Rlh0JkadDo0sZGzhm1QgAAAL/E+lXXnjw2b9brteI47vQ9P3z4oKZpjDcjZuEBAACAI5HaoD2XVEradtnKstx2ab1e2+j3yvJncJYodwEAAHhdo7cHpMZ7XlPrV0124aZbbrCIUTgI0gEAAI5T6bA5wFPTN/rx44fS1HgzR72fjc3Y2Mi5YzEjAAAAN5a+O3AsMunhIJMOAMeJ9GswWaT2cXf0+GfpO6+t9GsgVSXpv2f/b2mld3hLpN8/u6sX//8ty2f//uPZ/2vEqopwqKoqLZdLJUmiKIqcvldd1zZWOa3FgFErmN0FAN6W6lftaSK3i6HUagO+n2oDwEr82JlI9fssHZHD96r0qw65Ejdd+GUtS9eNKIqUJInSNNXHjx8Vx7HVUpjFYqGbmxvTzcwkjc17AwDA72JJE0lzSRt1PJPDnraSNJU0EvM3vydR+9l1PgPHK61U+9mlzvYYfeD8fIzjeDsajbZ5nm/n8/l2tVqdNLPLZDKx0Z/M1YE8N2TSAaANzEeSPsvznMgHqCR9U7sYS+2zI4FI1H5uI4W/5PtCbaZ9IT67c1LIU+CapqniOFYcx7q6unr699dcXl6qqirTt70Q57cVBOkAzlWkX4F56rMjBmq1AftM5/WjGKkNer4o/MD8NZW42ToXmQKahnFXMpMkiT5+/Pj071K7iJGhRu0iRgAAHC1WW4IQQimLzbZSGwxElo5TiBK1wY7vY227zUWJwJDF8n+OdXkuAwBwlETDDPBets3jfiY2DlogUoVTZ+76s5uqv08H8LqV/J9fXbSJpeMFADgDsc4jwNvXVup3hjbV+X52pfpbhoU/ZfJ/TnXREjuHCwAwZLHOI3N+SFtLytWfUphE5xuc7/vsMpODiWCs5f98ctk29g4VAGCocg2v5tzWj2iucIP1SNxYvdbWIljvu1T+zyOXbW7tSAEABifV8LNVNtpG4QXrmbixOqStRbDeZ1P5P4dctczeYQIADEWkYf/4uWob+f9hjURpyyltLWrW+2ol/+eP7bZRWDf9AIAAJBrmj16XbS0/Ad9IZM9NWylmg+mbSMO7ZuUWjw8AYAAyEeTZbHN1lw2bdrA/59Rykcnsm0L+zxsbbSPOPQDAM1P5/3EaYtvI7VzHkdqbAd/7OcS2FiUwfTNS/xMNI8vHBI/+8t0BADhSpDYDNfLbDSlNU8VxrDiO9enTJ0VRJElP/0+S6rpWXddPr6mqSv/995+qqlLTNFoul533+0BLSTdql/m2JVYboCcWt3m058uiR1Gkq6urpz97/tntPqOdHz9+SJKWy6WaplFVVR32+igPku5l97ODO5HaG+PP6l/p0kzS2HcnhoogHUCfRGprcJPO3ziKNBqNdHV19RTg2VJVlaqq0s+fP7VcLkMK/hq1P8ALC9tK1H52kYVtHSWOY6Vpqqurq6cbK1uWy6XqutaPHz+e/j0QldrPrvLbDRxpJOlK7fcl9dmRA8xEgA4AUPuj1elj4TiOt5PJZLtarbZd2mw22/l8vp1MJts4jn0/yt6qLS0ykXX92SVJsp1Op9v1et35Z1cUxTbLsm0URb4/t438z94DM4nawD1X+xRqJf/Xg63ap5kAAHQXoEdRtM2yrPPA/C2r1Wo7nU63SZL4/FEudVoWPOuqj3Ecb/M87zwwf8tqtQrhZmt6wueGsKVqv1u52u/mWt2dTxPH+wYA6IlMHQTocRxvi6LYbjYb33Hdm3ZBn6cs7UrHBeqTLvqVpul2Pp/7/mjeVZalzwx7ceRnh/6J1AbvE7U3ZqXsXjtL9a9mHgDgSKYOAryyLH3HbycpimKbpqmPQD054LMr+Oz225XEeHgyshKB+jmK1QbvudrvZanDz5nN42uSTnsMAAhaJocBSxzHvQzw9lmv111naDd6+0fbaYDe1+B8n112vaPPjUAdzyX6Ve/+smUiMAcA7JHJUZASRdF2Op36js2c2Gw22zzPuwrWXwvUnQXocRz3oqzlFLsbrQ4+NwJ1AABwkkyOgpPRaBR8zbkNHQbrL4M9ZwH6ZDI5i8+uw2B99eo3EAAA4IVMDgKSKIq2RVH4jr86twvWXRzTZ20XqDsJ0IdUlnSMjoL14pAvJQAAOG+ZHAQiSZIENZ2iD+v1ejsajVwGexsX203T9Cyy528py9L14ODpwd9QAABwdjIR5DlXlqXv+boPblmW+T5cQSmKwmX5UnbMlxUAAJyHRAR5ndlsNtvJZOI9CH+rnWNp0iE2m42rJyIbMZMHAAB4JpGDUomhzt5iU4hZ9SiKBjt7i02Osuqrk77BAABgcCI5CNDJwh5us9n4WAzp1QD93McOHGO1WrlYDCk/7asMAACGIlKbubMa5J3jLCA2dLyYzh+Nwb2n2Ww2LgL15ORvNQAA6L1SZGGD0sFUja8G6AzuNWP5Jmtl+N0GAAA9VYgAPUhFURCg95TlQD0z/ZIDAIB+yUSAHrSuMuoE6PZZDNQ3+n0lWQAAMGCJCNB7wXWNOgG6OxZr1HMbX3oAp/vLdwcAnIVI0lqWsnNRFKksSyVJYmNzwVgul5KkHz9+SJI+fvyoOI6VJImiKOq0L9fX10/9sSlJEpVl2fn+nIumaXR5eam6ro03Jeni8Z8AAGCgSpFB/8N8Pt9OJpODsp9pmnY6h/hms7E+jzoZ9G6sVitb86jnFr77AAAgULksBnp9D9BXq9U2y7KTg6jRaNRZoFuWpbXPbUg3V30wnU5tfG4bUZsOAMAgpbIYoPd5oaKiKKwtHNRlRtrGQFICdD8snW+ZwfcfAAAEKJLFFUX7GqAXRWG9bERqM+pdsFH2EvoiU5vNZjufz7d5nm9Ho9E2TdNtnufboih6XZ6zXq9tnGvr0y8BAAAgRKUsBaRZlvmOd45WlqWT4Px566pGfT6fD/Lmar1eHzSTTZZl2/V67bu7J7E0pWZy9LcfAAAEaaKeZYxtWa/X1spa3mtxHHe2X6fs02Qy6ax/x9hsNtvJZHLUvkRRtJ1Op767frTNZmNjEGlx5PcfAAAEKJGlILRvs4F0tRDQ89ZVNv3YQaSh3lytViujJxx9fKpj4bzcHP71BwAAoVrJQvDZp8GGq9XK5iIywQaNh2bTQ725KorCyjEPdf9eYymbPjr4CgAAAIKTy1Lw2eWc4CZ8ZM+ftyiKOtvXQ4LcUG+ubH9OaZr63qWjHFves6dND7oCAACA4CSyFADlee47pnnXer32lj1/2boMit/LyIZ4c3XI4NBTWp9KXyzM9LJ+/xIAAABCtNKZZCiLorC1oqOV1uWAxrcysiEOFHX9pKNPg0ktDGiO370KAACAoOSyEPBEURR8ra+FsgHrrcvgeLVa7e1DiDdXtmrQ32shlvfsY+F4ZG9eBQAAQFASWQp2Ql70ZrPZBFPe8rJ1HSC/nB0liqLg5hE/djYak5Ykie/dPchmszHd1+LNKwEAAAjKShYCnZDr0FerVVDlLS9bl/Olb7d/1niHVoe+Xq87/7xCPn+fM7zRXL99KQAAAKGYyEKAE3Imcj6fBx2g71rXx2T3viEOnvT1xCO0pwn7WKjRj167GAAAgDDEahc5MfrRD7FUYqermmYbrUu7sok4joMbQ+BzzECIdfkvWSgDSvdfDgAAQCjmshDYhDo7RogDRN9qXUuSJLgxBM8z/L5aaMdkH8N9zPdeDQAAQBBSWQhoQs08uppX22XrOqMd2owmllbVHOw5/ZzhVIzF3isCAAAIwlqGwUyoZS59DNClfmRwXRqNRt4/g758FoZPicp9FwQA9v2f7w4A6J2JLCxqcnd3pzg23oxV4/FYs9nMdzdwpMViocVi4bsbT+7v73134U2fPn0yeXlqqRsAAMCiSBYGi4ZYEtDXDPquhfhUoguhlLm8bCFn0y0MHo0EAACCMtUAA8q+B+hS9wNHQxHqZxfi1JTPGe5fKgAAEIxYFoKX0BZ9CTXIO7adoy5XFT2lhXYz+pzh04dUAAAgGHMZBi1dr4z5nqEE6DrTIN3XokWHttBuSJ8znOElFwDnGDgK4BCppJHpRoqiMO6ILbPZjEGiPfbw8KCqqnx3402cXwBMEKQDOMSd6QZGo5HSNLXQFXOz2Uzj8dh3N6wJbZYc15qmCX4GFUmq61rL5dJ3N/YK5bsI4HUE6QDek8qwBjWKIk2nUyudMVVV1aACdOn8gvT7+3s1TeO7Gwf59u2b7y64cOW7A8A5IEgH8B7jLPpkMgkikKzrWtfX1767AQN1Xevh4cF3Nw4W0vztAPqFIB3AW1IZZtHjONaXL1+sdMZE0zS6ubnpTQb2GEmS+O5CZ/pQ5vJc0zRBBuqGCxoB6ABBOoC3GGfR7+7uFEWRha6YGY/HwQ80PFUIx7cLy+Wyl4Mxv3//7rsLfziXcwboM4J0AK9JZZhFT9NUWZbZ6IuR+/v7ILOZtnz8+NF3FzrRtyz6TqiDRw0kvjsAAMA5K2U4T3QIS6OHvuCNjRbCcXat75/jarXyfQh/Y+F4AnCMTDqAfVJZyKL7nuZtV4c+dCEMynWtr1n0nQFm0wE4RpAOYJ874w3cGW/C2FAHir409CB9uVz2PsgNrS6dmnQAAPonkeGj/dFo5Ptp/jbPc+8lDl20JEl8H2rnDJewD6aFxnB/AABAxwoZBiPr9dpr8LFarToLvOI43hZFsd1sNtvtdrtdr9fb0WjU2fuHcEPkUt9r0Z+30MYOGO4PAADoUCzDQCTLMt+xxzZJkk6CrizLnoLzl7rK/uZ53u3B7dhQsughflaG+wMAADqUyzAQ8T2LRVdlLkVRvNmP9XrdST/m83knx9WHIWXRJW3TNPV9SH9juD8AAKAjkaSNehyEdFXm8l6AvtNF2YvvmyKXhpRFl7SNosj3If2N4f4AAICOZDIMQnzX3HZR5jKdTg/uz3Q6dd6foerqSUTXzfd4jecM9wUAAHRkJYMfbd9Z9C7KXI6tt3ddrjHkmV2yLPMeULtoIZUnGe4LAADoQKoeBx/r9XobRZHzgPi1QaKv2Ww2TvsUwiBdF4aaRZfCGTzKiqNA+FjMCIAkfTZ5cRzHGo1GlrpyvNvbW6eLFkVRpKIojl4AxvWCMZ8+fXK6fV++fv3quwvOVFXluwsAeoIgHUCkth79ZD5XF10ul1osFk7f4+7uTkmSOH2PU4TYJ1NN02g2m/nuhjN1XfvuAgAA6ImJDB57R1F0dBmITa4Hi5rW2rvs2xB1MdjWdwuBYbnLWgCcI5MO4LPJi7Msc17W8ZrZbOa8fKAoCqfbP9UQs+hS96UuURRpMpmoLEuVZak8z52fzwMoeal9dwAAgKFLZJgV9DmlXBzHTjOeNgb5uerbEAeNzufzTjPar60Y63q+fd9TlW63221RFCb7UAqAc2TSgfNmlEUfjUaK49hSV45zf3/vtL43jmN9+fLF2fZNXV1d+e6CdV1m0YuieHUwcJIkyvPc2Xv/+PHD2bYP9e+///ruAoB3EKQD5y0zefHnz0Yx/smaptHDw4PT97i7u/NWxnOIoZW71HWt5XLZyXsVRaEsy978O77ObQDYIUgHztdI7cwuJ/E57eLXr1+dTrmYpum7QZxPURQNLki/v7/v5H0OCdCl9vx2dYwHUJPu/1EAcAYI0oHz9Y/Ji33Oi95FFt0GV5nhNE2dbNeXpmmcT6MpSXmeH3Xz5eo4u7zBPFRXTy0AnI4gHThPkQxLXXzVa89mM+dZ9NCD4KFl0V1/plJ7U3nszdfHjx+d9CWEIB0AAIQpk8HsFKZzh5twPaOLzZk3XM35HcLsIDa5/kxPncvfcC7xN5tvhusLjATAOTLpwHkyKnXxNahusVg4ndHFdhb9v//+s7at50LP9B9juVw6X4VzPp8HPQjYB8O6+MZOLwC8hSAdOD+RDDNhPgeMumS7hMdF3e+QAnRJ+vbtm9PtTyaTwR0zAAAwTJkMHtP7WkRnvV47LYmI49h6n12UcdhYYCkUm80myDKXHZflLj4XAbOwWBOADpBJB87PlcmL//nHqFLmZK6z6LZmdHnORRnHkBYxms1mTrf/2mJFIXBd4vMWBq4CABCmjQwyk75EUeQ042qbqyzskLgcMGpjcLPLTLrPwb9FUZj0fSUAnSCTDpyXkQwWMPJVi75YLJxm/1wsXORiwZoh1VZXVeU0mzydTp1tu+/+/fdfk5c3lroB4B0E6cB56WWpy/fv351u38Wc7z9+2F+U0dfxd8Fl+VKWZVbmkh9qWYjhzZHRiwEcjiAdOC+jU18YRZGXTHrTNE5rl0ejkeI4tr5dMumvc73CqK3xBT9//rSyndAYBulGaXgAhyNIB85H/NhO4itAdL1cvIvsdF3X1ks5oigazEqjLsuXsixzctM1JGTSgX4gSAfOx8jkxb5KLVyUjexEUeSkHt3F/Oi+xgO44HJudJuz9Lh4GhICgnSgHwjSgfNhVI/uc9CoKy4CdMnNjcVQpl6s69rJTYxkP4s+xJp0CzcetXkvAByCIB04H6NTX5imqZf5ppfLpdNA6fPnz062y0qjr+tLFl1y8zn6ZuH7VJv3AsAhCNKB85CavHiIs7rEceykxtvF1IJJkgymztrVIGDbWXSfiw25ZPiUp7LUDQAHIEgHzkNq9GJPWVyXmUxX5Ttk0V/ncm5029Noug7Sfa2EarhfjZ1eADgEQTpwHk4uaPY1q0jTNE4H7rkqdXGR/R/K/Oiu5kZP09T6OepywLIkbzP1GAbpbg8KgN8QpAPnIT31hb4GjLrMorsqdWmaxnq/oygaTCbd1SBgFzdcQ53ZxfD8bOz0AsAhCNKB4UtNXuxrVhGXC8m4uvFwEYQOZepFV3Ojx3Hcm2k0fbNQwlOZ9wLAoQjSgeFLTF48xHp0V+UjLkpdhjL1oqtBwC4C9Lqunc4q5GsQMEE6AABhmUvantLiON76cmqf32tRFDnp72azcdLfzWbjpL9d2mw22yiKnByf9Xptvb9FUTg7/yRt0zS13udD5Hlu0u+NAHSKTDowfOnJL/SURXdZD+xqn1yUuvian942V6UuaZo6yUq7HjTqi+H3yujFAI5HkA4MWywpOvXFnz59staRY7gM0vtU6jKUWV1clbr0aTGq53p68zvMOxcgYATpwLAlJi/2FUz8+++/zrbtYp/qumbQ6CuapnFybKIocnJ86roe5EJGTdOY7pfRiwEcjyAdGLbk1Bf6mh9dcpfJjOPYSXmEiyB0KKuMupp2cTQaOSkF6mJWFx+DgS08nTLeAIDjEKQDw3ZyNOArQJfcrfbo6smAi0V6hjI3uqtSlz6VLb3kY5yBhTr7ykI3AADAo41OnM0hz3MvM1Bst+5mdimKwnpfy7J00tfVamW9r11br9dOjo2rGXq2W3fn3vPmw2g0MulzKQCdI5MODFcsBo3+xsXTgW/fvlnfpqsVUbvmstTFBVf9fc7X58rMLkD/EKQDwxWbvNhXMOFyERnb+9Q0jWazmdVtSsMYMCq5uYGR+l3q4mOcgYXBsO6W/wXwKoJ0YLjSU18YRZG3QYuuMukuarxd1KJL7qYW7FJd1736LKXhZtItDIatzHsB4FgE6cBwnVyv4rPU4r///nOyXRf75CKLTqnL21zN6uJqwaWXfMzs8vOnUSK8EUE64AVBOjBc0akv9DmziKuZXWzX2M9mMyd9HUqpi6vSEVdBbhelLlIvM+mVnV4AAICdoGZBOVSapk5m1CjL0mo/4zh20s/1em21nz5sNhtnM6O4Oj5RFDmf1SVJEid9f4uFzyIXAC/IpAPDFBu9eACL6LxkM4PpKovOAkZvc7kYVRelLj3MokuS8QYAnIYgHRim2OTFPstdXAVLNuuYXc1aMoQBo5K70hFX56Wrz/MlH/XoLGIEAEBYJjrx8XYcx50/kn/u1H6/1dI0tdY/V4sXiVKXd5uLMiyX/Q3h802SxKTPKwHwhkw6MEzRqS8cQrmFS+Px2Ml20zQdxLF3OY2hi0y6ixl69vFRytQ0jek0mEs7PQFwCoJ0YJg+nfrCIUz/95Kt4MhVLbo0nFIXC+UVe7mau9/VXPcv+Sghs3DD5ObDBHAQgnRgmKKTX+hgDmrfbAR3TdPo/v7evDN7RFE0mKkXXWXSXdw8LpdLZzddL/m4CbNww7S00A0AJyJIB4YpPvWFtucTH4qvX786C+hcLdDTNZezpPRpxdiXfC1QZWF+9MZGPwCchiAdGKb41Bf6DBa7ymoeq65rPTw8ONs+pS7vs33zWNe10/r553yUulRVZfp9WtrpCYBTEaQD+I3PwYuhBum3t7fOMsRxHHud8tIml0Gv7Uy0q9Klfb58+dLZe+1YmB+9myVYAbyKIB0YntTkxUOYYcSmxWLhNPjMsszZtrtU17XTmyyb52XTNJ1l0X2VuliYq35poRsADBCkA8ArmqZxNuXizlBKXfo09eLXr187WWFU8nMT1jSNaSZ9YacnAEwQpAN44rvsIrTBk+Px2GkwNxqNBvPkwmU9us3zomkap+MLXvJxE8bUi8AwEKQDw5P67sCpXJUFnJJVfHh4cF4SMZQsutSfevQus+i+bsIslLosLHQDgCGCdACDd2xQtlwudXt766Yzj+I4Zm70jnWdRfcxYFQyHjRaPzYAnhGkA3gyxNVGpXY6ukMD9aqqdHNz47ZDGs6AUcltqYskXV1dWdlOl1l0X7P2WJirfmGnJwBM/c93BwCEI7SacJuur69f3b9jgnhbhlTqYmG6P+fqulae5529393dXWfv9ZyFUhfq0YFAEKQDw8OSoXtUVeW7C0+GNGC0aZqgju1rupwXPY5jb09KDEuPGpFJB4JBuQswPJHvDpgYcjZ/Z0hZ9D7Uoy+XS81ms87ez2eATqkLMBwE6QCCMtS6+J0hDRiV3Nej2+B6EPBzURR5GzBKqQswLATpAJ58/PjRdxcGz1cA50ro9ej39/edluNMp1MvT4MsraJqvAEA9hCkA3gSQp30kMtdoiga1KwudV2rrmvf3XhVVVWdDhb1XYtuodTFaAMA7CJIBxCUIZe7jEajQd2EhJ5FH4/Hnb6frxldJCulLsYbAGAXs7sAQEd8BnEu/Pz5s5P3ub6+VhzHT3OPf/z48d15yG9vbzstc0nT1FsWva5rSl2AASJIBxCUT5+GOYPkkKZd3Okyk74rrXn5nnEcK0kSJUmiT58+KUkSLZfLTlcWlfzegFkK0BvTjQAAgLeVkrantLIst76VZXlS30NvIRxbmzabjfdjGkrLsszrZxHHsek+jAQgONSkAwjKEGvSkyTxskS8S31YwKgLURRpOp16e/+qqkwH7zai1AUIEkE6gCchzHk9pIGVO0ObdlEK41wJQVEUXs/Zr1+/mm5iYaEbABwgSAcQnCFlnX1Oy+cSmfT2PPW5MJWludG/WegKAAcI0gEEZ0gDLIc2o8tO6NMvuhZFkYqi8NoHC3Oj15KWNvoCwD6CdGBYUkmx5z4YG0qQHkWR10yrK3VdmwaHvTedTr2fpxZKXciiAwFjCkZgGFJJd4//7L2rq6ujXxNF0R+DTveVzfz9999HDU59r/TmrYxyFEWDrLEPeZXRLoxGI+8lTMvl0kbJ0cy8JwBcIUgH+i1WG5xnNja2XC6DKM/YZSiTJHkKdHeB9W4hm93f853NHFL9/KHOedBoHMfey1wk6ds34yT4Qm25C4BAEaQD/RRJmqgN0AcnjmNtt1vf3cArznnQ6Hw+9/50pK5rzWYz0818t9AVAA4RpAP9M5I0lYPa83OvM8Zh/vnnH0nt+bJbCfQcTKfTIObxt5BFb0SpCxC8v3x3AMDBIkmFHK8OSAYbp2ia5inDviuH2dXrD2EmmNFopPl87rsbkqQPHz6Y3lA/SLq10hkAzhCkA/0wUhugR67fiCAdriyXSzVNo58/fz4F9X3IxCdJorIsvZe5SNJsNtN4PDbdzIWoRweCR5AOhC1SW9qSdfWGZVme5WBI+LUL2H/+/PkUuIeQgY+iSGVZBlHmIkkXFxemNzULSTdWOgPAKWrSgXAlarPnid9uAO4lSaIkSf6YV34XsP/48cNL8D6fz4MJ0GezmY2nDsyNDvQEQToQppE6Km956cePH2TSEYzdNJsvz8nnmffdnOG2Bz4XRRHUd8HCgNFabSYdQA9Q7gKEJ5eHqRWTJNHnz581Go28zz0OnKKua1VVZSVwn0wmmk6ndjtoYLlc6vr62nQzYzGrC9AbBOlAWAp1WH++W7b+y5cvwTzSB2yqqkpVVenHjx9P//6eLMuCWLDouevra9Myn0btgNHGQncAADgbkdoAfdtFi+N4WxTFdrPZbIFzstlstvP5fDuZTLZJkvzx3ciyzHcX/1CWpY3vfTiPBQAchEw64F8kqVQHA0TTNNXd3V1QdbaAT03TaLlcPg1MLYoiiKkWn7Mwo4vEtItA7xCkA35F6iBAJzgH+snSvOgztfXoAHqEIB3way6HK4gSnAP9RhYdOF9MwQj4U8hRgB5FkabTqbIsc7F5AB24v7+3EaDPRIAO9BKZdMCPXI6mWZxMJrq7uwuurhbA4Zqm0cXFhY25368lLY07BKBzZNKB7mVyEKDHcRzc4isATnN/f28jQF+KAB3oLTLpQLcStQNFI5sbJXsODEdVVbq8vLSxKWrRgR4jkw50J1Jbhx5Z22AUqSgKjUYjW5sE4Nnt7a2NzcxEgA702v/57gBwRu5kcarFJElUliUBOjAgDw8PpiuL7ozUwdoLANyh3AXoxkjtdItW7AJ0yluA4bA4WPS5sdqsOoCeIZMOuBepLXOxIssyrVYrAnRgYMbjse0AXWqvPZntjQJwjyAdcO9OlurQsyxTUViL9wEEYrFYaLFYuNp8IWniauMA3CBIB9xKZOnHkQAdGK7v37+7foupLD7RA+AeNemAW6Wk1HQjaZqqLEvz3gAI1mKx0O3trY1VRt9yK+nB5RsAsIMgHXAnVRukG2GQKHA+mqbR169flee5y7dhMCnQAwTpgDvGWfQoirRarRTHsZUOAeiHqqo0Ho9VVZWrtyBQBwJHTTrgRioLZS5FURCgA2coSRKtViuXGfWpmEcdCBqZdMAN4yz6ZDLRdDq10xsAveUwq15LupTU2N4wAHME6YB9iaSVyQbiOGYudABPmqbR7e2tZrOZ7U0vJV3b3igAc5S7APZ9Md1AURQE6ACeRFGkoihcPF1LJeW2NwrAHJl0wK5I0loGixcx3SKAtyyXS93c3NhenfRSUmVzgwDMEKQDdmUyXDBkvV4zWPSZ5XKpuq7177///vb/P336pCiKlKapn44BHlVVpevra5uBeqU2UAcQiP/57gAwMP+YvDjLMgJ0SXVd6/7+XovF4qAgJEkSpWmqq6srjUYj5/0DfNutn2AxUE/Ulr3kNjYGwByZdMCeSNLGZANk0aWHhwfd3t6e/PooijQajfT582ey7Bg8yxn1Rm02vbaxMQAAQpFJ2p7a0jTdnrvpdHry8dvX4jjeTqfT7Waz8b1rgDOr1WobRZGt741RuR4Ae8ikA/YUagP1k8zn87Mu1ajrWhcXF062HUWRJpOJvnz5wqw5GCTLGXUGkQIBYApGwJ7RqS/clWics69fvzrbdtM0yvNcFxcXLuaZBrxLksTm9IysogYEgCAdsCORwbSLWZbZ6kdvOVhN8Q9N02g8Huvy8rKT9wO6lGWZJpOJjU2laq9pADwiSAfsSExefHV1Zakb/VXXdWfvVVWVLi8vdX9/39l7Al2YTqdKksTGpowXZQNghiAdsOPkKJtSl5aPWW3yPCerjsEpCitjPzNJsY0NATgNQTpgR3zqC5km0K/dgDtq1TEUSZIoz3MbmxrZ2AiA0xCkA3akp76QUpeWpUf0J9nVqlP+gqG4u7uz8XSKkhfAI4J0wFxs8mKfwWlIPn/+7LsLyvNc4/HYdzcAK+7u7kw3EYsBpIA3zJMOmEsllae+eLvd2utJz11cXHQ6gPQ1WZbZqusFvLIw5uJB0ulLAAM42f98dwAYgOTUF/oYLBmyu7u7IDLZu/p0AnX/6rpWXdf68ePHb/8ttU+hoijSp0+flKYpC1Xt8eXLF9Pv1EgE6QCAnsp14hLcaZr6XlE8OHEc21re3LhlWeb7cJyd9Xq9nU6n29FodPRS92mabsuy9L0LwbHwnYpPujICAODZVCf++E0mE9+/38Epy9J7cP68TadT34dk8DabzXY6nW6TJLHymY1Go+1ms/G9W8HI89z0mGZHXhMBAAhCqRN//PI89/37HaTJZOI9OH/eVquV70MySGVZbrMsc/KZJUnie/eCsV6vTY9nccwFEYAdzO4CIDh3d3dBzXpzc3Ojpml8d2Mwlsulrq+vnc5PX1UVU2o+iuPY9Ptk9GIApyFIBxCcKIpUFEUwAwHrutbXr199d6P3dgtHXV9fa7lcOn8/Fqj6xXBV48ROLwAcgyAdQJCSJFFZlsEE6nmeBzE9ZB81TaPb21tdXl52EpzvPJ8J5txZWDQttdANAEcgSAfM1ae+kBKKtyVJoul06rsbTyifON5isdDFxYUeHh68vD9BeitNU9NNROa9AHAMgnTA3L+nvtBwkZGzkGWZ5vN5EBn1xWLBjdWBdtlz6vnDQV060C8E6YC55tQXdvnov89Go1EQpS9N02ixWHjtQx/sas99Zc+fC2kAsm8sngb0C0E6YK4yeTGB+mF2Neq+g67dypfYbzdzSwhPieI49n5jFxLD745xUTuA4xCkA+Yqkxd///7dUjeGbxeoG85UYYQa59fNZjNdX18HU97i8zwBAFME6YC5RgaDR5km7jhRFGk+nwc1RSPa83g8Hvvuxm++fPniuwtBsTDDC4AOEaQDdlSnvrBpGgL1E2RZptVqZWPWChgKMUDPsowabAC9RpAO2GFUs8LUfqeJ41hlWaoois4CMrL3v6uqKrgAPYqioKbuBIBTEKQDdixNXlzXNdl0A7usep7nzoPof/75x+n2+6RpGl1fX/vuxh8ohQIAAM+tJG1PbXEcb2Fus9ls8zzfRlF08mfxWkuSxPfuBSVNU+vH2LRlWeb7sASrLEuTY1seczEEYI5MOmDPV5MX13VN2YsFURTp7u5O6/VaRVFYm7IxiiIVRWFlW0Mwm82Cmz40tBVqQxPKrDsAAHQtkrSRYSZwtVr5TrgNzmq12k4mk20cxyd9JqPRaLvZbHzvRjA2m42TJxUmLUkSPqN35HlOJh3okf/57gAwII2khaTMZCPj8TiI1TWHJEmSpyxrXddaLpf6+fOnqqpSVVV7M4xpmipJEn3+/Nn7Akqhmc1mQWVld/Pn850BMCR/+e4AMDCxpLXpRrIso7QCwbq4uAhmUScC9MPd3NxosVic+vJ7Sbm1zgB4FzXpgF21pJnpRmazGbO9IEhVVQUToI9GIwL0I4TyuQE4DEE6YJ+V0Z/j8Ti4gXlAVVW+uyBJyvNc8/mcAP0Ihp+d0YsBHI8gHbCvloVsutQ+ng4lKAIk6d9///X6/lEUqSxL3d3dee1H31i4jjTmvQBwDIJ0wI1bWfhR2y0WQ6AOtOUt6/VaaZr67krvWHgqZ7wBAMchSAfcaGSp7IVAHSH5+++/O3/POI5VliXlLQZ+/Phh8vLaUjcAHIHZXQC3SkmpjQ3tHvMzHSB8qutaFxcXnbxXFEWaTCaUtljw119GP/cLSTd2egLgUGTSAbfGslTLSUYdIYjjWFmWOX2PKIqU57nW6zUBugUG0y7uGKXhAQAIVSaLKytGUbQtisL34oU4Y5vN5uTVW99qcRxvi6Jg5VDLRqOR6WeTWLsaAjgY5S5ANwoZrkT60nQ61WQysblJ4GBN0+jm5sZ4QGIURRqNRvry5QulXA40TaMPHz4YbUKS0QYAAAhZJGkly5nHLMvIOsKroiiOztSmabrN83y7Wq18d3/w8jw3vc6w9DHgCZl0oDuRpPXjP61JkkTz+VxxHNvcLHCUpmlUVZWqqtJ///3325/9/fffSpJEcRxznnaoaRpdXFyoaRqTzYxlad0HAMchSAe6laid8SWyudEoilQUhUajkc3NAuix+/t75XluupkPYiEjwAuCdKB7I0lzFxveTVfHXNLAebOURV+IqRcBb5iCEejeQu0jZOseHh6YphGA7u/vTQN0SfpmoSsATkQmHfAnk8NBWXmeM8c0cIaqqtLl5aXpZmpJ3axaBWAvMumAPzM5yqhLbZB+eXlJVh04M+OxlcsKWXTAM4J0wK+ZHAbqu4yapUffAAJ3f39v48a8kfRguhEAZih3AcKQyfF8xHEcazqdMgMMMFDL5VLX19c2NjWTw+QBgMMQpAPhSNXO+hI5fZM0VVEUzFcNDEhd17q8vLT1xOxCbU06AI8odwHCsZR0LcdzEi+XS11cXOj29pYSGGAAmqbRzc2Nre/zvQjQgSCQSQfCE6ld8Chx/kZRpLu7O00mE9dvBcARiwPEG7VZ9MbGxgCYIZMOhKeRdKkOluJumka3t7e6uLjQbOb87QBYNh6Pbc7gdC8CdCAYZNKBsGVyPKD0uTiOdXd3pyzLunpLACcaj8c2b64rtckBAIEgSAfCl6gdUBp39YYshASEa1eDvlwubW72Um2gDiAQlLsA4avU/oAuunrDuq67eisAR2iaRtfX17YD9HsRoAPBIUgH+qGRdKN27uLG9ZsRpAPhqapKFxcXtlcRriTlNjcIwA6CdKBfZmqz6kuXb2I5CABgaDab6fr62va0qY3am38AASJIB/qnVjuf+q0cZdWZPx0IQ9M0Go/HGo/HLr6XYzEnOhAsgnSgvx7kMKtuueYVwJGWy6UuLy9dTY96rw7HuQA4HkE60G+12qy69Vp16tIBP3brF1xfX7v6Hs5EHToQPIJ0YBhmalcKnNna4L///mtrUwAOtMuePzw8uHqLSu1NPYDAEaQDw9Go/fG9loUSGAaPAt2p61o3Nzcus+dSG6Bfu9o4ALsI0oHhWepXCUx96kYYPAq4tyttubi40GKxcPlWldrrQuPyTQDYw4qjwLCN1K5WepLtdmuvJwCeNE2jr1+/6uHhoYsb4koE6EDv/M93BwA41Ri9uGkURZGdngDoOjiXCNCB3qLcBRi2pcmLfdSlLxYLSm0wOHVdazwe6+LiQnmed3WOz0SADvQWQTowfM2pL+w6SJ/NZrq5udGHDx+eZrhgACv6bLFY6ObmRhcXF5rNZl3egD7IwdSsALpDuQswfJWk9JQX/vfff1Y78paqqnR7e/vbf+8C9DiONRqNdHV1pdFo1FmfgFPUda1v375pNpv5Wm9gLIvTsQLwg4GjwPBNJU1OeWGapirL0m5v9miaRtfX1wdnzXcBe5qmSpLEad+AQzRNo8Vioe/fv7uepeUttaQbtTfmAHqOTDowfCenw7t6NH97e3tUWctisXgKhOI4VpqmT0F7HMdO+gi8FEhgvrMQ5S3AoJBJB4YvlXRyOtz1NIyz2Uzjsb0FEAna4VJggbnUBuX3amvQAQwIQTowfImk1akvXq1WzkpKqqrS9fW104x9HMdKkkRXV1dKkkRpmjp7LwzTcrnUjx8/tFgsQhvIvJThomUAwkWQDpyHk9PhZVk6C2wvLy+9BD27WvZd4E62Hc9VVfUUmC+XyxCnBG1E9hwYPIJ04DysJcWnvDDPc93d3dntjdo69IeHB+vbPUUURU9Z9k+fPj1l33EedgsM7YLzAIPy5xaSbkX2HBg8Bo4C56HWiUG6i4BlsVgEE6BL7T4ul0stl8vf/v+upv3Tp09KkkRJkrAC6wB9/fpVeZ777sZ7arWlLUu/3QDQFYJ04Dz80IlzpdsuR9mtvNgHL4N26VfWPUkSTafT7jsF6/Z9zgFp1GbOZ367AaBrrDgKnIfm1BfaDtJvbm5CLyd40y7r/vHjR99dgSWBBumN2rrzCxGgA2eJTDpwHqpTX2gzoD52PvRQJUmiyWTiuxuwIMAAvZH0Ve2g0MZnRwD4RZAOnIfa5MXL5dJ4hpfQ6tBNhFDm8jy4DL1Wvq5r1XX99N9N0+jnz5/6559/vA/Q/fHjh9f3f6YRwTmAZwjSgfNQm7zYNJvepzr092RZ5n2u9YeHB93e3r77944J3t/bp0MzzlVVHXy+LJdLleXJ62xZEUAmvVZb1jLz2w0AAOBLqXa+9KNbnudbE0mSnPS+Ibb1em10LEyt1+ttFEXej4OtVhSF1+Ppcd8LnTiYGwAADMtcJwYUWZadHARNJhPvgaCtZnqzYkOapt6Pg80WRdF2s9l4OZZlWXa9v2tJE504HSoAABimXCcGF2manhQEzedz70GgreYzmNwpisL7cXDRTG4CTeR53sX+bUTWHAAAvCGTQbBxLMtlGWu1Qc5EBk8ETJrvLPpmsxlUmcvLVpZl58fU4VOJjdrAfCQAAIB3pDIIPI7NIlsOgJJX9ieXQa39oS2ELPqQyob2tSRJOj+mlvdhIwJzAABwgkgGQcgxmU7LZQSTA/cvlaOg3XcWfb1eew+iu2jT6bSzY2qpHn0taSpKWQAAgKGNTgxIDp2Fw/JgvLnBviZqA/y1SR9CyKIPbbBoCMfawo1kctBZCAAAcIBSJwYlh2STLddNr9Vm/03Epv3wnUX3MAOJ19bVIFLDG5/1gecfAADAQQqdGJgcMsNLB3Xox5qa9IEsup/WxSBSwz4WB55/AAAAB8l1YmDy3sA+T3Xo79mY9GMymTgPFt9ybln0XXM9iNTCcc0OOvsAAAAONJJBcPLaapsB1aE/l5n2xffqoueYRd81l2VGFm4o4/dPPwAAgMMlMghOkiT5o/xjtVqFVoe+Mzfpi68FdnbONYu+a1EUObtJoh4dAACEyCh4iuN4O51Ot2VZbieTie0FdlJL+xib9sXH4joWA8lBtNFo5OTYGvarePfsAwAAOMFKAQRge1pucR8nJn3xsbDOc+eeRX/ebN8sUY8OoC/+57sDADq3VHhzPC9lN0j/bPLiL1++2OrHSb59+2ZjM2NJ9Yv/F8t+PXUlqXnlzwrT9xuPx1qv1yab+M2PHz9MN7G00A0AAIA/JAogQ/qsbWSvDt14/3xPu2hpddHS4vE0kcrCOWJzECn16AAAIGRr+Q/Ody21vG9Tk/74HjBqaSrL2PIxNTGX4f7YHERq2JfC/eECAADnLJP/4HwruyUuO2uTPvkeMGphIG5ogWQsw/nqJTuDSKlHBwAAfWAUzFpopYN9Skz6FMexhTD7dEVR2DiuqYPjaiqXhXNmPp8bHV/mRwcAAH2Qyl+AvpHdOvSdiUm/XC6gc4jRaBTijY8taxmeN3EcG40XoB4dAAD0xVR+gvTU0f6sTPrlc4VRSwNGXR1XG1JZOHdMbqQM37twfYAAAACem6vbAD1ztB+xSb98z40+nU5Nj+va0XG1ycq5dsrNFPXoAACgbyJ1t8DRxOF+ZCZ9m06n1gPvYyRJcg5BZCQLg0jTND36+FKPDgAA+qqQ2wA9c9z/uUn/el7qspGbGn8XJrJwPh07iJR6dAAA0GcTWch06s8AJ+mg7yf3ewClLkUHx9emlQzPq2MHkRq+X9+OLwAAGKBYdrLqG7VT70Ud9Dk16etkMnEXgR/AQqlL4vwI25XKwg3goYNIqUcHAABDEqud/WWt4wKaldqMfNRhX/Mj+/hbW61WbqPwN1godVm7P7xO2LgRPOizox4dAAAMVaI28J6qnYv7ZcvVZhtjD33TYx9OCsCiKDIKsler1bYsy5Pn77awgNG0iwPsQKSOBpFSjw4AAODHyUHYqcvNr9fr3xYfiqLopMGnFhYwSpwfXXcmspBNL4rizWNsuP3C9UEAAAAYolQOA7x9ptPpNoqiP7Z1yjSO+7ZzRBtClnclwyA9iqJXn2TM53PTID1zfgQAAAAGKJdBEHZM9nu9Xr9ZOnHsapgWBjROXR7YjqQyDNIlbbMs++P4bjYbG4NyY8f7DwAAMEilTgzA4jg+OKCez+fvZr2PXWTHwoDGxOWB7dBUFgL10Wi0Lctyu16vt/P53EaAvna+5wAAAAO1kcXs6z6TycR60L/dGg9o3Lg8qB2LZH9+fhutcLjPAAAAg5XIIAh7rx79lHIJFtg5WSb/QfnLljncXwAAgMHKZBCEvVWPvlqtThrUWZblQQH6arUigPxTKf+B+fMWO91bAHjD//nuAAAYiE99YRRFiuP9L18ul7q+vlbTNEdv98ePHwf9veVyefS2X27CdAMBuvXdgWcWkmrPfQBwxgjSAfTZ1akvTNN07/+fzWYnB+iSVFXVQX/v58+fJ23/Ua1hBpCVpAfPfdj56rsDAAAAfXVyecS+6RItrP558AqmhjOPFE6OZhgi+R9EWrreSQAAgCE7OUh/WTtuI0DftdVq9W6QbvgeE+tHMiwj+Q3SE9c7CAAAMGQnB+mj0chJgC69v/KohUWMUtsHMkCF/ATokw72DQAAYNBODtKldl5zw7nK370B2MfCTcE5iCSt1G2AXnSxYwAAAEOXy0+29d321nzphiuNrmwewMBF6i5QJ0AHEBRmdwHQZ5XvDrxmsVi8+meG0y9WJi/umUbStdzv80zS2PF7AMBRCNIB9NnSdwde8/3791f/7NTpHR/9a/LiHmokXcrN1IyN2rnZCdABAAAsmyuA8pZ97bWSF8PtphaPXd+ksrcqaSlWFAUAAHBmpAAC8n2tKIo/AvT1em263cTeoeutkU4P1gud940OAABAZ1YKICh/2ZIkcTH9In6JJWVqA+99Qfvm8f9P1Qb2UfddBAAAOF+pAgjK97WXCxvN53OT7a1tHjQAQLgYOApgCJZyM7DQ2NevX3/7758/f5psrjZ5MQAAAOBDkGUv6/X6KZNuuHjS3O7hAgAAANyLFGCgHsfxNs9zG6ub5haPFQAAANCZSAFPy2jYJtaOEgAAAODBRO3sHjaC41CC/tTi8QEAAAC8iNVOz3dqUFzqV2BcGmzHRtvYOywAAACAf7HazPpK7wfDa+1f8GZ0wGtdtsLGgQAA9MNfvjsAAB2L1K7aufunJDWSKrVTHNZvvHYtf0vJX6udahIAAADAM5n8ZNHLDvYNAAAA6K1DSmZst7SLHQMAAAD6KlG3Afq0k70CAAAAem6ibgL0VUf7AwAAAAxCIfcBetTVzgAAAABDkYsAHQAAAAjOSPZWNqUGHQAAALAkUhtcmwTnpZjFBQAAALAuVlsCs9ZhgflG+1c3BQCcOVYcBQA3YrXTNSZ7/qxRu8LpsqO+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABC9/8sqJeszPovfQAAAABJRU5ErkJggg==" alt="BUWEMON" style="
-    width:320px;
+    width:560px;
     height:auto;
     filter: drop-shadow(0 4px 18px rgba(0,0,0,0.45)) drop-shadow(0 2px 6px rgba(0,0,0,0.3));
     display:block;
+    margin-bottom:-20px;
   ">
 
 
@@ -1737,6 +2680,12 @@ document.querySelectorAll('.swatch').forEach(sw=>{
       border-radius:8px;padding:10px 14px;font-size:.95rem;font-family:'Kievit',sans-serif;
       color:#2a2e3a;outline:none;text-align:center;width:100%;
     ">
+  </div>
+
+  <!-- 4-Player toggle -->
+  <div id="lobby-4p-toggle-wrap" style="display:flex;align-items:center;gap:10px;font-family:'Kievit',sans-serif;font-size:.9rem;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.5);">
+    <button id="lobby-4p-toggle" onclick="toggle4PMode()" style="background:rgba(180,185,195,0.75);border:1px solid rgba(255,255,255,0.7);border-radius:20px;padding:4px 16px;font-family:'AiSpec',sans-serif;font-size:.85rem;cursor:pointer;color:#2a2e3a;transition:background .2s;">4-Spieler: AUS</button>
+    <button id="erweiterung-btn" onclick="toggleErweiterung()" style="background:rgba(0,150,80,0.7);border:1px solid rgba(255,255,255,0.7);border-radius:20px;padding:4px 16px;font-family:'AiSpec',sans-serif;font-size:.85rem;cursor:pointer;color:#fff;">Erweiterung: AN</button>
   </div>
 
   <!-- Mode selector -->
@@ -1768,7 +2717,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
       font-size:1rem;font-weight:700;font-family:'AiSpec',sans-serif;font-style:italic;
       letter-spacing:1px;color:#2a2e3a;cursor:pointer;width:100%;
       box-shadow:0 2px 12px rgba(0,0,0,0.13),inset 0 1px 0 rgba(255,255,255,0.8);
-      transition:transform .12s,box-shadow .12s;text-shadow:0 1px 2px rgba(255,255,255,0.7);opacity:.7;">← Zurück</button>
+      transition:transform .12s,box-shadow .12s;text-shadow:0 1px 2px rgba(255,255,255,0.7);">← Zurück</button>
   </div>
 
   <!-- Multi panel -->
@@ -1780,11 +2729,11 @@ document.querySelectorAll('.swatch').forEach(sw=>{
       box-shadow:0 2px 12px rgba(0,0,0,0.13),inset 0 1px 0 rgba(255,255,255,0.8);
       transition:transform .12s,box-shadow .12s;text-shadow:0 1px 2px rgba(255,255,255,0.7);">Raum erstellen</button>
     <div style="display:flex;gap:6px;">
-      <input id="lobby-code" type="text" placeholder="Code eingeben …" maxlength="6"
-        style="flex:1;background:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.7);
+      <input id="lobby-code" type="text" placeholder="Code eingeben …" maxlength="6" onkeydown="if(event.key==='Enter'){document.getElementById('btn-join').click()}"
+        style="flex:1;background:linear-gradient(160deg,#c8ccd4 0%,#e8ecf2 40%,#d0d4dc 70%,#f0f2f6 100%);border:1px solid rgba(255,255,255,0.7);
         border-radius:8px;padding:10px 10px;font-size:.95rem;font-family:'Kievit',sans-serif;
         color:#2a2e3a;outline:none;text-align:center;letter-spacing:3px;text-transform:uppercase;">
-      <button onclick="multiJoin()" style="background:linear-gradient(160deg,#c8ccd4 0%,#e8ecf2 40%,#d0d4dc 70%,#f0f2f6 100%);
+      <button id="btn-join" onclick="multiJoin()" style="background:linear-gradient(160deg,#c8ccd4 0%,#e8ecf2 40%,#d0d4dc 70%,#f0f2f6 100%);
       border:1px solid rgba(255,255,255,0.7);border-radius:10px;padding:12px 24px;
       font-size:1rem;font-weight:700;font-family:'AiSpec',sans-serif;font-style:italic;
       letter-spacing:1px;color:#2a2e3a;cursor:pointer;width:100%;
@@ -1792,21 +2741,21 @@ document.querySelectorAll('.swatch').forEach(sw=>{
       transition:transform .12s,box-shadow .12s;text-shadow:0 1px 2px rgba(255,255,255,0.7);width:auto;padding:10px 14px;">Beitreten</button>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:4px;">
-      <button id="pick-p1" onclick="pickPlayer(1)" style="flex:1;background:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.6);border-radius:7px;padding:7px;font-size:.85rem;font-family:'AiSpec',sans-serif;font-style:italic;color:#2a2e3a;cursor:pointer;">Spieler 1</button>
-      <button id="pick-p2" onclick="pickPlayer(2)" style="flex:1;background:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.6);border-radius:7px;padding:7px;font-size:.85rem;font-family:'AiSpec',sans-serif;font-style:italic;color:#2a2e3a;cursor:pointer;">Spieler 2</button>
+      <button id="pick-p1" onclick="pickPlayer(1)" class="lobby-pick-btn" style="flex:1;">Spieler 1</button>
+      <button id="pick-p2" onclick="pickPlayer(2)" class="lobby-pick-btn" style="flex:1;">Spieler 2</button>
     </div>
-    <div id="lobby-multi-status" style="font-size:.78rem;color:#2a2e3a;opacity:.6;text-align:center;min-height:1.2em;font-family:'Kievit',sans-serif;"></div>
+    <div id="lobby-multi-status" style="font-size:.78rem;color:#ffffff;opacity:.9;text-align:center;min-height:1.2em;font-family:'Kievit',sans-serif;text-shadow:0 1px 3px rgba(0,0,0,0.5);"></div>
     <div id="lobby-code-display" style="display:none;font-size:1.8rem;font-weight:900;letter-spacing:6px;color:#2a2e3a;text-align:center;font-family:'AiSpec',sans-serif;background:rgba(255,255,255,0.4);border-radius:8px;padding:8px 16px;"></div>
     <button onclick="showLobbyMode(null)" style="background:linear-gradient(160deg,#c8ccd4 0%,#e8ecf2 40%,#d0d4dc 70%,#f0f2f6 100%);
       border:1px solid rgba(255,255,255,0.7);border-radius:10px;padding:12px 24px;
       font-size:1rem;font-weight:700;font-family:'AiSpec',sans-serif;font-style:italic;
       letter-spacing:1px;color:#2a2e3a;cursor:pointer;width:100%;
       box-shadow:0 2px 12px rgba(0,0,0,0.13),inset 0 1px 0 rgba(255,255,255,0.8);
-      transition:transform .12s,box-shadow .12s;text-shadow:0 1px 2px rgba(255,255,255,0.7);opacity:.7;">← Zurück</button>
+      transition:transform .12s,box-shadow .12s;text-shadow:0 1px 2px rgba(255,255,255,0.7);">← Zurück</button>
   </div>
 
-  <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;">
-    v22l
+  <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
+    v27d
   </div>
 </div>
 
@@ -1839,14 +2788,14 @@ function setMultiStatus(msg) {
 
 function pickPlayer(n) {
   NET.myPlayer = n;
-  document.getElementById('pick-p1').style.background = n===1 ? 'rgba(80,120,220,0.35)' : 'rgba(255,255,255,0.4)';
-  document.getElementById('pick-p2').style.background = n===2 ? 'rgba(80,120,220,0.35)' : 'rgba(255,255,255,0.4)';
+  document.getElementById('pick-p1').classList.toggle('selected', n===1);
+  document.getElementById('pick-p2').classList.toggle('selected', n===2);
 }
 
 function wsConnect(onOpen) {
   try {
     // Connect to WebSocket - same host, /ws path
-    const wsUrl = (location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws';
+    const wsUrl = (location.protocol==='https:'?'wss://':'ws://')+location.host+(fourPlayerMode?'/ws4':'/ws');
     const ws = new WebSocket(wsUrl);
     NET.ws = ws;
     ws.onopen = () => {
@@ -1948,6 +2897,7 @@ function netSendState() {
     t: 'state',
     deck: G.deck,
     graves: {p1: G.graves['p1'], p2: G.graves['p2']},
+    banish: G.banish,
     slots: mySlots,
     senderPrefix: myPfx,
     fieldCards,
@@ -2005,7 +2955,12 @@ function onNetData(d) {
       G.graves['p2'] = d.graves.p2 || G.graves['p2'];
       updGrave('p1');
       updGrave('p2');
-    } else if (d.grave !== undefined) {
+    }
+    if (d.banish !== undefined) {
+      G.banish = d.banish;
+      updBanish();
+    }
+    if (d.grave !== undefined) {
       G.graves[sPfx] = d.grave;
       updGrave(sPfx);
     }
@@ -2020,11 +2975,6 @@ function onNetData(d) {
     }
 
     // Field cards: same position, update or create
-    const incomingUids = new Set((d.fieldCards||[]).map(fc => String(fc.uid)));
-
-    // Remove enemy cards no longer in snapshot
-    G.cards.filter(c => c.dataset.netEnemy === '1' && !incomingUids.has(c.dataset.uid))
-      .forEach(c => { c.remove(); G.cards = G.cards.filter(x => x !== c); });
 
     // Update or create
     (d.fieldCards||[]).forEach(fc => {
@@ -2061,24 +3011,8 @@ function onNetData(d) {
 
     // Reveal state handled via separate event
   }
-
-
-  if (d.t === 'card_remove') {
-    const toRemove = G.cards.find(c => String(c.dataset.uid) === String(d.uid));
-    if (toRemove) { toRemove.remove(); G.cards = G.cards.filter(c => c !== toRemove); }
-  }
-  if (d.t === 'lp') {
-    G.lp[d.p] = d.val;
-    document.getElementById('p'+d.p+'-lp').textContent = d.val;
-  }
-  if (d.t === 'gamereset') {
-    resetLocalState();
-  }
-  if (d.t === 'reveal') {
-    G.reveal[d.p] = d.val;
-    updateRevealBtn(d.p);
-    applyP1HandVisibility();
-    setTimeout(applyP1HandVisibility, 100);
+  if (d.t === 'shuffle_hand') {
+    applyShuffleHand(d.moves);
   }
   if (d.t === 'card_remove') {
     const toRemove = G.cards.find(c => String(c.dataset.uid) === String(d.uid));
@@ -2091,14 +3025,34 @@ function onNetData(d) {
   if (d.t === 'gamereset') {
     resetLocalState();
   }
+  if (d.t === 'winlose') {
+    const myPlayer = NET.myPlayer;
+    showWinLose(myPlayer !== d.loser);
+  }
+  if (d.t === 'darkschah') {
+    const myPlayer = NET.myPlayer;
+    const winnerNum = parseInt(d.winner.replace('p',''));
+    showDarkschahWinLose(myPlayer === winnerNum);
+  }
   if (d.t === 'reveal') {
     G.reveal[d.p] = d.val;
     updateRevealBtn(d.p);
+    applyRevealToHand(d.p);
     applyP1HandVisibility();
-    setTimeout(applyP1HandVisibility, 100);
   }
-  if (d.t === 'dice') {
-    showDiceResult(d.result, false);
+  if (d.t === 'dice_roll') {
+    // Show rolling animation then display sender's result
+    const btn = document.getElementById('dice-btn');
+    btn.classList.remove('show-result');
+    btn.classList.add('rolling');
+    btn.textContent = '?';
+    let c = 0;
+    const iv = setInterval(() => {
+      btn.textContent = Math.floor(Math.random()*6)+1;
+      c++;
+      if (c > 10) clearInterval(iv);
+    }, 60);
+    setTimeout(() => { showDiceResult(d.result, false); }, 700);
   }
 }
 
@@ -2127,170 +3081,6 @@ function updateEnemyHandDisplay(count) {
   if (lbl) lbl.textContent = (NET.enemyName||'Gegner') + ' — Hand (' + count + ')';
 }
 
-// ── POV POPUP ──
-let povVisible = false;
-let povDrag = null;
-let povInterval = null;
-let povRendering = false;
-
-function togglePOV() {
-  povVisible = !povVisible;
-  const popup = document.getElementById('pov-popup');
-  popup.style.display = povVisible ? 'flex' : 'none';
-  if (povVisible) {
-    startPOV();
-  } else {
-    stopPOV();
-  }
-}
-
-function startPOV() {
-  renderPOV();
-  povInterval = setInterval(renderPOV, 2000);
-}
-
-function stopPOV() {
-  if (povInterval) { clearInterval(povInterval); povInterval = null; }
-}
-
-function renderPOV() {
-  if (povRendering) return;
-  povRendering = true;
-  document.getElementById('pov-status').textContent = 'wird geladen …';
-
-  // Temporarily make hand cards show backs for the screenshot
-  // In POV: mask MY hand (enemy can't see it)
-  // Spieler 1 (myPlayer=1): mask p2-hand (bottom = my hand)
-  // Spieler 2 (myPlayer=2): mask p1-hand (top = my hand)
-  const myHandIdPOV = (NET.myPlayer === 2) ? 'p1-hand' : 'p2-hand';
-  const myRevealPOV = (NET.myPlayer === 2) ? G.reveal[2] : G.reveal[1];
-  const handCards = [];
-  G.cards.forEach(el => {
-    // For enemy cards, use style.left/top directly (more accurate after position update)
-    let cx, cy;
-    if (el.dataset.netEnemy === '1') {
-      cx = parseFloat(el.style.left) + 31;
-      cy = parseFloat(el.style.top) + 44;
-    } else {
-      const r = el.getBoundingClientRect();
-      cx = r.left + r.width/2; cy = r.top + r.height/2;
-    }
-    const myH = document.getElementById(myHandIdPOV);
-    if (myH && !myRevealPOV) {
-      const hr = myH.getBoundingClientRect();
-      if (cx>=hr.left && cx<=hr.right && cy>=hr.top && cy<=hr.bottom && el.dataset.fd!=='1') {
-        handCards.push({el, orig: el.innerHTML});
-        el.innerHTML = '<img src="karten/Rueckseite.png" style="width:63px;height:88px;border-radius:6px;object-fit:cover;display:block;" draggable="false">';
-      }
-    }
-  });
-
-  // Hide POV popup, carry card, ctx menu, and modals during screenshot
-  const povEl = document.getElementById('pov-popup');
-  const povWas = povEl ? povEl.style.display : 'none';
-  if (povEl) povEl.style.display = 'none';
-  // Show carry card as back in screenshot (not hidden)
-  const carry = document.getElementById('carry-card');
-  const carryOrig = carry ? carry.querySelector('img') : null;
-  const carryOrigSrc = carryOrig ? carryOrig.src : '';
-  if (carryOrig && carry.style.display !== 'none') {
-    carryOrig.src = 'karten/Rueckseite.png';
-  }
-  const carryWas = 'keep';
-  const ctx = document.getElementById('ctx');
-  const ctxWas = ctx ? ctx.style.display : 'none';
-  if (ctx) ctx.style.display = 'none';
-  // Hide all modals
-  const modals = document.querySelectorAll('.modal-bg.open');
-  modals.forEach(m => m.style.display = 'none');
-
-  // Temporarily restore p2-hand cards to face-up for POV
-  const p1HandRestored = [];
-  G.cards.forEach(el => {
-    if (el.dataset.fdSaved !== undefined) {
-      p1HandRestored.push({el, savedFd: el.dataset.fd, savedInner: el.innerHTML});
-      el.dataset.fd = el.dataset.fdSaved;
-      renderCard(el);
-    }
-  });
-
-  // No rotation needed in POV
-
-  // Hide dragged card (show as back) - card being dragged is hidden from enemy
-  const draggedEl = drag ? drag.el : null;
-  const draggedOrig = draggedEl ? draggedEl.innerHTML : null;
-  if (draggedEl && draggedEl.dataset.fd !== '1') {
-    draggedEl.innerHTML = '<img src="karten/Rueckseite.png" style="width:63px;height:88px;border-radius:6px;object-fit:cover;display:block;" draggable="false">';
-  }
-
-  // Screenshot the whole body so fixed-position cards are included
-  const boardEl = document.getElementById('board');
-  const boardRect = boardEl.getBoundingClientRect();
-  html2canvas(document.body, {
-    scale: 0.6,
-    useCORS: true,
-    allowTaint: true,
-    backgroundColor: null,
-    logging: false,
-    imageTimeout: 0,
-    x: boardRect.left,
-    y: boardRect.top,
-    width: boardRect.width,
-    height: boardRect.height,
-    scrollX: -window.scrollX,
-    scrollY: -window.scrollY,
-    windowWidth: window.innerWidth,
-    windowHeight: window.innerHeight,
-  }).then(canvas => {
-    // Restore hand cards
-    handCards.forEach(({el, orig}) => { el.innerHTML = orig; });
-    // Restore p2-hand cards to masked state
-    p1HandRestored.forEach(({el, savedFd, savedInner}) => {
-      el.dataset.fd = savedFd;
-      el.innerHTML = savedInner;
-    });
-    // Restore dragged card
-    if (draggedEl && draggedOrig) draggedEl.innerHTML = draggedOrig;
-
-    if (povEl) povEl.style.display = povWas;
-    if (carryOrig && carryOrigSrc) carryOrig.src = carryOrigSrc;
-    if (ctx) ctx.style.display = ctxWas;
-    modals.forEach(m => m.style.display = '');
-
-    // Rotate 180 by drawing onto a new flipped canvas
-    const povCanvas = document.getElementById('pov-canvas');
-    const popup = document.getElementById('pov-popup');
-    const maxW = popup.clientWidth;
-    const maxH = popup.clientHeight - 30;
-    const scale = Math.min(maxW / canvas.width, maxH / canvas.height);
-    povCanvas.width = Math.round(canvas.width * scale);
-    povCanvas.height = Math.round(canvas.height * scale);
-    const ctx2 = povCanvas.getContext('2d');
-    // Rotate 180° around center
-    ctx2.drawImage(canvas, 0, 0, povCanvas.width, povCanvas.height);
-
-    document.getElementById('pov-status').textContent = '— live (2s refresh)';
-    povRendering = false;
-  }).catch(e => {
-    handCards.forEach(({el, orig}) => { el.innerHTML = orig; });
-    if (povEl) povEl.style.display = povWas;
-    if (carryOrig && carryOrigSrc) carryOrig.src = carryOrigSrc;
-    if (draggedEl && draggedOrig) draggedEl.innerHTML = draggedOrig;
-    p1HandRestored.forEach(({el, savedFd, savedInner}) => { el.dataset.fd = savedFd; el.innerHTML = savedInner; });
-
-    document.getElementById('pov-status').textContent = '⚠ Fehler';
-    povRendering = false;
-  });
-}
-
-// Make POV popup draggable
-const povPopup = document.getElementById('pov-popup');
-const povHeader = document.getElementById('pov-header');
-povHeader.addEventListener('pointerdown', e => {
-  if (e.target.style.pointerEvents === 'all') return;
-  povDrag = {ox: e.clientX - povPopup.offsetLeft, oy: e.clientY - povPopup.offsetTop};
-  povHeader.setPointerCapture(e.pointerId);
-});
 povHeader.addEventListener('pointermove', e => {
   if (!povDrag) return;
   povPopup.style.left = Math.max(0, e.clientX - povDrag.ox) + 'px';
@@ -2312,6 +3102,16 @@ function showDiceResult(result, broadcast) {
     btn.textContent = '?';
     diceTimer = null;
   }, 10000);
+}
+
+function toggleErweiterung() {
+  erweiterungAN = !erweiterungAN;
+  const btn = document.getElementById('erweiterung-btn');
+  if (btn) {
+    btn.textContent = 'Erweiterung: ' + (erweiterungAN ? 'AN' : 'AUS');
+    btn.style.background = erweiterungAN ? 'rgba(0,150,80,0.7)' : 'rgba(180,185,195,0.75)';
+    btn.style.color = erweiterungAN ? '#fff' : '#2a2e3a';
+  }
 }
 
 </script>
