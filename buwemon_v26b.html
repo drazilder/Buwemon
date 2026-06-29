@@ -37,7 +37,7 @@ body{background:linear-gradient(160deg,#909aaa 0%,#d8dce8 45%,#a8aebb 75%,#e4e8f
 .zone-effects{flex:1;min-width:0;}
 .zone-grave{width:var(--cw);height:var(--ch);flex-shrink:0;position:relative;overflow:hidden;cursor:pointer;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);}
 .zone-grave:hover{border-color:rgba(0,0,0,0.3);}
-.zone-ex{width:var(--slot);flex-shrink:0;}
+.zone-ex{width:var(--slot);flex-shrink:0;display:flex;justify-content:center;}
 .buw-group{display:flex;gap:5px;flex-shrink:0;}
 .buw-slot{width:var(--slot);background:rgba(0,0,0,0.05);border:1.5px solid rgba(0,0,0,0.13);border-radius:7px;position:relative;flex-shrink:0;}
 .push{flex:1;}
@@ -399,8 +399,8 @@ body {
   <div class="row-hand">
     <div class="zone zone-hand" id="p2-hand">
       <span class="zlbl">Hand – Spieler 1</span>
-      <button class="reveal-btn" onclick="shuffleHand('p2')" style="bottom:30px;">🔀 Hand mischen</button>
-      <button class="reveal-btn" id="p2-reveal" onclick="toggleReveal(2)">Hand verdeckt</button>
+      <button class="reveal-btn" onpointerdown="event.stopPropagation()" onclick="shuffleHand('p2')" style="bottom:30px;">🔀 Hand mischen</button>
+      <button class="reveal-btn" id="p2-reveal" onpointerdown="event.stopPropagation()" onclick="toggleReveal(2)">Hand verdeckt</button>
     </div>
   </div>
 
@@ -433,7 +433,7 @@ body {
     <div id="p2-ex-space" style="flex:none;width:0;"></div><!-- grave spacer -->
     <div style="flex:1;"></div><!-- push spacer -->
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:calc(3*var(--slot) + 2*5px);align-self:stretch;">
-      <div class="zone zone-ex" id="p2-ex" style="width:var(--slot);flex:1;"><span class="zlbl" style="width:100%;text-align:center;">EX</span></div>
+      <div class="zone zone-ex" id="p2-ex" style="width:var(--slot);flex:1;"><span class="zlbl" style="left:0;right:0;text-align:center;">EX</span></div>
     </div>
     <div style="flex:1;"></div><!-- push spacer -->
     <div style="flex:1;min-width:0;"></div><!-- effects spacer -->
@@ -476,7 +476,7 @@ body {
     <div id="p1-ex-space" style="flex:none;width:0;"></div><!-- effects spacer -->
     <div style="flex:1;"></div><!-- push spacer -->
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:calc(3*var(--slot) + 2*5px);align-self:stretch;">
-      <div class="zone zone-ex" id="p1-ex" style="width:var(--slot);flex:1;"><span class="zlbl" style="width:100%;text-align:center;">EX</span></div>
+      <div class="zone zone-ex" id="p1-ex" style="width:var(--slot);flex:1;"><span class="zlbl" style="left:0;right:0;text-align:center;">EX</span></div>
     </div>
     <div style="flex:1;"></div><!-- push spacer -->
     <div style="width:calc(var(--cw) + 4px);flex-shrink:0;"></div><!-- grave spacer -->
@@ -510,8 +510,8 @@ body {
   <div class="row-hand">
     <div class="zone zone-hand" id="p1-hand">
       <span class="zlbl">Hand – Spieler 2</span>
-      <button class="reveal-btn" onclick="shuffleHand('p1')" style="bottom:30px;">🔀 Hand mischen</button>
-      <button class="reveal-btn" id="p1-reveal" onclick="toggleReveal(1)">Hand verdeckt</button>
+      <button class="reveal-btn" onpointerdown="event.stopPropagation()" onclick="shuffleHand('p1')" style="bottom:30px;">🔀 Hand mischen</button>
+      <button class="reveal-btn" id="p1-reveal" onpointerdown="event.stopPropagation()" onclick="toggleReveal(1)">Hand verdeckt</button>
     </div>
   </div>
 </div>
@@ -2205,9 +2205,7 @@ function doRecast() {
 
 
 function shuffleHand(player) {
-  // Always use own hand zone (myPlayer determines which zone is ours)
-  const myPfx = NET.mode === 'multi' ? (NET.myPlayer === 2 ? 'p2' : 'p1') : player;
-  const handEl = document.getElementById(myPfx+'-hand');
+  const handEl = document.getElementById(player+'-hand');
   if (!handEl) return;
   const W=1920,H=980,scale=Math.min(window.innerWidth/W,window.innerHeight/H);
   const ox=(window.innerWidth-W*scale)/2, oy=(window.innerHeight-H*scale)/2;
@@ -2237,7 +2235,7 @@ function shuffleHand(player) {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v25y',
+    version: 'v26b',
     deck: G.deck,
     graves: G.graves,
     banish: G.banish,
@@ -2429,7 +2427,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v25y
+    v26b
   </div>
 </div>
 
