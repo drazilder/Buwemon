@@ -528,169 +528,182 @@ body {
 </div>
 
 <!-- 4-PLAYER BOARD -->
-<div id="board4" style="display:none;">
-  <!-- TOP: p2 hand -->
-  <div class="row-hand">
-    <div class="zone zone-hand" id="p2-hand-4">
-      <span class="zlbl">Hand – Gegner (oben)</span>
-      <button class="reveal-btn" onpointerdown="event.stopPropagation()" onclick="shuffleHand4('p2')" style="bottom:32px;">🔀 Hand mischen</button>
-      <button class="reveal-btn" id="p2-reveal-4" onpointerdown="event.stopPropagation()" onclick="toggleReveal4(2)">Hand verdeckt</button>
+<div id="board4" style="display:none;width:1920px;height:980px;flex-direction:column;overflow:hidden;background:linear-gradient(160deg,#909aaa 0%,#d8dce8 45%,#a8aebb 75%,#e4e8f0 100%);">
+
+  <!-- ROW 1: p2 hand (full width top) -->
+  <div style="height:68px;flex-shrink:0;padding:4px;">
+    <div id="p2-hand-4" style="border-radius:7px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(0,0,0,0.03);position:relative;width:calc(100% - 0px);height:60px;box-sizing:border-box;">
+      <span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Hand – Oben</span>
+      <button onpointerdown="event.stopPropagation()" id="p2-reveal-4" onclick="toggleReveal4(2)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:5px;padding:2px 6px;font-size:.6rem;cursor:pointer;color:#333;z-index:10;min-height:18px;">Hand verdeckt</button>
     </div>
   </div>
 
-  <div style="display:flex;flex:1;min-height:0;">
+  <!-- ROW 2: p2 zones -->
+  <div style="height:150px;flex-shrink:0;display:flex;align-items:flex-start;gap:6px;padding:2px 4px 4px 4px;">
+    <!-- grave + lp -->
+    <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;">
+      <div id="p2-grave-4" onclick="openGraveBrowser4('2')" style="width:63px;height:88px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;overflow:hidden;cursor:pointer;">
+        <span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Friedhof</span>
+        <div id="p2-grave-preview-4" style="position:absolute;inset:0;"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;">
+        <div id="p2-lp-4" contenteditable="true" onblur="lpDirectEdit4(2)" onkeydown="lpDirectKey4(event,2)" style="font-size:1.2rem;font-weight:800;min-width:44px;text-align:center;border-bottom:2px solid rgba(0,0,0,0.15);outline:none;">300</div>
+        <div style="display:flex;gap:2px;align-items:center;">
+          <input id="p2-lp-inp-4" type="number" style="width:36px;border:1px solid rgba(0,0,0,0.2);border-radius:3px;padding:1px 2px;font-size:.6rem;">
+          <button onclick="applyLP4(2)" style="padding:1px 4px;border-radius:3px;border:1px solid rgba(0,0,0,0.2);background:rgba(200,210,220,0.7);cursor:pointer;font-size:.6rem;">OK</button>
+        </div>
+      </div>
+    </div>
+    <!-- buw + ex centered -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;">
+      <div style="display:flex;gap:4px;flex-shrink:0;">
+        <div id="p2-buw1-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buwemon</span></div>
+        <div id="p2-buw2-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buwemon</span></div>
+        <div id="p2-buw3-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buwemon</span></div>
+      </div>
+      <div id="p2-ex-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px dashed rgba(0,0,0,0.2);background:rgba(0,0,0,0.03);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">EX</span></div>
+    </div>
+    <!-- effects (takes remaining space) -->
+    <div id="p2-effects-4" style="border-radius:7px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(0,0,0,0.03);position:relative;flex:1;height:100%;min-width:0;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Effektkarten</span></div>
+  </div>
 
-    <!-- LEFT: p3 -->
-    <div style="width:190px;flex-shrink:0;display:flex;flex-direction:column;gap:4px;padding:4px;border-right:1px solid rgba(0,0,0,0.1);">
-      <div class="zone zone-hand" id="p3-hand" style="flex:1;min-height:60px;position:relative;">
-        <span class="zlbl">Hand – Links</span>
-        <button class="reveal-btn" onpointerdown="event.stopPropagation()" id="p3-reveal" onclick="toggleReveal4(3)">Hand verdeckt</button>
+  <!-- ROW 3: middle (p3 | center | p4) -->
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <!-- P3 LEFT -->
+    <div style="width:195px;flex-shrink:0;display:flex;border-right:1.5px solid rgba(0,0,0,0.1);">
+      <!-- hand (left strip) -->
+      <div style="width:65px;padding:4px 2px 4px 4px;flex-shrink:0;">
+        <div id="p3-hand-4" style="border-radius:7px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(0,0,0,0.03);position:relative;height:100%;width:57px;box-sizing:border-box;">
+      <span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Hand – Links</span>
+      <button onpointerdown="event.stopPropagation()" id="p3-reveal-4" onclick="toggleReveal4(3)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:5px;padding:2px 6px;font-size:.6rem;cursor:pointer;color:#333;z-index:10;min-height:18px;">Hand verdeckt</button>
+    </div>
       </div>
-      <div class="zone zone-grave" id="p3-grave" onclick="openGraveBrowser4('p3')" style="width:var(--cw);height:var(--ch);flex-shrink:0;">
-        <span class="zlbl" style="font-size:.62rem;">Friedhof</span>
-        <div class="grave-preview" id="p3-grave-preview"></div>
+      <!-- p3 zones top-to-bottom: grave, lp, buw(v), ex, effects -->
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px;padding:4px 4px 4px 2px;">
+        <div id="p3-grave-4" onclick="openGraveBrowser4('3')" style="width:63px;height:88px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;overflow:hidden;cursor:pointer;">
+        <span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Friedhof</span>
+        <div id="p3-grave-preview-4" style="position:absolute;inset:0;"></div>
       </div>
-      <div class="lp-wrap" id="p3-lp-wrap">
-        <div class="lp-val" id="p3-lp" contenteditable="true" onblur="lpDirectEdit4(3)" onkeydown="lpDirectKey4(event,3)">300</div>
-        <div class="lp-controls"><input class="lp-inp" id="p3-lp-inp" type="number"><button onclick="applyLP4(3)">OK</button></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;">
+        <div id="p3-lp-4" contenteditable="true" onblur="lpDirectEdit4(3)" onkeydown="lpDirectKey4(event,3)" style="font-size:1.2rem;font-weight:800;min-width:44px;text-align:center;border-bottom:2px solid rgba(0,0,0,0.15);outline:none;">300</div>
+        <div style="display:flex;gap:2px;align-items:center;">
+          <input id="p3-lp-inp-4" type="number" style="width:36px;border:1px solid rgba(0,0,0,0.2);border-radius:3px;padding:1px 2px;font-size:.6rem;">
+          <button onclick="applyLP4(3)" style="padding:1px 4px;border-radius:3px;border:1px solid rgba(0,0,0,0.2);background:rgba(200,210,220,0.7);cursor:pointer;font-size:.6rem;">OK</button>
+        </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:3px;">
-        <div class="buw-slot" id="p3-buw1"><span class="zlbl">BUWEMON</span></div>
-        <div class="buw-slot" id="p3-buw2"><span class="zlbl">BUWEMON</span></div>
-        <div class="buw-slot" id="p3-buw3"><span class="zlbl">BUWEMON</span></div>
+        <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;">
+        <div id="p3-buw1-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buw</span></div>
+        <div id="p3-buw2-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buw</span></div>
+        <div id="p3-buw3-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buw</span></div>
       </div>
-      <div class="zone zone-ex" id="p3-ex" style="width:var(--slot);height:var(--slot);flex-shrink:0;"><span class="zlbl" style="left:0;right:0;text-align:center;">EX</span></div>
-      <div class="zone zone-effects" id="p3-effects" style="flex:1;"><span class="zlbl">Effektkarten</span></div>
+        <div id="p3-ex-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px dashed rgba(0,0,0,0.2);background:rgba(0,0,0,0.03);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">EX</span></div>
+        <div id="p3-effects-4" style="border-radius:7px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(0,0,0,0.03);position:relative;flex:1;min-height:30px;width:100%;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Effektkarten</span></div>
+      </div>
     </div>
 
     <!-- CENTER -->
-    <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
-
-      <!-- p2 zones -->
-      <div style="display:flex;align-items:stretch;padding:4px 8px;gap:8px;height:155px;flex-shrink:0;">
-        <div class="grave-wrap">
-          <div class="zone zone-grave" id="p2-grave-4" onclick="openGraveBrowser4('p2')">
-            <span class="zlbl" style="font-size:.62rem;">Friedhof</span>
-            <div class="grave-preview" id="p2-grave-preview-4"></div>
-          </div>
-          <div class="lp-wrap" id="p2-lp-wrap-4">
-            <div class="lp-val" id="p2-lp-4" contenteditable="true" onblur="lpDirectEdit4(2)" onkeydown="lpDirectKey4(event,2)">300</div>
-            <div class="lp-controls"><input class="lp-inp" id="p2-lp-inp-4" type="number"><button onclick="applyLP4(2)">OK</button></div>
-          </div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:8px;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+        <div id="deck-card-4" onpointerdown="drawCard4(event)" style="width:63px;height:88px;border-radius:7px;overflow:hidden;cursor:grab;border:1.5px solid rgba(0,0,0,0.2);">
+          <img id="deck-vis-4" src="karten/Rueckseite.png" draggable="false" style="width:100%;height:100%;object-fit:cover;display:block;">
         </div>
-        <div style="display:flex;flex-direction:column;gap:3px;flex:1;">
-          <div style="display:flex;gap:5px;justify-content:center;">
-            <div class="buw-slot" id="p2-buw1-4"><span class="zlbl">BUWEMON</span></div>
-            <div class="buw-slot" id="p2-buw2-4"><span class="zlbl">BUWEMON</span></div>
-            <div class="buw-slot" id="p2-buw3-4"><span class="zlbl">BUWEMON</span></div>
-          </div>
-          <div style="display:flex;justify-content:center;">
-            <div class="zone zone-ex" id="p2-ex-4" style="width:var(--slot);flex:1;max-height:var(--slot);"><span class="zlbl" style="left:0;right:0;text-align:center;">EX</span></div>
-          </div>
-        </div>
-        <div class="zone zone-effects" id="p2-effects-4" style="flex:1;"><span class="zlbl">Effektkarten</span></div>
+        <span style="font-size:.62rem;color:rgba(0,0,0,0.5);">Ziehstapel</span>
+        <span id="deck-cnt-4" style="font-size:.62rem;color:rgba(0,0,0,0.4);">0 Karten</span>
       </div>
-
-      <!-- CENTER ROW: deck + buttons -->
-      <div class="row-center" style="flex:1;">
-        <div id="dice-outer-4">
-          <div style="display:flex;align-items:center;justify-content:center;">
-            <div id="dice-btn-4" onclick="rollDice4()" title="Würfeln" style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.7);border:2px solid rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:center;font-size:1.4rem;cursor:pointer;">?</div>
-          </div>
-          <div style="font-size:.6rem;text-align:center;color:rgba(0,0,0,0.4);">Würfeln</div>
-        </div>
-        <div id="center-wrap-4" style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-          <div class="deck-zone-bg">
-            <div id="deck-card-4" onpointerdown="drawCard4(event)">
-              <img id="deck-vis-4" src="karten/Rueckseite.png" alt="Stapel" draggable="false">
-            </div>
-          </div>
-          <span class="pile-lbl">Ziehstapel</span>
-          <span class="pile-cnt" id="deck-cnt-4">0 Karten</span>
-        </div>
-        <div id="deck-side-btns-4" style="display:flex;flex-direction:column;gap:3px;">
-          <button class="tbtn" onclick="openBrowser('deck','all')">🔍 Stapel ansehen</button>
-          <button class="tbtn" onclick="openOverview()" style="background:rgba(180,30,30,0.5);color:#fff;">🎴 Schicksal</button>
-          <button class="tbtn" onclick="openColorRemove()" style="background:rgba(20,20,20,0.85);color:#fff;">☠️ Raum-Zeit-Genozid</button>
-        </div>
-      </div>
-
-      <!-- p1 zones -->
-      <div style="display:flex;align-items:stretch;padding:4px 8px;gap:8px;height:155px;flex-shrink:0;">
-        <div class="zone zone-effects" id="p1-effects-4" style="flex:1;"><span class="zlbl">Effektkarten</span></div>
-        <div style="display:flex;flex-direction:column;gap:3px;flex:1;">
-          <div style="display:flex;justify-content:center;">
-            <div class="zone zone-ex" id="p1-ex-4" style="width:var(--slot);flex:1;max-height:var(--slot);"><span class="zlbl" style="left:0;right:0;text-align:center;">EX</span></div>
-          </div>
-          <div style="display:flex;gap:5px;justify-content:center;">
-            <div class="buw-slot" id="p1-buw1-4"><span class="zlbl">BUWEMON</span></div>
-            <div class="buw-slot" id="p1-buw2-4"><span class="zlbl">BUWEMON</span></div>
-            <div class="buw-slot" id="p1-buw3-4"><span class="zlbl">BUWEMON</span></div>
-          </div>
-        </div>
-        <div class="grave-wrap" style="align-items:flex-end;">
-          <div class="lp-wrap" id="p1-lp-wrap-4">
-            <div class="lp-val" id="p1-lp-4" contenteditable="true" onblur="lpDirectEdit4(1)" onkeydown="lpDirectKey4(event,1)">300</div>
-            <div class="lp-controls"><input class="lp-inp" id="p1-lp-inp-4" type="number"><button onclick="applyLP4(1)">OK</button></div>
-          </div>
-          <div class="zone zone-grave" id="p1-grave-4" onclick="openGraveBrowser4('p1')">
-            <span class="zlbl" style="font-size:.62rem;">Friedhof</span>
-            <div class="grave-preview" id="p1-grave-preview-4"></div>
-          </div>
-        </div>
+      <div id="dice-btn-4" onclick="rollDice4()" style="width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.7);border:2px solid rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;cursor:pointer;font-family:'AiSpec',sans-serif;">?</div>
+      <div style="width:140px;">
+        <button style="display:block;width:100%;padding:3px 6px;border-radius:5px;border:1px solid rgba(0,0,0,0.15);background:rgba(200,205,215,0.7);cursor:pointer;font-size:.62rem;font-family:inherit;text-align:left;margin-bottom:2px;" onclick="openBrowser('deck','all')">🔍 Stapel ansehen</button>
+        <button style="display:block;width:100%;padding:3px 6px;border-radius:5px;border:1px solid rgba(0,0,0,0.15);background:rgba(200,205,215,0.7);cursor:pointer;font-size:.62rem;font-family:inherit;text-align:left;margin-bottom:2px;background:rgba(180,30,30,0.5);color:#fff;" onclick="openOverview()">🎴 Schicksal</button>
+        <button style="display:block;width:100%;padding:3px 6px;border-radius:5px;border:1px solid rgba(0,0,0,0.15);background:rgba(200,205,215,0.7);cursor:pointer;font-size:.62rem;font-family:inherit;text-align:left;margin-bottom:2px;background:rgba(120,40,180,0.5);color:#fff;" onclick="openBrowser('deck','top4')">👁 Gossip</button>
+        <button style="display:block;width:100%;padding:3px 6px;border-radius:5px;border:1px solid rgba(0,0,0,0.15);background:rgba(200,205,215,0.7);cursor:pointer;font-size:.62rem;font-family:inherit;text-align:left;margin-bottom:2px;background:rgba(20,20,20,0.85);color:#fff;" onclick="openColorRemove()">☠️ Raum-Zeit-Genozid</button>
       </div>
     </div>
 
-    <!-- RIGHT: p4 -->
-    <div style="width:190px;flex-shrink:0;display:flex;flex-direction:column;gap:4px;padding:4px;border-left:1px solid rgba(0,0,0,0.1);">
-      <div class="zone zone-effects" id="p4-effects" style="flex:1;"><span class="zlbl">Effektkarten</span></div>
-      <div class="zone zone-ex" id="p4-ex" style="width:var(--slot);height:var(--slot);flex-shrink:0;"><span class="zlbl" style="left:0;right:0;text-align:center;">EX</span></div>
-      <div style="display:flex;flex-direction:column;gap:3px;">
-        <div class="buw-slot" id="p4-buw1"><span class="zlbl">BUWEMON</span></div>
-        <div class="buw-slot" id="p4-buw2"><span class="zlbl">BUWEMON</span></div>
-        <div class="buw-slot" id="p4-buw3"><span class="zlbl">BUWEMON</span></div>
+    <!-- P4 RIGHT -->
+    <div style="width:195px;flex-shrink:0;display:flex;border-left:1.5px solid rgba(0,0,0,0.1);">
+      <!-- p4 zones top-to-bottom: effects, buw(v), ex, lp, grave -->
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px;padding:4px 2px 4px 4px;">
+        <div id="p4-effects-4" style="border-radius:7px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(0,0,0,0.03);position:relative;flex:1;min-height:30px;width:100%;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Effektkarten</span></div>
+        <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;">
+        <div id="p4-buw1-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buw</span></div>
+        <div id="p4-buw2-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buw</span></div>
+        <div id="p4-buw3-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buw</span></div>
       </div>
-      <div class="lp-wrap" id="p4-lp-wrap">
-        <div class="lp-val" id="p4-lp" contenteditable="true" onblur="lpDirectEdit4(4)" onkeydown="lpDirectKey4(event,4)">300</div>
-        <div class="lp-controls"><input class="lp-inp" id="p4-lp-inp" type="number"><button onclick="applyLP4(4)">OK</button></div>
+        <div id="p4-ex-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px dashed rgba(0,0,0,0.2);background:rgba(0,0,0,0.03);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">EX</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;">
+        <div id="p4-lp-4" contenteditable="true" onblur="lpDirectEdit4(4)" onkeydown="lpDirectKey4(event,4)" style="font-size:1.2rem;font-weight:800;min-width:44px;text-align:center;border-bottom:2px solid rgba(0,0,0,0.15);outline:none;">300</div>
+        <div style="display:flex;gap:2px;align-items:center;">
+          <input id="p4-lp-inp-4" type="number" style="width:36px;border:1px solid rgba(0,0,0,0.2);border-radius:3px;padding:1px 2px;font-size:.6rem;">
+          <button onclick="applyLP4(4)" style="padding:1px 4px;border-radius:3px;border:1px solid rgba(0,0,0,0.2);background:rgba(200,210,220,0.7);cursor:pointer;font-size:.6rem;">OK</button>
+        </div>
       </div>
-      <div class="zone zone-grave" id="p4-grave" onclick="openGraveBrowser4('p4')" style="width:var(--cw);height:var(--ch);flex-shrink:0;">
-        <span class="zlbl" style="font-size:.62rem;">Friedhof</span>
-        <div class="grave-preview" id="p4-grave-preview"></div>
+        <div id="p4-grave-4" onclick="openGraveBrowser4('4')" style="width:63px;height:88px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;overflow:hidden;cursor:pointer;">
+        <span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Friedhof</span>
+        <div id="p4-grave-preview-4" style="position:absolute;inset:0;"></div>
       </div>
-      <div class="zone zone-hand" id="p4-hand" style="flex:1;min-height:60px;position:relative;">
-        <span class="zlbl">Hand – Rechts</span>
-        <button class="reveal-btn" onpointerdown="event.stopPropagation()" id="p4-reveal" onclick="toggleReveal4(4)">Hand verdeckt</button>
+      </div>
+      <!-- hand (right strip) -->
+      <div style="width:65px;padding:4px 4px 4px 2px;flex-shrink:0;">
+        <div id="p4-hand-4" style="border-radius:7px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(0,0,0,0.03);position:relative;height:100%;width:57px;box-sizing:border-box;">
+      <span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Hand – Rechts</span>
+      <button onpointerdown="event.stopPropagation()" id="p4-reveal-4" onclick="toggleReveal4(4)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:5px;padding:2px 6px;font-size:.6rem;cursor:pointer;color:#333;z-index:10;min-height:18px;">Hand verdeckt</button>
+    </div>
       </div>
     </div>
 
-  </div><!-- end flex row -->
+  </div>
 
-  <!-- BOTTOM: p1 hand -->
-  <div class="row-hand">
-    <div class="zone zone-hand" id="p1-hand-4">
-      <span class="zlbl">Hand – Spieler</span>
-      <button class="reveal-btn" onpointerdown="event.stopPropagation()" onclick="shuffleHand4('p1')" style="bottom:32px;">🔀 Hand mischen</button>
-      <button class="reveal-btn" id="p1-reveal-4" onpointerdown="event.stopPropagation()" onclick="toggleReveal4(1)">Hand verdeckt</button>
+  <!-- ROW 4: p1 zones -->
+  <div style="height:150px;flex-shrink:0;display:flex;align-items:flex-end;gap:6px;padding:4px 4px 2px 4px;">
+    <div id="p1-effects-4" style="border-radius:7px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(0,0,0,0.03);position:relative;flex:1;height:100%;min-width:0;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Effektkarten</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;">
+      <div id="p1-ex-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px dashed rgba(0,0,0,0.2);background:rgba(0,0,0,0.03);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">EX</span></div>
+      <div style="display:flex;gap:4px;flex-shrink:0;">
+        <div id="p1-buw1-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buwemon</span></div>
+        <div id="p1-buw2-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buwemon</span></div>
+        <div id="p1-buw3-4" style="width:80px;height:80px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;"><span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Buwemon</span></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;align-items:flex-end;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;">
+        <div id="p1-lp-4" contenteditable="true" onblur="lpDirectEdit4(1)" onkeydown="lpDirectKey4(event,1)" style="font-size:1.2rem;font-weight:800;min-width:44px;text-align:center;border-bottom:2px solid rgba(0,0,0,0.15);outline:none;">300</div>
+        <div style="display:flex;gap:2px;align-items:center;">
+          <input id="p1-lp-inp-4" type="number" style="width:36px;border:1px solid rgba(0,0,0,0.2);border-radius:3px;padding:1px 2px;font-size:.6rem;">
+          <button onclick="applyLP4(1)" style="padding:1px 4px;border-radius:3px;border:1px solid rgba(0,0,0,0.2);background:rgba(200,210,220,0.7);cursor:pointer;font-size:.6rem;">OK</button>
+        </div>
+      </div>
+      <div id="p1-grave-4" onclick="openGraveBrowser4('1')" style="width:63px;height:88px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;overflow:hidden;cursor:pointer;">
+        <span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Friedhof</span>
+        <div id="p1-grave-preview-4" style="position:absolute;inset:0;"></div>
+      </div>
     </div>
   </div>
 
-  <!-- Banish panel -->
-  <div id="banish-panel-4" style="position:fixed;left:8px;top:50%;transform:translateY(-50%);z-index:400;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;width:var(--cw);">
-    <div class="zone zone-grave" id="banish-zone-4" onclick="openBanishBrowser()" title="Entfernt-Stapel">
-      <span class="zlbl" style="font-size:.62rem;">Entfernt</span>
-      <div class="grave-preview" id="banish-preview-4"></div>
+  <!-- ROW 5: p1 hand (full width bottom) -->
+  <div style="height:68px;flex-shrink:0;padding:4px;">
+    <div id="p1-hand-4" style="border-radius:7px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(0,0,0,0.03);position:relative;width:calc(100% - 0px);height:60px;box-sizing:border-box;">
+      <span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;">Hand – Spieler</span>
+      <button onpointerdown="event.stopPropagation()" id="p1-reveal-4" onclick="toggleReveal4(1)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:5px;padding:2px 6px;font-size:.6rem;cursor:pointer;color:#333;z-index:10;min-height:18px;">Hand verdeckt</button>
     </div>
-    <div style="font-size:.6rem;color:rgba(0,0,0,0.4);">0 Karten</div>
   </div>
 
-  <!-- Ereignis panel top right -->
-  <div id="ereignis-panel-4" style="position:fixed;right:8px;top:8px;z-index:400;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;">
-    <img src="karten/Rueckseite_Ereigniskarten.png" alt="Ereigniskarten" onclick="openEreignis()" title="Ereigniskarten" style="width:var(--cw);height:var(--ch);border-radius:6px;object-fit:cover;">
-    <div style="font-size:.6rem;text-align:center;color:rgba(0,0,0,0.4);">Ereignis</div>
+  <!-- Banish (top left fixed) -->
+  <div id="banish-panel-4" style="position:fixed;left:6px;top:42px;z-index:400;display:none;flex-direction:column;align-items:center;gap:2px;cursor:pointer;">
+    <div id="banish-zone-4" onclick="openBanishBrowser()" style="width:63px;height:88px;flex-shrink:0;border-radius:7px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);position:relative;overflow:hidden;cursor:pointer;">
+      <span style="position:absolute;top:3px;left:0;right:0;font-size:.58rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-size:.52rem;">Entfernt</span>
+      <div id="banish-preview-4" style="position:absolute;inset:0;"></div>
+    </div>
+    <div style="font-size:.52rem;color:rgba(0,0,0,0.4);">0 Karten</div>
   </div>
 
-</div><!-- end board4 -->
+  <!-- Ereignis (top right fixed) -->
+  <div id="ereignis-panel-4" style="position:fixed;right:6px;top:42px;z-index:400;display:none;flex-direction:column;align-items:center;gap:2px;cursor:pointer;">
+    <img src="karten/Rueckseite_Ereigniskarten.png" onclick="openEreignis()" style="width:63px;height:88px;border-radius:6px;object-fit:cover;cursor:pointer;display:block;">
+    <div style="font-size:.52rem;color:rgba(0,0,0,0.4);">Ereignis</div>
+  </div>
+
+</div>
 
 
 <!-- BROWSER -->
@@ -887,6 +900,7 @@ const BACK = "karten/Rueckseite.png";
 function startGame(mode) {
   NET.mode = mode;
   document.getElementById('lobby').style.display = 'none';
+  G.deck=buildDeck();updDeck();
   // Update zone labels
   const myDefault = (mode==='multi' && !NET.isHost) ? 'Spieler 2' : 'Spieler 1';
   NET.myName = getLobbyName() || myDefault;
@@ -1001,7 +1015,9 @@ const COLOR_GROUPS=[
 
 const G={deck:[],nid:1,cards:[],reveal:{1:false,2:false},lp:{1:300,2:300},graves:{p1:[],p2:[]},banish:[],browserSource:null,browserMode:null,popupCardEl:null};
 
-function buildDeck(){let d=[];CARD_DB.forEach(def=>{for(let i=0;i<def.count;i++)d.push({name:def.name,color:def.color,type:def.type,uid:G.nid++});});return shuffle(d);}
+let erweiterungAN = true;
+const NO_DLC = {'Gilip der Glibbrige':3,'Lord Phillipp of Glencoe':3,'Phülügülüm':3,'Baby Niko':0,'Grünika':3,'Schwammika':3,'Antika':3,'Marie die Königsgardistin':0,'Marzo der Gott':3,'Marcopter':3,'Marco der Hund':3,'Leonie Norris':0,'Kax Maufmann':3,'Maxodia':3,'Maxibu':3,'Hoffi der rasierte Karnevalsprinz':0,'Barista Clarista':3,'Clarry Pather':3,'ClariSSIO':3,'Alicia die ehrenlose Fettsau':0,'Glorian Schniekel':3,'Flosama Op Laden':3,'Klorian':3,'Lisa aus Australien':0,'Suffia':3,'Luis Münsters':3,'Cedzilla':3,'Griechischer Apored':0,'Fabio':3,'Giraffael':3,'Hannah im Bach':3,'Alexerus Snape':0,'Die Pogofanten':1,"L'Enderdragon":1,'Golop der Grobe':0,'Der Zeitführer':1,'BOOM Clan':1,'Glaskuppel':6,'Calgon':6,'Clubmate':5,'Eine Runde noch':5,'RGB':5,'Nachschlag':5,'Mecces':5,'Ablehnt':5,'Dinkelmehl':5,'Wanze':2,'UwU':2,'Tut mir leid':2,'Ragequit':2,'Random Vote':2,'Neue BESSERE Karte':2,'Discord Meeting':2,'Zeitmaschinen Veruntreuung':2,'Sigma Transformation':0,'Tristanverbot':2,'Elefanten Aufstand':2,'Stein':2,'13er Bogen':2,'Vertragsbruch':2,'FourAceFour-Feuer-Reverse-Blöff':1};
+function buildDeck(){let d=[];CARD_DB.forEach(def=>{let cnt=erweiterungAN?def.count:(NO_DLC[def.name]??0);for(let i=0;i<cnt;i++)d.push({name:def.name,color:def.color,type:def.type,uid:G.nid++});});return shuffle(d);}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 G.deck=buildDeck();updDeck();
 
@@ -2428,7 +2444,12 @@ function toggle4PMode() {
     btn.style.color = fourPlayerMode ? '#fff' : '#2a2e3a';
   }
   document.getElementById('board').style.display = fourPlayerMode ? 'none' : '';
-  document.getElementById('board4').style.display = fourPlayerMode ? '' : 'none';
+  document.getElementById('board4').style.display = fourPlayerMode ? 'flex' : 'none';
+  const bp4 = document.getElementById('banish-panel-4');
+  const ep4 = document.getElementById('ereignis-panel-4');
+  if (bp4) bp4.style.display = fourPlayerMode ? 'flex' : 'none';
+  if (ep4) ep4.style.display = fourPlayerMode ? 'flex' : 'none';
+  if (fourPlayerMode) { G4.deck = buildDeck(); updDeck4(); }
 }
 
 
@@ -2533,7 +2554,7 @@ function updDeck4() {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v1b',
+    version: 'v26r',
     deck: G.deck,
     graves: G.graves,
     banish: G.banish,
@@ -2661,6 +2682,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   <!-- 4-Player toggle -->
   <div id="lobby-4p-toggle-wrap" style="display:flex;align-items:center;gap:10px;font-family:'Kievit',sans-serif;font-size:.9rem;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.5);">
     <button id="lobby-4p-toggle" onclick="toggle4PMode()" style="background:rgba(180,185,195,0.75);border:1px solid rgba(255,255,255,0.7);border-radius:20px;padding:4px 16px;font-family:'AiSpec',sans-serif;font-size:.85rem;cursor:pointer;color:#2a2e3a;transition:background .2s;">4-Spieler: AUS</button>
+    <button id="erweiterung-btn" onclick="toggleErweiterung()" style="background:rgba(0,150,80,0.7);border:1px solid rgba(255,255,255,0.7);border-radius:20px;padding:4px 16px;font-family:'AiSpec',sans-serif;font-size:.85rem;cursor:pointer;color:#fff;">Erweiterung: AN</button>
   </div>
 
   <!-- Mode selector -->
@@ -2730,7 +2752,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v1b
+    v27a
   </div>
 </div>
 
@@ -3077,6 +3099,15 @@ function showDiceResult(result, broadcast) {
     btn.textContent = '?';
     diceTimer = null;
   }, 10000);
+}
+
+function toggleErweiterung() {
+  erweiterungAN = !erweiterungAN;
+  const btn = document.getElementById('erweiterung-btn');
+  if (btn) {
+    btn.textContent = 'Erweiterung: ' + (erweiterungAN ? 'AN' : 'AUS');
+    btn.style.background = erweiterungAN ? 'rgba(0,150,80,0.7)' : 'rgba(180,50,50,0.7)';
+  }
 }
 
 </script>
