@@ -380,6 +380,22 @@ body {
 }
 #board4 .row-hand { height: 80px; flex-shrink: 0; position: relative; }
 #board4 > div:nth-child(2) { flex: 1; min-height: 0; }
+.verbot-slot{border-style:dashed;border-color:rgba(0,0,0,0.18);background:rgba(0,0,0,0.02);}
+.verbot-slot .docked-card img{width:var(--cw);height:var(--ch);border-radius:6px;object-fit:cover;}
+.effekt-slot.verboten{border:3px solid #cc2222 !important;box-shadow:0 0 6px rgba(204,34,34,0.5);}
+.effekt-slot.verboten::after{content:'🚫';position:absolute;top:2px;right:2px;font-size:.8rem;z-index:20;filter:drop-shadow(0 0 2px rgba(255,255,255,0.9));}
+
+#popup-name, #bpopup-name{font-family:'AiSpec',sans-serif;font-style:italic;}
+.card-type-lbl{font-family:'Kievit','Segoe UI',sans-serif;font-style:normal;}
+.tbtn, .reveal-btn, button{font-family:'Kievit','Segoe UI',sans-serif;}
+#ereignis-lbl, #banish-count-text{font-family:'Kievit','Segoe UI',sans-serif;}
+
+#browser-title{font-family:'AiSpec',sans-serif;font-style:italic;}
+.browser-sub, .sub, #browser-sub{font-family:'Kievit','Segoe UI',sans-serif;font-style:normal;}
+.deck-row-name{font-family:'AiSpec',sans-serif;font-style:italic;}
+
+#ereignis-modal h3, #overview-modal h3{font-family:'AiSpec',sans-serif;font-style:italic;}
+.er-name, .ov-name{font-family:'AiSpec',sans-serif;font-style:italic;}
 </style>
 </head>
 <body>
@@ -392,6 +408,7 @@ body {
   <span id="conn-dot" style="width:7px;height:7px;border-radius:50%;background:#d95555;display:none;flex-shrink:0;"></span>
   <button class="tbtn" id="btn-lobby">⌂ Startbildschirm</button>
   
+  <button class="tbtn" onclick="openAnleitung()">📖 Anleitung</button>
   <button class="tbtn" id="btn-save" style="color:#1a6a1a;border-color:rgba(30,120,30,0.3);">💾 Speichern</button>
   <button class="tbtn" id="btn-color">🎨 Tischfarbe</button>
   <div id="cpicker">
@@ -415,30 +432,7 @@ body {
     </div>
   </div>
 
-  <div class="row-zones">
-    <div class="grave-wrap" style="align-self:flex-start;">
-      <div class="lp-box">
-        <div class="lp-display" id="p2-lp" contenteditable="true" onblur="lpDirectEdit(2)" onkeydown="lpDirectKey(event,2)">300</div>
-        <div class="lp-calc">
-          <input type="text" id="p2-lp-input" placeholder="" onkeydown="lpKey(event,2)">
-          <button onclick="applyLP(2)">OK</button>
-        </div>
-      </div>
-      <div class="zone zone-grave" id="p2-grave" onclick="openGraveBrowser('p2')" title="Friedhof ansehen">
-        <span class="zlbl" style="font-size:.62rem;">Friedhof</span>
-        <div class="grave-preview" id="p2-grave-preview"></div>
-        <div class="grave-count" id="p2-grave-count" style="display:none;"></div>
-      </div>
-    </div>
-    <div class="push" style="min-width:20px;"></div>
-    <div class="buw-group">
-      <div class="buw-slot" id="p2-buw1"><span class="zlbl">Buwemon</span></div>
-      <div class="buw-slot" id="p2-buw2"><span class="zlbl">Buwemon</span></div>
-      <div class="buw-slot" id="p2-buw3"><span class="zlbl">Buwemon</span></div>
-    </div>
-    <div class="push" style="flex:2;"></div>
-    <div class="zone zone-effects" id="p2-effects"><span class="zlbl">Effektkarten</span></div>
-  </div>
+  <div class="row-zones" style="position:relative;"><div class="grave-wrap" style="align-self:flex-start;"><div class="zone zone-grave" id="p2-grave" onclick="openGraveBrowser('p2')" title="Friedhof ansehen"><span class="zlbl" style="font-size:.62rem;">Friedhof</span><div class="grave-preview" id="p2-grave-preview"></div><div class="grave-count" id="p2-grave-count" style="display:none;"></div></div></div><div class="push" style="min-width:20px;"></div><div class="buw-group"><div class="buw-slot" id="p2-buw1"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p2-buw2"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p2-buw3"><span class="zlbl">Buwemon</span></div></div><div class="push" style="flex:2;"></div><div style="flex:1;min-width:0;"></div><div style="position:absolute;right:0;top:0;bottom:0;display:flex;align-items:stretch;gap:50px;margin-left:200px;"><div class="buw-group" id="p2-effekt-group"><div class="buw-slot effekt-slot" id="p2-eff1"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff2"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff3"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff4"><span class="zlbl">Effekt</span></div></div><div class="grave-wrap" style="gap:6px;align-self:flex-start;"><div class="zone zone-grave verbot-slot" id="p2-verbot1"></div><div class="zone zone-grave verbot-slot" id="p2-verbot2"></div><div class="zone zone-grave verbot-slot" id="p2-verbot3"></div></div><div class="grave-wrap" style="align-self:flex-start;"><div class="lp-box"><div class="lp-display" id="p2-lp" contenteditable="true" onblur="lpDirectEdit(2)" onkeydown="lpDirectKey(event,2)">300</div><div class="lp-calc"><input type="text" id="p2-lp-input" placeholder="" onkeydown="lpKey(event,2)"><button onclick="applyLP(2)" class="lp-ok" id="p2-lp-ok">OK</button></div></div></div></div></div>
 
   <div class="row-ex" id="p2-ex-row" style="display:flex;align-items:stretch;flex:11;min-height:0;">
     <div id="p2-ex-space" style="flex:none;width:0;"></div><!-- grave spacer -->
@@ -493,30 +487,7 @@ body {
     <div style="width:calc(var(--cw) + 4px);flex-shrink:0;"></div><!-- grave spacer -->
   </div>
 
-  <div class="row-zones">
-    <div class="zone zone-effects" id="p1-effects"><span class="zlbl">Effektkarten</span></div>
-    <div class="push" style="flex:2;"></div>
-    <div class="buw-group">
-      <div class="buw-slot" id="p1-buw1"><span class="zlbl">Buwemon</span></div>
-      <div class="buw-slot" id="p1-buw2"><span class="zlbl">Buwemon</span></div>
-      <div class="buw-slot" id="p1-buw3"><span class="zlbl">Buwemon</span></div>
-    </div>
-    <div class="push" style="min-width:20px;"></div>
-    <div class="grave-wrap" style="align-self:flex-end;">
-      <div class="zone zone-grave" id="p1-grave" onclick="openGraveBrowser('p1')" title="Friedhof ansehen">
-        <span class="zlbl" style="font-size:.62rem;">Friedhof</span>
-        <div class="grave-preview" id="p1-grave-preview"></div>
-        <div class="grave-count" id="p1-grave-count" style="display:none;"></div>
-      </div>
-      <div class="lp-box">
-        <div class="lp-display" id="p1-lp" contenteditable="true" onblur="lpDirectEdit(1)" onkeydown="lpDirectKey(event,1)" title="Meine LP">300</div>
-        <div class="lp-calc">
-          <input type="text" id="p1-lp-input" placeholder="" onkeydown="lpKey(event,1)">
-          <button onclick="applyLP(1)">OK</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <div class="row-zones" style="position:relative;"><div style="flex:1;min-width:0;"></div><div class="push" style="flex:2;"></div><div class="buw-group"><div class="buw-slot" id="p1-buw1"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p1-buw2"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p1-buw3"><span class="zlbl">Buwemon</span></div></div><div class="push" style="min-width:20px;"></div><div class="grave-wrap" style="align-self:flex-end;"><div class="zone zone-grave" id="p1-grave" onclick="openGraveBrowser('p1')" title="Friedhof ansehen"><span class="zlbl" style="font-size:.62rem;">Friedhof</span><div class="grave-preview" id="p1-grave-preview"></div><div class="grave-count" id="p1-grave-count" style="display:none;"></div></div></div><div style="position:absolute;left:0;top:0;bottom:0;display:flex;align-items:stretch;gap:50px;margin-right:200px;"><div class="grave-wrap" style="align-self:flex-end;"><div class="lp-box"><div class="lp-display" id="p1-lp" contenteditable="true" onblur="lpDirectEdit(1)" onkeydown="lpDirectKey(event,1)">300</div><div class="lp-calc"><input type="text" id="p1-lp-input" placeholder="" onkeydown="lpKey(event,1)"><button onclick="applyLP(1)" class="lp-ok" id="p1-lp-ok">OK</button></div></div></div><div class="grave-wrap" style="gap:6px;align-self:flex-end;"><div class="zone zone-grave verbot-slot" id="p1-verbot1"></div><div class="zone zone-grave verbot-slot" id="p1-verbot2"></div><div class="zone zone-grave verbot-slot" id="p1-verbot3"></div></div><div class="buw-group" id="p1-effekt-group"><div class="buw-slot effekt-slot" id="p1-eff1"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff2"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff3"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff4"><span class="zlbl">Effekt</span></div></div></div></div>
 
   <div class="row-hand">
     <div class="zone zone-hand" id="p1-hand">
@@ -1361,7 +1332,7 @@ function openPopup(el){
   document.getElementById('popup-img').src=imgFor(el.dataset.name,fd,el.dataset.file);
   document.getElementById('popup-img').alt=el.dataset.name;
   document.getElementById('popup-name').textContent=el.dataset.name;
-  const types={buw:'Buwemonkarte',spec:'Spezial-Buwemonkarte',eff:'Effektkarte',ereignis:'Ereigniskarte','ex-ereignis':'Ereignis-EX-Buwemonkarte'};
+  const types={buw:'Buwemonkarte',spec:'Spezial-Buwemonkarte',eff:'Effektkarte',ereignis:'Ereigniskarte','ex-ereignis':'Ereignis-EX-Buwemonkarte','ex-auto':'Ereignis-EX-Buwemonkarte'};
   document.getElementById('popup-type').textContent=types[el.dataset.ctype]||'';
   document.getElementById('card-popup').classList.add('open');
 }
@@ -1445,7 +1416,9 @@ function onCarryDrop(e) {
   }
 
   // Check if dropped on a buw/ex slot
-  const slotIds = ['p2-buw1','p2-buw2','p2-buw3','p1-buw1','p1-buw2','p1-buw3','p2-ex','p1-ex'];
+  const slotIds = ['p2-buw1','p2-buw2','p2-buw3','p1-buw1','p1-buw2','p1-buw3','p2-ex','p1-ex',
+    'p2-eff1','p2-eff2','p2-eff3','p2-eff4','p1-eff1','p1-eff2','p1-eff3','p1-eff4',
+    'p2-verbot1','p2-verbot2','p2-verbot3','p1-verbot1','p1-verbot2','p1-verbot3'];
   for (const sid of slotIds) {
     const slot = document.getElementById(sid);
     if (!slot) continue;
@@ -1697,6 +1670,7 @@ const EREIGNIS_CARDS = [
 ];
 
 // EX color → ereignis card mapping
+const EX_NAMES = {"#cc3333": "Drakkschah EX", "#cc5500": "Schahco EX", "#aa9900": "Drukkschah EX", "#2e8a2e": "Annischah EX", "#1a44bb": "Drikkschah EX", "#6622aa": "Schahbio EX", "#666666": "Drokkschah EX", "#008899": "Clarischah EX", "#111111": "Darkschah EX"};
 const EX_MAP = {
   "#cc3333": "Drakkschah_EX.png",
   "#cc5500": "Schahco_EX.png",
@@ -1770,6 +1744,8 @@ function renderSlot(slotId) {
   const img = document.createElement('img');
   img.src = 'karten/' + (cd.file || imgFileFor(cd.name));
   img.alt = cd.name;
+  img.draggable = false;
+  img.style.pointerEvents = 'none';
   div.appendChild(img);
   // Doppelklick Popup für ex-auto Karten
   if (cd.type === 'ex-auto') {
@@ -1827,6 +1803,52 @@ function imgFileFor(name) {
 }
 
 
+
+const VERBOT_MAP = {
+  'Mecces Verbot': ['Mecces', 'Mecces Ereignis'],
+  'Eine Runde noch Verbot': ['Eine Runde noch'],
+  'Nachschlag Verbot': ['Nachschlag']
+};
+
+
+const SUMMON_MAP = {
+  "L'Enderdragon": 'Tristanverbot',
+  'Die Pogofanten': 'Elefanten Aufstand',
+  'Der Zeitführer': 'Zeitmaschinen Veruntreuung',
+  'Golop der Grobe': 'Sigma Transformation',
+  'BOOM Clan': 'Discord Meeting'
+};
+
+function hasSummonCard(player, buwemonName) {
+  const required = SUMMON_MAP[buwemonName];
+  if (!required) return true; // not a special spec-buwemon needing summon
+  return ['eff1','eff2','eff3','eff4'].some(es => {
+    const cd = G.slots[player+'-'+es];
+    return cd && cd.name === required;
+  });
+}
+
+function checkVerbote(player) {
+  // Collect which effect names are banned by this player's verbot slots
+  const bannedNames = new Set();
+  ['verbot1','verbot2','verbot3'].forEach(vs => {
+    const cd = G.slots[player+'-'+vs];
+    if (cd && VERBOT_MAP[cd.name]) VERBOT_MAP[cd.name].forEach(n => bannedNames.add(n));
+  });
+  // Check this player's effect slots
+  ['eff1','eff2','eff3','eff4'].forEach(es => {
+    const slotId = player+'-'+es;
+    const el = document.getElementById(slotId);
+    if (!el) return;
+    const cd = G.slots[slotId];
+    if (cd && bannedNames.has(cd.name)) {
+      el.classList.add('verboten');
+    } else {
+      el.classList.remove('verboten');
+    }
+  });
+}
+
 function checkZoneColor(player) {
   const s1 = G.slots[player+'-buw1'];
   const s2 = G.slots[player+'-buw2'];
@@ -1835,18 +1857,24 @@ function checkZoneColor(player) {
   if (s1 && s2 && s3 && s1.color === s2.color && s2.color === s3.color) {
     color = s1.color;
   }
-  // Apply to zones: buw1,buw2,buw3,ex,hand,effects,grave
+  // Apply to zones: buw1,buw2,buw3,ex,hand,effects,grave,eff1-4,verbot1-3
   const zones = [
     document.getElementById(player+'-buw1'),
     document.getElementById(player+'-buw2'),
     document.getElementById(player+'-buw3'),
     document.getElementById(player+'-ex'),
     document.getElementById(player+'-hand'),
-    document.getElementById(player+'-effects'),
     document.getElementById(player+'-grave'),
+    document.getElementById(player+'-eff1'),
+    document.getElementById(player+'-eff2'),
+    document.getElementById(player+'-eff3'),
+    document.getElementById(player+'-eff4'),
+    document.getElementById(player+'-verbot1'),
+    document.getElementById(player+'-verbot2'),
+    document.getElementById(player+'-verbot3'),
   ].filter(Boolean);
-  // Also LP button
-  const lpBtn = document.querySelector('#'+player+'-lp-wrap .lp-ok');
+  // Also LP OK button
+  const lpBtn = document.getElementById(player+'-lp-ok');
   zones.forEach(z => {
     if (!z) return;
     if (color) {
@@ -1880,7 +1908,7 @@ function checkExBuwemon(player) {
   if (s1 && s2 && s3 && s1.color === s2.color && s2.color === s3.color) {
     const exFile = EX_MAP[s1.color];
     if (exFile) {
-      G.slots[exSlot] = {name: 'EX', color: s1.color, type: 'ex-auto', file: exFile, uid: 0};
+      G.slots[exSlot] = {name: EX_NAMES[s1.color]||'EX', color: s1.color, type: 'ex-auto', file: exFile, uid: 0};
       renderSlot(exSlot);
       if (s1.color === '#111111') checkDarkschahWin(player);
       checkZoneColor(player);
@@ -1899,7 +1927,9 @@ function tryDockCard(el) {
   // Check if card center is over a buwemon slot or ex slot
   const r = el.getBoundingClientRect();
   const cx = r.left + r.width/2, cy = r.top + r.height/2;
-  const slotIds = ['p2-buw1','p2-buw2','p2-buw3','p1-buw1','p1-buw2','p1-buw3','p2-ex','p1-ex'];
+  const slotIds = ['p2-buw1','p2-buw2','p2-buw3','p1-buw1','p1-buw2','p1-buw3','p2-ex','p1-ex',
+    'p2-eff1','p2-eff2','p2-eff3','p2-eff4','p1-eff1','p1-eff2','p1-eff3','p1-eff4',
+    'p2-verbot1','p2-verbot2','p2-verbot3','p1-verbot1','p1-verbot2','p1-verbot3'];
   for (const sid of slotIds) {
     const slot = document.getElementById(sid);
     if (!slot) continue;
@@ -1907,9 +1937,20 @@ function tryDockCard(el) {
     if (cx >= sr.left && cx <= sr.right && cy >= sr.top && cy <= sr.bottom) {
       // check type compatibility
       const ctype = el.dataset.ctype;
+      const cname = el.dataset.name;
       const isExSlot = sid.endsWith('-ex');
+      const isEffSlot = /-eff\d$/.test(sid);
+      const isVerbotSlot = /-verbot\d$/.test(sid);
+      const EFF_EREIGNIS_NAMES = ['Mecces Ereignis','Clubmate Ereignis'];
+      const VERBOT_NAMES = ['Mecces Verbot','Eine Runde noch Verbot','Nachschlag Verbot'];
       if (isExSlot && ctype !== 'ex' && ctype !== 'ex-ereignis' && ctype !== 'ex-auto') continue;
-      if (!isExSlot && ctype !== 'buw' && ctype !== 'spec') continue;
+      if (isEffSlot && !(ctype === 'eff' || EFF_EREIGNIS_NAMES.includes(cname))) continue;
+      if (isVerbotSlot && !VERBOT_NAMES.includes(cname)) continue;
+      if (!isExSlot && !isEffSlot && !isVerbotSlot && ctype !== 'buw' && ctype !== 'spec') continue;
+      if (!isExSlot && !isEffSlot && !isVerbotSlot && SUMMON_MAP[cname]) {
+        const buwPlayer = sid.startsWith('p1') ? 'p1' : 'p2';
+        if (!hasSummonCard(buwPlayer, cname)) continue;
+      }
       // dock it
       const cd = {
         name: el.dataset.name,
@@ -1930,7 +1971,9 @@ function tryDockCard(el) {
       renderSlot(sid);
       // check EX
       const player = sid.startsWith('p1') ? 'p1' : 'p2';
-      if (!isExSlot) { checkExBuwemon(player); checkZoneColor(player); }
+      const isBuwSlot = !isExSlot && !isEffSlot && !isVerbotSlot;
+      if (isBuwSlot) { checkExBuwemon(player); checkZoneColor(player); }
+      if (isEffSlot || isVerbotSlot) checkVerbote(player);
       // Darkschah manual dock
       if (isExSlot && cd.color === '#111111') checkDarkschahWin(player);
       return true;
@@ -1945,10 +1988,14 @@ function releaseSlot(slotId, x, y) {
   G.slots[slotId] = null;
   renderSlot(slotId);
   if (cd.uid) spawnCard(cd, clampX(x || window.innerWidth/2-31), clampY(y || window.innerHeight/2-44), false);
+  const _p = slotId.startsWith('p1') ? 'p1' : 'p2';
+  if (/-(eff\d|verbot\d)$/.test(slotId)) checkVerbote(_p);
 }
 
 // Pointerdown on slot = start drag; dblclick = popup
-['p2-buw1','p2-buw2','p2-buw3','p1-buw1','p1-buw2','p1-buw3','p2-ex','p1-ex'].forEach(sid => {
+['p2-buw1','p2-buw2','p2-buw3','p1-buw1','p1-buw2','p1-buw3','p2-ex','p1-ex',
+ 'p2-eff1','p2-eff2','p2-eff3','p2-eff4','p1-eff1','p1-eff2','p1-eff3','p1-eff4',
+ 'p2-verbot1','p2-verbot2','p2-verbot3','p1-verbot1','p1-verbot2','p1-verbot3'].forEach(sid => {
   const slotEl = document.getElementById(sid);
   if (!slotEl) return;
   let clickCount = 0;
@@ -2006,6 +2053,7 @@ function releaseSlot(slotId, x, y) {
       renderSlot(sid);
       const player = sid.startsWith('p1') ? 'p1' : 'p2';
       if (!sid.endsWith('-ex')) checkExBuwemon(player);
+      if (/-(eff\d|verbot\d)$/.test(sid)) checkVerbote(player);
       const gp0 = clientToGame(e.clientX, e.clientY);
       const el = spawnCard(cd, clampX(gp0.x-31), clampY(gp0.y-44), false);
       el.style.zIndex = Math.min(100 + (G.nid++), 7000);
@@ -2755,7 +2803,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v27d
+    v28d
   </div>
 </div>
 
@@ -2972,6 +3020,10 @@ function onNetData(d) {
       });
       checkExBuwemon('p1');
       checkExBuwemon('p2');
+      checkZoneColor('p1');
+      checkZoneColor('p2');
+      checkVerbote('p1');
+      checkVerbote('p2');
     }
 
     // Field cards: same position, update or create
@@ -3114,6 +3166,31 @@ function toggleErweiterung() {
   }
 }
 
+</script>
+
+<!-- ANLEITUNG POPUP -->
+<div id="anleitung-modal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;">
+  <div style="position:relative;width:94%;height:94%;background:#fff;border-radius:10px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.4);">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 14px;background:#f5f5f5;border-bottom:1px solid rgba(0,0,0,0.12);flex-shrink:0;">
+      <span style="font-family:'AiSpec',sans-serif;font-size:.95rem;letter-spacing:1px;color:#2a2e3a;">Buwemon Anleitung</span>
+      <button onclick="closeAnleitung()" style="background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.15);border-radius:6px;padding:3px 12px;cursor:pointer;font-size:.85rem;">✕ Schließen</button>
+    </div>
+    <iframe id="anleitung-iframe" src="" style="flex:1;width:100%;border:none;"></iframe>
+  </div>
+</div>
+<script>
+function openAnleitung() {
+  const modal = document.getElementById('anleitung-modal');
+  const iframe = document.getElementById('anleitung-iframe');
+  modal.style.display = 'flex';
+  if (!iframe.getAttribute('data-loaded')) {
+    iframe.src = 'bilder/Buwemon Anleitung.pdf';
+    iframe.setAttribute('data-loaded','1');
+  }
+}
+function closeAnleitung() {
+  document.getElementById('anleitung-modal').style.display = 'none';
+}
 </script>
 </body>
 </html>
