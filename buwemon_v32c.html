@@ -2423,81 +2423,74 @@ setInterval(applyP1HandVisibility, 300);
 
 // ── 4-SPIELER HAND-SICHTBARKEIT ──
 function applyHandVisibility4() {
+  // Exakt wie applyP1HandVisibility im 2-Spieler – Positionscheck für alle 4 Handzonen
   if (NET.mode !== 'multi' || !fourPlayerMode) return;
   const myP = NET.myPlayer;
   if (!myP) return;
 
   const W=1920, H=980;
   const scale = Math.min(window.innerWidth/W, window.innerHeight/H);
-  const ox = (window.innerWidth  - W*scale) / 2;
+  const ox = (window.innerWidth - W*scale) / 2;
   const oy = (window.innerHeight - H*scale) / 2;
 
-  function screenToGame(r) {
-    return { left:(r.left-ox)/scale, right:(r.right-ox)/scale,
-             top:(r.top-oy)/scale,   bottom:(r.bottom-oy)/scale };
-  }
-
+  // Handzonengrenzen für alle 4 Spieler in Spielfeld-Koordinaten
   const handRects = {};
   [1,2,3,4].forEach(p => {
     const el = document.getElementById('p'+p+'-hand-4');
-    if (el) handRects[p] = screenToGame(el.getBoundingClientRect());
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    handRects[p] = {
+      left: (r.left-ox)/scale, right: (r.right-ox)/scale,
+      top: (r.top-oy)/scale,   bottom: (r.bottom-oy)/scale
+    };
   });
 
   G.cards.forEach(el => {
     if (el.dataset.drawnFromDeck === '1') return;
+    const cx = parseFloat(el.style.left) + 31;
+    const cy = parseFloat(el.style.top)  + 44;
 
-    // Determine ownerP:
-    // - own cards: use hand zone position check
-    // - enemy cards: use inEnemyHand flag sent by the owner
+    // Welcher Handzone liegt diese Karte in?
     let ownerP = null;
-    if (el.dataset.netEnemy === '1') {
-      // Enemy card – owner is identified by netOwner
-      if (el.dataset.inEnemyHand === '1') {
-        ownerP = parseInt((el.dataset.netOwner || '').replace('p','')) || null;
-      }
-      // else ownerP stays null (card is on field, not in hand)
-    } else {
-      // Own card – use position check
-      const cx = parseFloat(el.style.left) + 31;
-      const cy = parseFloat(el.style.top)  + 44;
-      for (const p of [1,2,3,4]) {
-        const r = handRects[p];
-        if (r && cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom) {
-          ownerP = p; break;
-        }
+    for (const p of [1,2,3,4]) {
+      const r = handRects[p];
+      if (r && cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom) {
+        ownerP = p; break;
       }
     }
 
-    let targetFd;
     if (ownerP === null || ownerP === myP) {
-      // Not in enemy hand – restore if we masked it
+      // Nicht in fremder Hand: original fd wiederherstellen
       if (el.dataset.handmasked === '1') {
-        targetFd = el.dataset.fdSaved !== undefined ? el.dataset.fdSaved : '0';
+        const orig = el.dataset.fdSaved !== undefined ? el.dataset.fdSaved : '0';
         delete el.dataset.fdSaved;
         delete el.dataset.handmasked;
+        if (el.dataset.fd !== orig) { el.dataset.fd = orig; renderCard(el); }
       }
     } else {
-      // Enemy hand – hide unless revealed for me
-      const canSee = G4.reveal[ownerP] instanceof Set ? G4.reveal[ownerP].has(myP) : !!G4.reveal[ownerP];
+      // Fremde Hand: verdecken außer wenn reveal aktiv
+      const canSee = G4.reveal[ownerP] instanceof Set
+        ? G4.reveal[ownerP].has(myP)
+        : !!G4.reveal[ownerP];
       if (!canSee) {
+        // Verdecken
         if (el.dataset.handmasked !== '1') {
           if (el.dataset.fdSaved === undefined) el.dataset.fdSaved = el.dataset.fd;
           el.dataset.handmasked = '1';
-          targetFd = '1';
+          if (el.dataset.fd !== '1') { el.dataset.fd = '1'; renderCard(el); }
         }
       } else {
+        // Aufdecken
         if (el.dataset.handmasked === '1') {
-          targetFd = el.dataset.fdSaved !== undefined ? el.dataset.fdSaved : '0';
+          const orig = el.dataset.fdSaved !== undefined ? el.dataset.fdSaved : '0';
           delete el.dataset.fdSaved;
           delete el.dataset.handmasked;
+          if (el.dataset.fd !== '0') { el.dataset.fd = '0'; renderCard(el); }
+        } else if (el.dataset.fd !== '0') {
+          // Karte kam bereits verdeckt an – aufdecken
+          el.dataset.fd = '0'; renderCard(el);
         }
       }
-    }
-
-    // Nur rendern wenn sich fd wirklich ändert → kein Flackern
-    if (targetFd !== undefined && el.dataset.fd !== targetFd) {
-      el.dataset.fd = targetFd;
-      renderCard(el);
     }
   });
 }
@@ -2961,7 +2954,11 @@ function getPlayerName4(p) {
 }
 
 function openRevealPopup4(p) {
-  if (NET.mode === 'multi' && NET.myPlayer !== p) return;
+  // Fremder Button: Hand von Spieler p sofort für mich (NET.myPlayer) öffnen
+  if (NET.mode === 'multi' && NET.myPlayer !== p) {
+    revealFor4(p, [NET.myPlayer]);
+    return;
+  }
   const others = [1,2,3,4].filter(x => x !== p);
   const revSet = G4.reveal[p] instanceof Set ? G4.reveal[p] : new Set();
   const allActive = others.every(q => revSet.has(q));
@@ -3019,6 +3016,7 @@ function hideHand4(p) {
   applyHandVisibility4();
   if (NET.mode === 'multi' && fourPlayerMode) {
     netSend({t:'reveal4', p, viewers: []});
+    netSendState4();
   }
 }
 
@@ -3030,38 +3028,9 @@ function revealFor4(p, viewers) {
   applyHandVisibility4();
   if (NET.mode === 'multi' && fourPlayerMode) {
     netSend({t:'reveal4', p, viewers: [...G4.reveal[p]]});
+    // Sofort state4 senden – Empfänger bekommt Karten mit aktuellem reveal-Status
+    netSendState4();
   }
-}
-
-function hideHand4direct(p) {
-  // Beim Hand-Verbergen direkt alle Karten wieder verdecken
-  applyRevealToHand4(p, false);
-}
-
-function applyRevealToHand4(ownerP, canSee) {
-  // Direkt fd auf alle Handkarten von ownerP setzen - genau wie applyRevealToHand im 2-Spieler
-  // Handkarten erkennen: netEnemy-Karten die in der p{ownerP}-hand-4 Zone liegen
-  const ownerPfx = 'p' + ownerP;
-  const handEl = document.getElementById('p' + ownerP + '-hand-4');
-  if (!handEl) return;
-  const W=1920, H=980;
-  const scale = Math.min(window.innerWidth/W, window.innerHeight/H);
-  const ox = (window.innerWidth - W*scale) / 2;
-  const oy = (window.innerHeight - H*scale) / 2;
-  const hr = handEl.getBoundingClientRect();
-  const gLeft = (hr.left-ox)/scale, gRight = (hr.right-ox)/scale;
-  const gTop = (hr.top-oy)/scale, gBottom = (hr.bottom-oy)/scale;
-  G.cards.forEach(el => {
-    if (el.dataset.netEnemy !== '1' || el.dataset.netOwner !== ownerPfx) return;
-    // Prüfe ob Karte in der Handzone liegt ODER als inEnemyHand markiert ist
-    const cx = parseFloat(el.style.left) + 31;
-    const cy = parseFloat(el.style.top) + 44;
-    const inZone = cx >= gLeft && cx <= gRight && cy >= gTop && cy <= gBottom;
-    if (inZone || el.dataset.inEnemyHand === '1') {
-      const newFd = canSee ? '0' : '1';
-      if (el.dataset.fd !== newFd) { el.dataset.fd = newFd; renderCard(el); }
-    }
-  });
 }
 
 function toggleReveal4(p) {
@@ -3224,7 +3193,7 @@ function updDeck4() {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v26r',
+    version: 'v32c',
     deck: G.deck,
     graves: G.graves,
     banish: G.banish,
@@ -3426,7 +3395,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v31h
+    v32c
   </div>
 </div>
 
@@ -3640,8 +3609,6 @@ function onNetData(d) {
     G4.deck = d.deck; G4.nid = d.nid;
     if (!NET.isHost) G4.nid = Math.max(G4.nid, 10000 * (NET.myPlayer||1));
     updDeck4();
-    // Gast: fourPlayerMode auf true setzen damit netSend-Bedingungen greifen
-    fourPlayerMode = true;
   }
   if (d.t === 'hello4') {
     const lbl = document.getElementById('p'+d.p+'-hand-4');
@@ -3759,27 +3726,23 @@ if (d.t === 'state4') {
 
     // Reveal state
     if (d.reveal !== undefined) G4.reveal[senderP] = new Set(Array.isArray(d.reveal) ? d.reveal : (d.reveal ? [1,2,3,4].filter(x=>x!==senderP) : []));
-    const myP4recv = NET.myPlayer;
-    const senderCanSee = G4.reveal[senderP] instanceof Set ? G4.reveal[senderP].has(myP4recv) : false;
 
     // Field cards belonging to sender: update or create
     (d.fieldCards || []).forEach(fc => {
       let el = G.cards.find(c => c.dataset.uid === String(fc.uid));
-      // If sender revealed hand to me, show inHand cards face-up regardless of sent fd
-      const effectiveFd = (fc.inHand && senderCanSee) ? '0' : fc.fd;
       if (el) {
+        // Nur Position updaten - applyHandVisibility4 übernimmt Masking (wie 2-Spieler)
         el.style.left = clampX(fc.x) + 'px';
         el.style.top  = clampY(fc.y) + 'px';
-        if (el.dataset.fd !== effectiveFd) { el.dataset.fd = effectiveFd; renderCard(el); }
-        el.dataset.inEnemyHand = fc.inHand ? '1' : '0';
+        el.dataset.realFd = fc.fd;
       } else {
         el = spawnCard(
           {name:fc.name, color:fc.color, type:fc.ctype, uid:fc.uid, file:fc.file||''},
-          clampX(fc.x), clampY(fc.y), effectiveFd==='1'
+          clampX(fc.x), clampY(fc.y), fc.fd==='1'
         );
         el.dataset.netEnemy = '1';
         el.dataset.netOwner = senderPfx;
-        el.dataset.inEnemyHand = fc.inHand ? '1' : '0';
+        el.dataset.realFd = fc.fd;
       }
     });
 
@@ -3805,16 +3768,6 @@ if (d.t === 'state4') {
       G4.reveal[d.p] = d.val ? new Set([1,2,3,4].filter(x=>x!==d.p)) : new Set();
     }
     updateRevealBtn4(d.p);
-    // Direkt alle inEnemyHand-Karten dieses Spielers aufdecken/verdecken
-    const myP4 = NET.myPlayer;
-    const canSee4 = G4.reveal[d.p] instanceof Set ? G4.reveal[d.p].has(myP4) : !!G4.reveal[d.p];
-    const ownerPfx4 = 'p' + d.p;
-    G.cards.forEach(el => {
-      if (el.dataset.netEnemy === '1' && el.dataset.netOwner === ownerPfx4 && el.dataset.inEnemyHand === '1') {
-        const newFd = canSee4 ? '0' : '1';
-        if (el.dataset.fd !== newFd) { el.dataset.fd = newFd; renderCard(el); }
-      }
-    });
     applyHandVisibility4();
   }
   if (d.t === 'shuffle_hand') {
