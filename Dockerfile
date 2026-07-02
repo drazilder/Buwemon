@@ -4,4 +4,4 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 COPY . .
 EXPOSE 8080
-CMD ["python", "buwemon_fly_server.py"]
+CMD ["python", "buwemon_fly_server_2to4players.py"]

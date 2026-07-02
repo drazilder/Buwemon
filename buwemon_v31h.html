@@ -714,10 +714,19 @@ body {
       <img id="ereignis-back-4" src="karten/Rueckseite_Ereigniskarten.png" style="width:47px;height:66px;border-radius:6px;object-fit:cover;">
       <span style="font-size:.5rem;color:rgba(0,0,0,0.4);font-family:'Kievit',sans-serif;">Ereignis</span>
     </div>
-    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
-      <div id="deck-card-4" onpointerdown="drawCard4(event)" style="width:47px;height:66px;border-radius:6px;overflow:hidden;cursor:grab;border:1.5px solid rgba(0,0,0,0.2);"><img id="deck-vis-4" src="karten/Rueckseite.png" draggable="false" style="width:100%;height:100%;object-fit:cover;display:block;"></div>
-      <span style="font-size:.5rem;color:rgba(0,0,0,0.4);font-family:'Kievit',sans-serif;">Ziehstapel</span>
-      <span id="deck-cnt-4" style="font-size:.5rem;color:rgba(0,0,0,0.4);font-family:'Kievit',sans-serif;">0 Karten</span>
+    <div style="display:flex;align-items:center;gap:14px;margin-left:56px;">
+      <div id="dice-btn-4" onclick="rollDice4()" style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.7);border:2px solid rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:center;font-size:.95rem;cursor:pointer;font-family:'AiSpec',sans-serif;flex-shrink:0;">?</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+        <div id="deck-card-4" onpointerdown="drawCard4(event)" style="width:47px;height:66px;border-radius:6px;overflow:hidden;cursor:grab;"><img id="deck-vis-4" src="karten/Rueckseite.png" draggable="false" style="width:100%;height:100%;object-fit:cover;display:block;"></div>
+        <span style="font-size:.5rem;color:rgba(0,0,0,0.4);font-family:'Kievit',sans-serif;">Ziehstapel</span>
+        <span id="deck-cnt-4" style="font-size:.5rem;color:rgba(0,0,0,0.4);font-family:'Kievit',sans-serif;">0 Karten</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <button class="tbtn" onclick="openBrowser4('all')" style="font-size:.55rem;padding:2px 6px;">🔍 Stapel ansehen</button>
+        <button class="tbtn" onclick="openOverview4()" style="font-size:.55rem;padding:2px 6px;background:rgba(180,30,30,0.5);color:#fff;">🎴 Schicksal</button>
+        <button class="tbtn" onclick="openBrowser4('top4')" style="font-size:.55rem;padding:2px 6px;background:rgba(120,40,180,0.5);color:#fff;">👁 Gossip</button>
+        <button class="tbtn" onclick="openColorRemove4()" style="font-size:.55rem;padding:2px 6px;background:rgba(20,20,20,0.85);color:#fff;">☠️ Raum-Zeit-Genozid</button>
+      </div>
     </div>
     <div style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;" onclick="openBanishBrowser4()">
       <div id="banish-zone-4" style="width:47px;height:66px;position:relative;overflow:hidden;border-radius:6px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);">
@@ -725,15 +734,6 @@ body {
         <div id="banish-preview-4" style="position:absolute;inset:0;"></div>
       </div>
       <span id="banish-cnt-4" style="font-size:.5rem;color:rgba(0,0,0,0.4);font-family:'Kievit',sans-serif;">0 Karten</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div id="dice-btn-4" onclick="rollDice4()" style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.7);border:2px solid rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:center;font-size:.95rem;cursor:pointer;font-family:'AiSpec',sans-serif;flex-shrink:0;">?</div>
-      <div style="display:flex;flex-direction:column;gap:2px;">
-        <button class="tbtn" onclick="openBrowser4('all')" style="font-size:.55rem;padding:2px 6px;">🔍 Stapel ansehen</button>
-        <button class="tbtn" onclick="openOverview4()" style="font-size:.55rem;padding:2px 6px;background:rgba(180,30,30,0.5);color:#fff;">🎴 Schicksal</button>
-        <button class="tbtn" onclick="openBrowser4('top4')" style="font-size:.55rem;padding:2px 6px;background:rgba(120,40,180,0.5);color:#fff;">👁 Gossip</button>
-        <button class="tbtn" onclick="openColorRemove4()" style="font-size:.55rem;padding:2px 6px;background:rgba(20,20,20,0.85);color:#fff;">☠️ Raum-Zeit-Genozid</button>
-      </div>
     </div>
   </div>
 
@@ -1203,6 +1203,7 @@ function sendToGrave(el,player){
   if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) {
     G4.graves[player].push(cd);
     updGrave4(player);
+    if (NET.mode === 'multi') netSendState4();
     return;
   }
   G.graves[player].push(cd);
@@ -1606,7 +1607,7 @@ function onCarryDrop(e) {
       if (isEffSlot || isVerbotSlot) checkVerbote(player, zoneSuffix2);
       if (isEffSlot && !zoneSuffix2) onCardDockedToEffSlot(player, sid, cd);
       if (isExSlot && cd.color === '#111111' && !zoneSuffix2) checkDarkschahWin(player);
-      if (NET.mode==='multi' && !zoneSuffix2) netSendState();
+      if (NET.mode==='multi') { zoneSuffix2 ? netSendState4() : netSendState(); }
       return;
     }
   }
@@ -2471,6 +2472,7 @@ function checkDropOnBanish(el){
       }
       el.remove();
       G.cards=G.cards.filter(c=>c!==el);
+      if (NET.mode === 'multi') netSendState4();
       return true;
     }
     return false;
@@ -2787,6 +2789,8 @@ function toggle4PMode() {
   const _bp = document.getElementById('banish-panel');
   if (_ep) _ep.style.display = fourPlayerMode ? 'none' : '';
   if (_bp) _bp.style.display = fourPlayerMode ? 'none' : '';
+  const p34row = document.getElementById('pick-p34-row');
+  if (p34row) p34row.style.display = fourPlayerMode ? 'flex' : 'none';
   if (fourPlayerMode) { G4.deck = buildDeck(); updDeck4(); ['p1','p2','p3','p4'].forEach(updGrave4); }
 }
 
@@ -2809,6 +2813,7 @@ function applyLP4(p) {
   const el = document.getElementById('p'+p+'-lp-4') || document.getElementById('p'+p+'-lp');
   if (el) el.textContent = G4.lp[p];
   inp.value = '';
+  if (NET.mode === 'multi' && fourPlayerMode) netSend({t:'lp4', p, val: G4.lp[p]});
 }
 
 function lpDirectEdit4(p) {
@@ -2818,6 +2823,7 @@ function lpDirectEdit4(p) {
   if (isNaN(val) || val < 0) val = 0;
   G4.lp[p] = val;
   el.textContent = val;
+  if (NET.mode === 'multi' && fourPlayerMode) netSend({t:'lp4', p, val: G4.lp[p]});
 }
 
 function lpDirectKey4(e, p) {
@@ -2835,6 +2841,8 @@ function toggleReveal4(p) {
     btn.style.background = G4.reveal[p] ? 'rgba(180,50,50,0.5)' : '';
     btn.style.color = G4.reveal[p] ? '#fff' : '';
   }
+  if (NET.mode === 'multi' && fourPlayerMode) netSend({t:'reveal4', p, val: G4.reveal[p]});
+  if (NET.mode === 'multi' && fourPlayerMode) netSendState4();
 }
 
 function shuffleHand4(player) {
@@ -2913,6 +2921,60 @@ function rollDice4() {
     count++;
     if(count>10){clearInterval(iv);btn.textContent=Math.floor(Math.random()*6)+1;}
   },60);
+}
+
+function netSendState4() {
+  if (NET.mode !== 'multi' || !fourPlayerMode) return;
+  const myP = NET.myPlayer;
+  const myPfx = 'p' + myP;
+  const myHandEl = document.getElementById(myPfx + '-hand-4');
+  const hr = myHandEl ? myHandEl.getBoundingClientRect() : null;
+
+  // Collect own loose field cards (including own hand, masked if not revealed)
+  const fieldCards = G.cards
+    .filter(c => c.dataset.netEnemy !== '1' && (!drag || drag.el !== c))
+    .map(c => {
+      const r = c.getBoundingClientRect();
+      const cx = r.left + r.width/2, cy = r.top + r.height/2;
+      const inMyHand = hr && cx>=hr.left && cx<=hr.right && cy>=hr.top && cy<=hr.bottom;
+      const realFd = c.dataset.fdSaved !== undefined ? c.dataset.fdSaved : c.dataset.fd;
+      return {
+        uid: parseInt(c.dataset.uid),
+        name: c.dataset.name,
+        color: c.dataset.color,
+        ctype: c.dataset.ctype,
+        file: c.dataset.file || '',
+        fd: (inMyHand && !G4.reveal[myP] && !(drag && drag.el===c)) ? '1' : realFd,
+        x: parseFloat(c.style.left),
+        y: parseFloat(c.style.top),
+      };
+    });
+
+  // Collect own slots (buw1-3, ex, eff1-2, verbot1-3, all with -4 suffix)
+  const mySlots = {};
+  ['buw1','buw2','buw3','ex','eff1','eff2','verbot1','verbot2','verbot3'].forEach(s => {
+    const sid = myPfx + '-' + s + '-4';
+    mySlots[sid] = G.slots[sid] || null;
+  });
+
+  // Verboten flags for own effekt slots
+  const verbotenFlags = {};
+  ['eff1','eff2'].forEach(es => {
+    const el = document.getElementById(myPfx + '-' + es + '-4');
+    verbotenFlags[myPfx+'-'+es+'-4'] = el ? el.classList.contains('verboten') : false;
+  });
+
+  netSend({
+    t: 'state4',
+    senderPlayer: myP,
+    deck: G4.deck,
+    banish: G4.banish,
+    grave: G4.graves[myPfx],
+    slots: mySlots,
+    verbotenFlags,
+    fieldCards,
+    reveal: G4.reveal[myP],
+  });
 }
 
 function drawCard4(e) {
@@ -3125,6 +3187,10 @@ document.querySelectorAll('.swatch').forEach(sw=>{
       <button id="pick-p1" onclick="pickPlayer(1)" class="lobby-pick-btn" style="flex:1;">Spieler 1</button>
       <button id="pick-p2" onclick="pickPlayer(2)" class="lobby-pick-btn" style="flex:1;">Spieler 2</button>
     </div>
+    <div id="pick-p34-row" style="display:none;gap:8px;margin-bottom:4px;">
+      <button id="pick-p3" onclick="pickPlayer(3)" class="lobby-pick-btn" style="flex:1;">Spieler 3</button>
+      <button id="pick-p4" onclick="pickPlayer(4)" class="lobby-pick-btn" style="flex:1;">Spieler 4</button>
+    </div>
     <div id="lobby-multi-status" style="font-size:.78rem;color:#ffffff;opacity:.9;text-align:center;min-height:1.2em;font-family:'Kievit',sans-serif;text-shadow:0 1px 3px rgba(0,0,0,0.5);"></div>
     <div id="lobby-code-display" style="display:none;font-size:1.8rem;font-weight:900;letter-spacing:6px;color:#2a2e3a;text-align:center;font-family:'AiSpec',sans-serif;background:rgba(255,255,255,0.4);border-radius:8px;padding:8px 16px;"></div>
     <button onclick="showLobbyMode(null)" style="background:linear-gradient(160deg,#c8ccd4 0%,#e8ecf2 40%,#d0d4dc 70%,#f0f2f6 100%);
@@ -3136,7 +3202,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v31c
+    v31h
   </div>
 </div>
 
@@ -3171,11 +3237,15 @@ function pickPlayer(n) {
   NET.myPlayer = n;
   document.getElementById('pick-p1').classList.toggle('selected', n===1);
   document.getElementById('pick-p2').classList.toggle('selected', n===2);
+  const p3 = document.getElementById('pick-p3');
+  const p4 = document.getElementById('pick-p4');
+  if (p3) p3.classList.toggle('selected', n===3);
+  if (p4) p4.classList.toggle('selected', n===4);
 }
 
 function wsConnect(onOpen) {
   try {
-    // Connect to WebSocket - same host, /ws path
+    // Gleicher Host für 2- und 4-Spieler-Modus, nur der Pfad unterscheidet sich
     const wsUrl = (location.protocol==='https:'?'wss://':'ws://')+location.host+(fourPlayerMode?'/ws4':'/ws');
     const ws = new WebSocket(wsUrl);
     NET.ws = ws;
@@ -3208,6 +3278,7 @@ function multiCreate() {
   wsConnect(() => {
     const code = Math.random().toString(36).slice(2,5).toUpperCase();
     NET.roomCode = code;
+    if (fourPlayerMode) { G4.deck = buildDeck(); }
     NET.ws.send(JSON.stringify({t:'create', code}));
     const cd = document.getElementById('lobby-code-display');
     cd.textContent = code; cd.style.display = 'block';
@@ -3230,6 +3301,7 @@ function multiJoin() {
 
 function netSendState() {
   if (NET.mode !== 'multi') return;
+  if (fourPlayerMode) { netSendState4(); return; }
   // Collect field cards (only my own, not dragging)
   const board = document.getElementById('board');
   const boardRect = board.getBoundingClientRect();
@@ -3301,14 +3373,23 @@ function netSend(obj) {
 
 function onNetData(d) {
   if (d.t === 'joined') {
-    if (NET.isHost) {
-      G.deck = buildDeck(); updDeck();
-      netSend({t:'init', deck:G.deck, nid:G.nid});
-      netSend({t:'hello', name:NET.myName});
-      startGame('multi');
+    if (fourPlayerMode) {
+      if (NET.isHost) {
+        // Deck already built once in multiCreate; just (re)send CURRENT state to sync new joiner
+        netSend({t:'init4', deck:G4.deck, nid:G4.nid});
+      }
+      netSend({t:'hello4', p: NET.myPlayer, name:NET.myName});
+      if (!NET._started) { NET._started = true; startGame('multi'); }
     } else {
-      netSend({t:'hello', name:NET.myName});
-      startGame('multi');
+      if (NET.isHost) {
+        G.deck = buildDeck(); updDeck();
+        netSend({t:'init', deck:G.deck, nid:G.nid});
+        netSend({t:'hello', name:NET.myName});
+        startGame('multi');
+      } else {
+        netSend({t:'hello', name:NET.myName});
+        startGame('multi');
+      }
     }
   }
   if (d.t === 'hello') {
@@ -3329,6 +3410,19 @@ function onNetData(d) {
     // Guest uses high uid range to avoid collision with host cards
     if (!NET.isHost) G.nid = Math.max(G.nid, 10000);
     updDeck();
+  }
+  if (d.t === 'init4') {
+    // 4-Spieler: aktueller Stapelzustand vom Host (auch für spät beigetretene Spieler)
+    G4.deck = d.deck; G4.nid = d.nid;
+    if (!NET.isHost) G4.nid = Math.max(G4.nid, 10000 * (NET.myPlayer||1));
+    updDeck4();
+  }
+  if (d.t === 'hello4') {
+    const lbl = document.getElementById('p'+d.p+'-hand-4');
+    if (lbl) {
+      const span = lbl.querySelector('span');
+      if (span) span.textContent = 'Hand – ' + d.name;
+    }
   }
 
   if (d.t === 'state') {
@@ -3408,6 +3502,75 @@ function onNetData(d) {
     if (lbl) lbl.textContent = (NET.enemyName||'Gegner') + ' — ' + (d.handCount||0) + ' Karten';
 
     // Reveal state handled via separate event
+  }
+if (d.t === 'state4') {
+    const senderP = d.senderPlayer;
+    const senderPfx = 'p' + senderP;
+
+    // Shared resources: deck, banish (last-write-wins)
+    if (d.deck !== undefined) { G4.deck = d.deck; updDeck4(); }
+    if (d.banish !== undefined) { G4.banish = d.banish; updBanish4(); }
+
+    // Sender's grave
+    if (d.grave !== undefined) { G4.graves[senderPfx] = d.grave; updGrave4(senderPfx); }
+
+    // Sender's slots
+    if (d.slots) {
+      Object.keys(d.slots).forEach(sid => {
+        G.slots[sid] = d.slots[sid] || null;
+        renderSlot(sid);
+      });
+      checkExBuwemon(senderPfx, '-4');
+      checkZoneColor(senderPfx, '-4');
+      checkVerbote(senderPfx, '-4');
+    }
+    if (d.verbotenFlags) {
+      Object.keys(d.verbotenFlags).forEach(sid => {
+        const el = document.getElementById(sid);
+        if (el) el.classList.toggle('verboten', d.verbotenFlags[sid]);
+      });
+    }
+
+    // Reveal state
+    if (d.reveal !== undefined) G4.reveal[senderP] = d.reveal;
+
+    // Field cards belonging to sender: update or create
+    (d.fieldCards || []).forEach(fc => {
+      let el = G.cards.find(c => c.dataset.uid === String(fc.uid));
+      if (el) {
+        el.style.left = clampX(fc.x) + 'px';
+        el.style.top  = clampY(fc.y) + 'px';
+        if (el.dataset.fd !== fc.fd) { el.dataset.fd = fc.fd; renderCard(el); }
+      } else {
+        el = spawnCard(
+          {name:fc.name, color:fc.color, type:fc.ctype, uid:fc.uid, file:fc.file||''},
+          clampX(fc.x), clampY(fc.y), fc.fd==='1'
+        );
+        el.dataset.netEnemy = '1';
+        el.dataset.netOwner = senderPfx;
+      }
+    });
+
+    // Remove sender's cards that are now slotted
+    const slottedUids4 = new Set(
+      Object.values(G.slots).filter(Boolean).map(s => String(s.uid))
+    );
+    G.cards.filter(c => c.dataset.netEnemy === '1' && c.dataset.netOwner === senderPfx && slottedUids4.has(c.dataset.uid))
+      .forEach(c => { c.remove(); G.cards = G.cards.filter(x => x !== c); });
+  }
+  if (d.t === 'lp4') {
+    G4.lp[d.p] = d.val;
+    const lpEl = document.getElementById('p'+d.p+'-lp-4');
+    if (lpEl) lpEl.textContent = d.val;
+  }
+  if (d.t === 'reveal4') {
+    G4.reveal[d.p] = d.val;
+    const btn = document.getElementById('p'+d.p+'-reveal-4');
+    if (btn) {
+      btn.textContent = d.val ? 'Hand offen' : 'Hand verdeckt';
+      btn.style.background = d.val ? 'rgba(180,50,50,0.5)' : '';
+      btn.style.color = d.val ? '#fff' : '';
+    }
   }
   if (d.t === 'shuffle_hand') {
     applyShuffleHand(d.moves);

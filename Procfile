@@ -1,1 +1,1 @@
-web: python buwemon_fly_server.py
+web: python buwemon_fly_server_2to4players.py
