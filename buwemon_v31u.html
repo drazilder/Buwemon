@@ -2369,6 +2369,7 @@ function releaseSlot(slotId, x, y) {
 // Unless G.reveal[1] is true (enemy pressed "Hand zeigen")
 function applyP1HandVisibility() {
   if (NET.mode !== 'multi') return;
+  if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) return;
 
   const maskId    = (NET.myPlayer === 2) ? 'p1-hand' : 'p2-hand';
   const revealKey = (NET.myPlayer === 2) ? 1 : 2;
@@ -2444,14 +2445,26 @@ function applyHandVisibility4() {
 
   G.cards.forEach(el => {
     if (el.dataset.drawnFromDeck === '1') return;
-    const cx = parseFloat(el.style.left) + 31;
-    const cy = parseFloat(el.style.top)  + 44;
 
+    // Determine ownerP:
+    // - own cards: use hand zone position check
+    // - enemy cards: use inEnemyHand flag sent by the owner
     let ownerP = null;
-    for (const p of [1,2,3,4]) {
-      const r = handRects[p];
-      if (r && cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom) {
-        ownerP = p; break;
+    if (el.dataset.netEnemy === '1') {
+      // Enemy card – owner is identified by netOwner
+      if (el.dataset.inEnemyHand === '1') {
+        ownerP = parseInt((el.dataset.netOwner || '').replace('p','')) || null;
+      }
+      // else ownerP stays null (card is on field, not in hand)
+    } else {
+      // Own card – use position check
+      const cx = parseFloat(el.style.left) + 31;
+      const cy = parseFloat(el.style.top)  + 44;
+      for (const p of [1,2,3,4]) {
+        const r = handRects[p];
+        if (r && cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom) {
+          ownerP = p; break;
+        }
       }
     }
 
@@ -2464,7 +2477,7 @@ function applyHandVisibility4() {
         delete el.dataset.handmasked;
       }
     } else {
-      // Enemy hand – hide unless revealed
+      // Enemy hand – hide unless revealed for me
       const canSee = G4.reveal[ownerP] instanceof Set ? G4.reveal[ownerP].has(myP) : !!G4.reveal[ownerP];
       if (!canSee) {
         if (el.dataset.handmasked !== '1') {
@@ -3123,7 +3136,8 @@ function netSendState4() {
         color: c.dataset.color,
         ctype: c.dataset.ctype,
         file: c.dataset.file || '',
-        fd: (inMyHand && !(G4.reveal[myP] instanceof Set ? G4.reveal[myP].size > 0 : G4.reveal[myP]) && !(drag && drag.el===c)) ? '1' : realFd,
+        fd: (inMyHand && !(drag && drag.el===c)) ? '1' : realFd,
+        inHand: !!(inMyHand && !(drag && drag.el===c)),
         x: parseFloat(c.style.left),
         y: parseFloat(c.style.top),
       };
@@ -3720,6 +3734,7 @@ if (d.t === 'state4') {
         el.style.left = clampX(fc.x) + 'px';
         el.style.top  = clampY(fc.y) + 'px';
         if (el.dataset.fd !== fc.fd) { el.dataset.fd = fc.fd; renderCard(el); }
+        el.dataset.inEnemyHand = fc.inHand ? '1' : '0';
       } else {
         el = spawnCard(
           {name:fc.name, color:fc.color, type:fc.ctype, uid:fc.uid, file:fc.file||''},
@@ -3727,6 +3742,7 @@ if (d.t === 'state4') {
         );
         el.dataset.netEnemy = '1';
         el.dataset.netOwner = senderPfx;
+        el.dataset.inEnemyHand = fc.inHand ? '1' : '0';
       }
     });
 
