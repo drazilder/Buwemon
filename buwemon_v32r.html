@@ -457,6 +457,7 @@ body {
   <span class="brand">BUWEMON</span>
   <span id="player-label" style="font-size:.72rem;color:rgba(0,0,0,0.4);font-family:'Kievit',sans-serif;display:none;padding:2px 6px;background:rgba(0,0,0,0.06);border-radius:4px;"></span>
   <span class="sp"></span>
+  <button class="tbtn" id="btn-deal" onclick="openDealConfirm()" style="color:#1a4a8a;border-color:rgba(30,80,200,0.3);">🃏 Startkarten ausgeben</button>
   <button class="tbtn danger" id="btn-reset" onclick="openConfirm()">↺ Neue Runde</button>
   <span id="conn-dot" style="width:7px;height:7px;border-radius:50%;background:#d95555;display:none;flex-shrink:0;"></span>
   <button class="tbtn" id="btn-lobby">⌂ Startbildschirm</button>
@@ -556,19 +557,19 @@ body {
 
   <div id="p2-hand-4" class="hand4-zone" style="position:absolute;top:8px;bottom:auto;left:320px;right:320px;height:113px;">
   <span style="position:absolute;top:4px;left:0;right:0;font-size:.55rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'Kievit',sans-serif;">Hand – Spieler 2</span>
-  <button onpointerdown="event.stopPropagation()" id="p2-hide-4" onclick="hideHand4(2)" style="position:absolute;bottom:22px;right:5px;display:none;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand verbergen</button><button onpointerdown="event.stopPropagation()" id="p2-reveal-4" onclick="openRevealPopup4(2)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand öffnen</button>
+  <button onpointerdown="event.stopPropagation()" id="p2-hide-4" onclick="hideHand4(2)" style="position:absolute;bottom:22px;right:5px;display:none;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand verbergen</button><button onpointerdown="event.stopPropagation()" onclick="shuffleHand4('p2')" style="position:absolute;bottom:4px;right:75px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">🔀 mischen</button><button onpointerdown="event.stopPropagation()" id="p2-reveal-4" onclick="openRevealPopup4(2)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand öffnen</button>
 </div>
   <div id="p1-hand-4" class="hand4-zone" style="position:absolute;top:auto;bottom:8px;left:320px;right:320px;height:113px;">
   <span style="position:absolute;top:4px;left:0;right:0;font-size:.55rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'Kievit',sans-serif;">Hand – Spieler 1</span>
-  <button onpointerdown="event.stopPropagation()" id="p1-hide-4" onclick="hideHand4(1)" style="position:absolute;bottom:22px;right:5px;display:none;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand verbergen</button><button onpointerdown="event.stopPropagation()" id="p1-reveal-4" onclick="openRevealPopup4(1)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand öffnen</button>
+  <button onpointerdown="event.stopPropagation()" id="p1-hide-4" onclick="hideHand4(1)" style="position:absolute;bottom:22px;right:5px;display:none;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand verbergen</button><button onpointerdown="event.stopPropagation()" onclick="shuffleHand4('p1')" style="position:absolute;bottom:4px;right:75px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">🔀 mischen</button><button onpointerdown="event.stopPropagation()" id="p1-reveal-4" onclick="openRevealPopup4(1)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand öffnen</button>
 </div>
   <div id="p3-hand-4" class="hand4-zone" style="position:absolute;top:90px;bottom:90px;left:8px;right:auto;width:151px;">
   <span style="position:absolute;top:4px;left:0;right:0;font-size:.55rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'Kievit',sans-serif;">Hand – Spieler 3</span>
-  <button onpointerdown="event.stopPropagation()" id="p3-hide-4" onclick="hideHand4(3)" style="position:absolute;bottom:22px;right:5px;display:none;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand verbergen</button><button onpointerdown="event.stopPropagation()" id="p3-reveal-4" onclick="openRevealPopup4(3)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand öffnen</button>
+  <button onpointerdown="event.stopPropagation()" id="p3-hide-4" onclick="hideHand4(3)" style="position:absolute;bottom:22px;right:5px;display:none;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand verbergen</button><button onpointerdown="event.stopPropagation()" onclick="shuffleHand4('p3')" style="position:absolute;bottom:4px;right:75px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">🔀 mischen</button><button onpointerdown="event.stopPropagation()" id="p3-reveal-4" onclick="openRevealPopup4(3)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand öffnen</button>
 </div>
   <div id="p4-hand-4" class="hand4-zone" style="position:absolute;top:90px;bottom:90px;left:auto;right:8px;width:151px;">
   <span style="position:absolute;top:4px;left:0;right:0;font-size:.55rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'Kievit',sans-serif;">Hand – Spieler 4</span>
-  <button onpointerdown="event.stopPropagation()" id="p4-hide-4" onclick="hideHand4(4)" style="position:absolute;bottom:22px;right:5px;display:none;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand verbergen</button><button onpointerdown="event.stopPropagation()" id="p4-reveal-4" onclick="openRevealPopup4(4)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand öffnen</button>
+  <button onpointerdown="event.stopPropagation()" id="p4-hide-4" onclick="hideHand4(4)" style="position:absolute;bottom:22px;right:5px;display:none;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand verbergen</button><button onpointerdown="event.stopPropagation()" onclick="shuffleHand4('p4')" style="position:absolute;bottom:4px;right:75px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">🔀 mischen</button><button onpointerdown="event.stopPropagation()" id="p4-reveal-4" onclick="openRevealPopup4(4)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand öffnen</button>
 </div>
 
   <div id="p1-grave-4" onclick="openGraveBrowser4('p1')" class="grave4-zone" style="position:absolute;left:1553px;top:755px;width:47px;height:66px;overflow:hidden;cursor:pointer;">
@@ -592,28 +593,28 @@ body {
   <div id="p4-grave-4-count" style="position:absolute;top:3px;right:4px;background:rgba(0,0,0,0.6);color:#fff;font-size:.5rem;font-weight:700;border-radius:3px;padding:1px 3px;display:none;">0</div>
 </div>
   <div style="position:absolute;left:320px;top:741px;width:60px;height:100px;display:flex;flex-direction:column;justify-content:center;gap:5px;align-items:stretch;">
-  <div id="p1-lp-4" contenteditable="true" onblur="lpDirectEdit4(1)" onkeydown="lpDirectKey4(event,1)" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:text;outline:none;font-family:'Kievit',sans-serif;">300</div>
+  <div id="p1-lp-4" contenteditable="true" onblur="lpDirectEdit4(1)" onkeydown="lpDirectKey4(event,1)" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:text;outline:none;font-family:'AiSpec',sans-serif;font-style:italic;">300</div>
   <div style="display:flex;gap:2px;">
     <input id="p1-lp-inp-4" type="text" onkeydown="lpKey4(event,1)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
     <button id="p1-lp-ok-4" onclick="applyLP4(1)" class="lp-ok-4">OK</button>
   </div>
 </div>
   <div style="position:absolute;left:1540px;top:107px;width:60px;height:100px;display:flex;flex-direction:column;justify-content:center;gap:5px;align-items:stretch;">
-  <div id="p2-lp-4" contenteditable="true" onblur="lpDirectEdit4(2)" onkeydown="lpDirectKey4(event,2)" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:text;outline:none;font-family:'Kievit',sans-serif;">300</div>
+  <div id="p2-lp-4" contenteditable="true" onblur="lpDirectEdit4(2)" onkeydown="lpDirectKey4(event,2)" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:text;outline:none;font-family:'AiSpec',sans-serif;font-style:italic;">300</div>
   <div style="display:flex;gap:2px;">
     <input id="p2-lp-inp-4" type="text" onkeydown="lpKey4(event,2)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
     <button id="p2-lp-ok-4" onclick="applyLP4(2)" class="lp-ok-4">OK</button>
   </div>
 </div>
   <div style="position:absolute;left:167px;top:70px;width:60px;height:100px;display:flex;flex-direction:column;justify-content:center;gap:5px;align-items:stretch;">
-  <div id="p3-lp-4" contenteditable="true" onblur="lpDirectEdit4(3)" onkeydown="lpDirectKey4(event,3)" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:text;outline:none;font-family:'Kievit',sans-serif;">300</div>
+  <div id="p3-lp-4" contenteditable="true" onblur="lpDirectEdit4(3)" onkeydown="lpDirectKey4(event,3)" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:text;outline:none;font-family:'AiSpec',sans-serif;font-style:italic;">300</div>
   <div style="display:flex;gap:2px;">
     <input id="p3-lp-inp-4" type="text" onkeydown="lpKey4(event,3)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
     <button id="p3-lp-ok-4" onclick="applyLP4(3)" class="lp-ok-4">OK</button>
   </div>
 </div>
   <div style="position:absolute;left:1693px;top:780px;width:60px;height:100px;display:flex;flex-direction:column;justify-content:center;gap:5px;align-items:stretch;">
-  <div id="p4-lp-4" contenteditable="true" onblur="lpDirectEdit4(4)" onkeydown="lpDirectKey4(event,4)" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:text;outline:none;font-family:'Kievit',sans-serif;">300</div>
+  <div id="p4-lp-4" contenteditable="true" onblur="lpDirectEdit4(4)" onkeydown="lpDirectKey4(event,4)" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:text;outline:none;font-family:'AiSpec',sans-serif;font-style:italic;">300</div>
   <div style="display:flex;gap:2px;">
     <input id="p4-lp-inp-4" type="text" onkeydown="lpKey4(event,4)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
     <button id="p4-lp-ok-4" onclick="applyLP4(4)" class="lp-ok-4">OK</button>
@@ -637,10 +638,10 @@ body {
   <div id="p1-verbot2-4" class="verbot4-slot" style="position:absolute;left:515px;top:755px;width:47px;height:66px;"></div>
   <div id="p1-verbot3-4" class="verbot4-slot" style="position:absolute;left:570px;top:755px;width:47px;height:66px;"></div>
   <div id="p1-eff1-4" class="buw4-slot" style="position:absolute;left:729px;top:722px;width:60px;height:99px;">
-  <span style="position:absolute;top:2px;left:0;right:0;font-size:.5rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'Kievit',sans-serif;">Effektkarten</span>
+  <span style="position:absolute;top:2px;left:0;right:0;font-size:.5rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">Effekt</span>
 </div>
   <div id="p1-eff2-4" class="buw4-slot" style="position:absolute;left:797px;top:722px;width:60px;height:99px;">
-  <span style="position:absolute;top:2px;left:0;right:0;font-size:.5rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'Kievit',sans-serif;">Effektkarten</span>
+  <span style="position:absolute;top:2px;left:0;right:0;font-size:.5rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">Effekt</span>
 </div>
   <div id="p2-buw1-4" class="buw4-slot" style="position:absolute;left:641px;top:129px;width:60px;height:99px;">
   <span style="position:absolute;top:2px;left:0;right:0;font-size:.5rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">Buwemon</span>
@@ -655,10 +656,10 @@ body {
   <span style="position:absolute;top:2px;left:0;right:0;font-size:.5rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">EX</span>
 </div>
   <div id="p2-eff1-4" class="buw4-slot" style="position:absolute;left:1063px;top:129px;width:60px;height:99px;">
-  <span style="position:absolute;top:2px;left:0;right:0;font-size:.5rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'Kievit',sans-serif;">Effektkarten</span>
+  <span style="position:absolute;top:2px;left:0;right:0;font-size:.5rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">Effekt</span>
 </div>
   <div id="p2-eff2-4" class="buw4-slot" style="position:absolute;left:1131px;top:129px;width:60px;height:99px;">
-  <span style="position:absolute;top:2px;left:0;right:0;font-size:.5rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'Kievit',sans-serif;">Effektkarten</span>
+  <span style="position:absolute;top:2px;left:0;right:0;font-size:.5rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">Effekt</span>
 </div>
   <div id="p2-verbot1-4" class="verbot4-slot" style="position:absolute;left:1303px;top:129px;width:47px;height:66px;"></div>
   <div id="p2-verbot2-4" class="verbot4-slot" style="position:absolute;left:1358px;top:129px;width:47px;height:66px;"></div>
@@ -674,10 +675,10 @@ body {
 </div>
 
   <div id="p3-eff1-4" class="buw4-slot" style="position:absolute;left:167px;top:180px;width:60px;height:99px;">
-  <span style="position:absolute;top:2px;left:0;right:0;font-size:.5rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'Kievit',sans-serif;">Effektkarten</span>
+  <span style="position:absolute;top:2px;left:0;right:0;font-size:.5rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">Effekt</span>
 </div>
   <div id="p3-eff2-4" class="buw4-slot" style="position:absolute;left:167px;top:287px;width:60px;height:99px;">
-  <span style="position:absolute;top:2px;left:0;right:0;font-size:.5rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'Kievit',sans-serif;">Effektkarten</span>
+  <span style="position:absolute;top:2px;left:0;right:0;font-size:.5rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">Effekt</span>
 </div>
 
   <div id="p3-ex-4" class="buw4-slot" style="position:absolute;left:235px;top:558px;width:60px;height:99px;">
@@ -700,10 +701,10 @@ body {
   <span style="position:absolute;top:2px;left:0;right:0;font-size:.5rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">EX</span>
 </div>
   <div id="p4-eff1-4" class="buw4-slot" style="position:absolute;left:1693px;top:671px;width:60px;height:99px;">
-  <span style="position:absolute;top:2px;left:0;right:0;font-size:.5rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'Kievit',sans-serif;">Effektkarten</span>
+  <span style="position:absolute;top:2px;left:0;right:0;font-size:.5rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">Effekt</span>
 </div>
   <div id="p4-eff2-4" class="buw4-slot" style="position:absolute;left:1693px;top:564px;width:60px;height:99px;">
-  <span style="position:absolute;top:2px;left:0;right:0;font-size:.5rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'Kievit',sans-serif;">Effektkarten</span>
+  <span style="position:absolute;top:2px;left:0;right:0;font-size:.5rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">Effekt</span>
 </div>
   <div id="p4-verbot1-4" class="verbot4-slot" style="position:absolute;left:1865px;top:868px;width:47px;height:66px;"></div>
   <div id="p4-verbot2-4" class="verbot4-slot" style="position:absolute;left:1813px;top:868px;width:47px;height:66px;"></div>
@@ -971,6 +972,10 @@ function startGame(mode) {
       if (resume) { loadGame(); return; }
     }
   }
+  // Im Mehrspieler 4-Spieler: alle Felder verblassen bis Spieler beitritt
+  if (mode === 'multi' && fourPlayerMode) {
+    setTimeout(initPlayerStates4, 200);
+  }
 }
 
 // ── CARD DB ──
@@ -1204,11 +1209,27 @@ function sendToGrave(el,player){
   if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) {
     G4.graves[player].push(cd);
     updGrave4(player);
-    if (NET.mode === 'multi') netSendState4();
+    // Slot leeren falls Karte aus einem Slot kam
+    Object.keys(G.slots).forEach(sid => {
+      if (G.slots[sid] && String(G.slots[sid].uid) === String(uid)) {
+        G.slots[sid] = null; renderSlot(sid);
+      }
+    });
+    if (NET.mode === 'multi') {
+      netSend({t:'card_remove', uid});
+      netSend({t:'grave4_update', player, graves: G4.graves[player]});
+      netSendState4();
+    }
     return;
   }
   G.graves[player].push(cd);
   updGrave(player);
+  // Slot leeren falls Karte aus einem Slot kam
+  Object.keys(G.slots).forEach(sid => {
+    if (G.slots[sid] && String(G.slots[sid].uid) === String(uid)) {
+      G.slots[sid] = null; renderSlot(sid);
+    }
+  });
   if (NET.mode === 'multi') {
     netSend({t:'card_remove', uid});
     if (!isEnemyCard) netSendState();
@@ -1325,7 +1346,15 @@ function bCardToField(i, src){
   const nidSrc = is4 ? G4 : G;
   cd = {...cd, uid: nidSrc.nid++};
   closeBrowser();
-  if(NET.mode==='multi'){ is4 ? netSendState4() : netSendState(); }
+  if(NET.mode==='multi'){
+    if(is4){
+      if(isGrave) netSend({t:'grave4_update', player:src, graves: G4.graves[src]});
+      if(isBanish) netSend({t:'banish4_update', banish: G4.banish});
+      netSendState4();
+    } else {
+      netSendState();
+    }
+  }
   startCarry(cd);
 }
 function shuffleAndClose(){shuffle(G.deck);updDeck();closeBrowser();if(NET.mode==='multi')netSendState();}
@@ -2570,9 +2599,14 @@ function checkDropOnBanish(el){
         G4.banish.push(cd);
         updBanish4();
       }
+      const uid4banish = el.dataset.uid;
       el.remove();
       G.cards=G.cards.filter(c=>c!==el);
-      if (NET.mode === 'multi') netSendState4();
+      if (NET.mode === 'multi') {
+        netSend({t:'card_remove', uid: uid4banish});
+        netSend({t:'banish4_update', banish: G4.banish});
+        netSendState4();
+      }
       return true;
     }
     return false;
@@ -2893,6 +2927,7 @@ function toggle4PMode() {
   }
   document.getElementById('board').style.display = fourPlayerMode ? 'none' : '';
   document.getElementById('board4').style.display = fourPlayerMode ? 'flex' : 'none';
+  // initPlayerStates4 wird in startGame aufgerufen
   const bp4 = document.getElementById('banish-panel-4');
   const ep4 = document.getElementById('ereignis-panel-4');
   if (bp4) bp4.style.display = fourPlayerMode ? 'flex' : 'none';
@@ -2913,7 +2948,9 @@ const G4 = {
   deck: [], graves: {p1:[],p2:[],p3:[],p4:[]},
   banish: [], slots: {},
   lp: {1:300,2:300,3:300,4:300},
-  reveal: {1:new Set(),2:new Set(),3:new Set(),4:new Set()}
+  reveal: {1:new Set(),2:new Set(),3:new Set(),4:new Set()},
+  active: {1:false,2:false,3:false,4:false},
+  deathTimers: {1:null,2:null,3:null,4:null}
 };
 
 function applyLP4(p) {
@@ -2921,12 +2958,11 @@ function applyLP4(p) {
   if (!inp) return;
   const n = parseInt(inp.value);
   if (isNaN(n)) return;
-  const oldVal = G4.lp[p];
-  G4.lp[p] = Math.max(0, G4.lp[p] + n);
-  const el = document.getElementById('p'+p+'-lp-4') || document.getElementById('p'+p+'-lp');
-  if (el) { el.textContent = G4.lp[p]; triggerLPAnim4(p, G4.lp[p] > oldVal); }
+  const newVal = Math.max(0, (G4.lp[p]||0) + n);
+  const increased = newVal > (G4.lp[p]||0);
   inp.value = '';
-  if (NET.mode === 'multi' && fourPlayerMode) netSend({t:'lp4', p, val: G4.lp[p], increased: G4.lp[p] > oldVal});
+  applyLP4withDeathCheck(p, newVal, increased);
+  if (NET.mode === 'multi' && fourPlayerMode) netSend({t:'lp4', p, val: G4.lp[p], increased});
 }
 
 function triggerLPAnim4(p, increased) {
@@ -2943,10 +2979,9 @@ function lpDirectEdit4(p) {
   const oldVal = G4.lp[p] || 0;
   let val = parseInt(el.textContent.trim());
   if (isNaN(val) || val < 0) val = 0;
-  G4.lp[p] = val;
-  el.textContent = val;
-  triggerLPAnim4(p, val > oldVal);
-  if (NET.mode === 'multi' && fourPlayerMode) netSend({t:'lp4', p, val: G4.lp[p], increased: val > oldVal});
+  const increased = val > oldVal;
+  applyLP4withDeathCheck(p, val, increased);
+  if (NET.mode === 'multi' && fourPlayerMode) netSend({t:'lp4', p, val: G4.lp[p], increased});
 }
 
 function lpDirectKey4(e, p) {
@@ -3021,21 +3056,7 @@ function updateRevealBtn4(p) {
 }
 
 function hideHand4(p) {
-  // Eigener Button: alles zurücksetzen
-  // Fremder Button: nur mich selbst aus der reveal-Liste entfernen
-  if (NET.mode === 'multi' && NET.myPlayer !== p) {
-    // Mich aus dem reveal-Set von Spieler p entfernen
-    const s = G4.reveal[p] instanceof Set ? G4.reveal[p] : new Set();
-    s.delete(NET.myPlayer);
-    G4.reveal[p] = s;
-    updateRevealBtn4(p);
-    applyHandVisibility4();
-    if (fourPlayerMode) {
-      netSend({t:'reveal4', p, viewers: [...G4.reveal[p]]});
-      netSendState4();
-    }
-    return;
-  }
+  // Jeder kann "Hand verbergen" drücken – setzt reveal für alle auf leer
   G4.reveal[p] = new Set();
   updateRevealBtn4(p);
   applyHandVisibility4();
@@ -3062,22 +3083,172 @@ function toggleReveal4(p) {
   openRevealPopup4(p);
 }
 
+function openDealConfirm() {
+  const m = document.getElementById('deal-modal');
+  if (m) { m.style.display = 'flex'; }
+}
+function closeDealConfirm() {
+  const m = document.getElementById('deal-modal');
+  if (m) { m.style.display = 'none'; }
+}
+
+function dealStartCards() {
+  closeDealConfirm();
+  if (fourPlayerMode) {
+    dealStartCards4();
+  } else {
+    dealStartCards2();
+  }
+}
+
+// ── 2-SPIELER AUSTEILEN ──
+function dealStartCards2() {
+  // Karten 1-5 für P1, 6-10 für P2
+  // Handzone p1-hand: untere Zone, p2-hand: obere Zone
+  // Buwemon-Abstand: --slot = 80px (center-to-center)
+  const CARDS = 5;
+  const GAP = 80; // center-to-center, wie Buwemon-Slots
+  const CW = 63, CH = 88;
+
+  // Positionen der Handzonen per getBoundingClientRect
+  const W=1920, H=980;
+  const scale = Math.min(window.innerWidth/W, window.innerHeight/H);
+  const ox = (window.innerWidth - W*scale)/2;
+  const oy = (window.innerHeight - H*scale)/2;
+
+  function screenToGame(r) {
+    return {
+      left:(r.left-ox)/scale, right:(r.right-ox)/scale,
+      top:(r.top-oy)/scale, bottom:(r.bottom-oy)/scale,
+      width:(r.right-r.left)/scale, height:(r.bottom-r.top)/scale,
+      cx:((r.left+r.right)/2-ox)/scale, cy:((r.top+r.bottom)/2-oy)/scale
+    };
+  }
+
+  const h1El = document.getElementById('p1-hand');
+  const h2El = document.getElementById('p2-hand');
+  if (!h1El || !h2El) return;
+  const h1 = screenToGame(h1El.getBoundingClientRect());
+  const h2 = screenToGame(h2El.getBoundingClientRect());
+
+  function placeCards(handRect, playerPrefix, deckSource, isEnemy) {
+    const totalW = CARDS * CW + (CARDS-1) * (GAP - CW);
+    const startX = handRect.cx - totalW/2;
+    const y = handRect.cy - CH/2;
+    const moves = [];
+    for (let i = 0; i < CARDS; i++) {
+      if (!deckSource.length) break;
+      const cd = deckSource.shift();
+      cd.uid = cd.uid || G.nid++;
+      const x = startX + i * GAP;
+      const el = spawnCard(cd, clampX(x), clampY(y), false);
+      if (isEnemy) {
+        el.dataset.netEnemy = '1';
+        el.dataset.netOwner = playerPrefix;
+      }
+      moves.push({uid: el.dataset.uid, x: parseFloat(el.style.left), y: parseFloat(el.style.top)});
+    }
+    return moves;
+  }
+
+  placeCards(h1, 'p1', G.deck, false);
+  placeCards(h2, 'p2', G.deck, false);
+  updDeck();
+
+  if (NET.mode === 'multi') {
+    netSendState();
+  }
+}
+
+// ── 4-SPIELER AUSTEILEN ──
+function dealStartCards4() {
+  const CARDS = 5;
+  const GAP4 = 68; // center-to-center wie buw4-slots (1151-1083=68)
+  const CW4 = 60, CH4 = 99;
+
+  const W=1920, H=980;
+  const scale = Math.min(window.innerWidth/W, window.innerHeight/H);
+  const ox = (window.innerWidth - W*scale)/2;
+  const oy = (window.innerHeight - H*scale)/2;
+
+  function screenToGame(r) {
+    return {
+      cx:((r.left+r.right)/2-ox)/scale, cy:((r.top+r.bottom)/2-oy)/scale,
+      width:(r.right-r.left)/scale, height:(r.bottom-r.top)/scale
+    };
+  }
+
+  // Aktive Spieler ermitteln
+  const activePlayers = [1,2,3,4].filter(p => NET.mode !== 'multi' || G4.active[p]);
+
+  // Karten horizontal austeilen (p1, p2)
+  function placeHoriz(handId, playerP) {
+    const el = document.getElementById('p'+playerP+'-hand-4');
+    if (!el) return;
+    const hr = screenToGame(el.getBoundingClientRect());
+    const totalW = CARDS * CW4 + (CARDS-1) * (GAP4 - CW4);
+    const startX = hr.cx - totalW/2;
+    const y = hr.cy - CH4/2;
+    for (let i = 0; i < CARDS; i++) {
+      if (!G4.deck.length) break;
+      const cd = G4.deck.shift();
+      const uid = G4.nid++;
+      cd.uid = uid;
+      const x = startX + i * GAP4;
+      const card = spawnCard({...cd, uid}, clampX(x), clampY(y), false);
+    }
+  }
+
+  // Karten vertikal austeilen (p3, p4)
+  function placeVert(playerP) {
+    const el = document.getElementById('p'+playerP+'-hand-4');
+    if (!el) return;
+    const hr = screenToGame(el.getBoundingClientRect());
+    const totalH = CARDS * CH4 + (CARDS-1) * (GAP4 - CH4);
+    const startY = hr.cy - totalH/2;
+    const x = hr.cx - CW4/2;
+    for (let i = 0; i < CARDS; i++) {
+      if (!G4.deck.length) break;
+      const cd = G4.deck.shift();
+      const uid = G4.nid++;
+      cd.uid = uid;
+      const y = startY + i * GAP4;
+      const card = spawnCard({...cd, uid}, clampX(x), clampY(y), false);
+    }
+  }
+
+  activePlayers.forEach(p => {
+    if (p === 1 || p === 2) placeHoriz('p'+p+'-hand-4', p);
+    else placeVert(p);
+  });
+
+  updDeck4();
+  G.cards = G4.cards; // keep in sync
+
+  if (NET.mode === 'multi' && fourPlayerMode) {
+    netSendState4();
+  }
+}
+
+
+
 function shuffleHand4(player) {
-  const handId = player+'-hand-4';
-  const handEl = document.getElementById(handId) || document.getElementById(player+'-hand');
+  // Exakt wie shuffleHand() im 2-Spieler - kein netEnemy Filter, kein extra Check
+  const handEl = document.getElementById(player+'-hand-4');
   if (!handEl) return;
   const hr = handEl.getBoundingClientRect();
-  const W=1920,H=980,scale=Math.min(window.innerWidth/W,window.innerHeight/H);
-  const ox=(window.innerWidth-W*scale)/2, oy=(window.innerHeight-H*scale)/2;
-  const handCards = G4.cards.filter(c => {
-    const cx=(parseFloat(c.style.left)+31)*scale+ox;
-    const cy=(parseFloat(c.style.top)+44)*scale+oy;
-    return cx>=hr.left&&cx<=hr.right&&cy>=hr.top&&cy<=hr.bottom;
+  const handCards = G.cards.filter(c => {
+    const r = c.getBoundingClientRect();
+    const cx = r.left + r.width/2;
+    const cy = r.top + r.height/2;
+    return cx>=hr.left && cx<=hr.right && cy>=hr.top && cy<=hr.bottom;
   });
   if (handCards.length < 2) return;
-  const pos = handCards.map(c=>({x:parseFloat(c.style.left),y:parseFloat(c.style.top)}));
-  for(let i=pos.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pos[i],pos[j]]=[pos[j],pos[i]];}
-  handCards.forEach((c,i)=>{c.style.left=pos[i].x+'px';c.style.top=pos[i].y+'px';});
+  const positions = handCards.map(c=>({x:parseFloat(c.style.left),y:parseFloat(c.style.top)}));
+  for(let i=positions.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[positions[i],positions[j]]=[positions[j],positions[i]];}
+  const moves = handCards.map((c,i)=>({uid:c.dataset.uid, x:positions[i].x, y:positions[i].y}));
+  moves.forEach(m=>{const c=G.cards.find(x=>x.dataset.uid===m.uid);if(c){c.style.left=m.x+'px';c.style.top=m.y+'px';}});
+  if (NET.mode==='multi' && fourPlayerMode) netSend({t:'shuffle_hand', moves});
 }
 
 function openGraveBrowser4(player) {
@@ -3095,6 +3266,141 @@ function updGrave4(player) {
   const top = grave[grave.length-1];
   preview.innerHTML = `<img src="${thumbFor(top.name)}" style="width:100%;height:100%;object-fit:cover;" alt="${top.name}">`;
   badge.textContent = grave.length; badge.style.display = 'block';
+}
+
+function setPlayerActive4(p, active) {
+  // Nur im Mehrspieler verblassen
+  if (NET.mode !== 'multi') return;
+  G4.active[p] = active;
+  const opacity = active ? '1' : '0.15';
+  const filter = active ? '' : 'grayscale(80%)';
+
+  // Spielfeld-Zonen verblassen
+  // Friedhof bleibt IMMER klickbar (auch nach Tod - andere können ihn nutzen)
+  const graveId = 'p'+p+'-grave-4';
+  const graveEl = document.getElementById(graveId);
+  if (graveEl) { graveEl.style.opacity = opacity; graveEl.style.filter = filter; }
+  // Buwemon/Effekt/Verbot-Slots und LP: bei Inaktivität blockieren
+  const blockIds = [];
+  ['buw1','buw2','buw3','ex','eff1','eff2','eff3','eff4','verbot1','verbot2','verbot3'].forEach(s => {
+    blockIds.push('p'+p+'-'+s+'-4');
+  });
+  blockIds.push('p'+p+'-lp-4');
+  blockIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.opacity = opacity;
+    el.style.filter = filter;
+    if (!active) el.style.pointerEvents = 'none';
+    else el.style.pointerEvents = '';
+  });
+
+  // Handzone: nur visuell verblassen, NIEMALS pointer-events blockieren
+  const handEl = document.getElementById('p'+p+'-hand-4');
+  if (handEl) {
+    handEl.style.opacity = opacity;
+    handEl.style.filter = filter;
+    handEl.style.pointerEvents = ''; // immer klickbar
+  }
+
+  // LP setzen
+  if (active) {
+    if (!G4.lp[p] || G4.lp[p] === 0) {
+      G4.lp[p] = 300;
+      const lpEl = document.getElementById('p'+p+'-lp-4');
+      if (lpEl) lpEl.textContent = 300;
+    }
+  } else {
+    G4.lp[p] = 0;
+    const lpEl = document.getElementById('p'+p+'-lp-4');
+    if (lpEl) lpEl.textContent = 0;
+  }
+}
+
+function checkDeathCondition4(p) {
+  if (!G4.active[p]) return;
+  if (G4.lp[p] > 0) {
+    // LP wieder über 0: Tod-Timer abbrechen
+    if (G4.deathTimers[p]) { clearTimeout(G4.deathTimers[p]); G4.deathTimers[p] = null; }
+    return;
+  }
+  // LP = 0: Felder verblassen
+  setPlayerActive4(p, false);
+  // Nach 10 Sekunden: Karten aufräumen
+  if (G4.deathTimers[p]) clearTimeout(G4.deathTimers[p]);
+  G4.deathTimers[p] = setTimeout(() => {
+    eliminatePlayer4(p);
+    G4.deathTimers[p] = null;
+  }, 10000);
+}
+
+function eliminatePlayer4(p) {
+  const pfx = 'p'+p;
+  const EREIGNIS_TYPES = new Set(['ereignis','ex-ereignis','ex-auto','ex']);
+  const VERBOT_SLOTS = ['verbot1','verbot2','verbot3'];
+  const FIELD_SLOTS = ['buw1','buw2','buw3','ex','eff1','eff2','eff3','eff4'];
+
+  // 1. Slot-Karten: Buwemon+Effekt→Friedhof, Verbot→entfernen, Ereignis→entfernen
+  [...FIELD_SLOTS, ...VERBOT_SLOTS].forEach(s => {
+    const sid = pfx+'-'+s+'-4';
+    const cd = G.slots[sid];
+    if (!cd) return;
+    G.slots[sid] = null;
+    renderSlot(sid);
+    if (VERBOT_SLOTS.includes(s)) return; // Verbotskarte: nur entfernen
+    if (EREIGNIS_TYPES.has(cd.type)) return; // Ereigniskarte: nur entfernen
+    G4.graves[pfx].push({name:cd.name, color:cd.color, type:cd.type, uid:cd.uid});
+  });
+
+  // 2. Freie Karten in der Handzone + auf dem Spielfeld die diesem Spieler gehören
+  // "Gehören" = netOwner===pfx (empfangene Karten) ODER eigene Karten (myPlayer===p)
+  const toRemove = G.cards.filter(c => {
+    if (c.dataset.netOwner === pfx) return true;
+    if (!c.dataset.netEnemy && NET.myPlayer === p) return true;
+    return false;
+  });
+  toRemove.forEach(c => {
+    const ctype = c.dataset.ctype;
+    const cd = {name:c.dataset.name, color:c.dataset.color, type:ctype, uid:parseInt(c.dataset.uid)};
+    c.remove();
+    G.cards = G.cards.filter(x => x !== c);
+    if (!EREIGNIS_TYPES.has(ctype)) {
+      G4.graves[pfx].push(cd);
+    }
+  });
+
+  updGrave4(pfx);
+
+  if (NET.mode === 'multi' && fourPlayerMode) {
+    netSend({t:'grave4_update', player: pfx, graves: G4.graves[pfx]});
+    netSend({t:'player_eliminated4', p});
+    netSendState4();
+  }
+}
+
+function onPlayerJoined4(p) {
+  G4.active[p] = false; // reset first so setPlayerActive triggers
+  setPlayerActive4(p, true);
+  if (NET.mode === 'multi' && fourPlayerMode) {
+    netSend({t:'player_active4', p, active: true});
+  }
+}
+
+function initPlayerStates4() {
+  [1,2,3,4].forEach(p => {
+    G4.active[p] = false;
+    const lpEl = document.getElementById('p'+p+'-lp-4');
+    if (lpEl) lpEl.textContent = 0;
+    setPlayerActive4(p, false);
+  });
+}
+
+function applyLP4withDeathCheck(p, newVal, increased) {
+  const oldVal = G4.lp[p];
+  G4.lp[p] = Math.max(0, newVal);
+  const el = document.getElementById('p'+p+'-lp-4');
+  if (el) { el.textContent = G4.lp[p]; triggerLPAnim4(p, increased !== undefined ? increased : newVal > oldVal); }
+  if (G4.active[p]) checkDeathCondition4(p);
 }
 
 function openBrowser4(mode) {
@@ -3243,7 +3549,7 @@ function updDeck4() {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v32g',
+    version: 'v32r',
     deck: G.deck,
     graves: G.graves,
     banish: G.banish,
@@ -3445,7 +3751,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v32g
+    v32r
   </div>
 </div>
 
@@ -3618,11 +3924,29 @@ function onNetData(d) {
   if (d.t === 'joined') {
     if (fourPlayerMode) {
       if (NET.isHost) {
-        // Deck already built once in multiCreate; just (re)send CURRENT state to sync new joiner
         netSend({t:'init4', deck:G4.deck, nid:G4.nid});
+        // Host sendet aktuellen LP-Status aller aktiven Spieler an neuen Joiner
+        setTimeout(() => {
+          [1,2,3,4].forEach(p => {
+            if (G4.active[p]) {
+              netSend({t:'player_active4', p, active:true, lp:G4.lp[p]});
+            }
+          });
+        }, 200);
       }
       netSend({t:'hello4', p: NET.myPlayer, name:NET.myName});
-      if (!NET._started) { NET._started = true; startGame('multi'); }
+      if (!NET._started) {
+        NET._started = true;
+        startGame('multi');
+        setTimeout(() => {
+          // Nur eigenen Spieler aktivieren, andere bleiben auf 0/verblasst
+          setPlayerActive4(NET.myPlayer, true);
+          netSend({t:'player_active4', p: NET.myPlayer, active: true, lp: G4.lp[NET.myPlayer]});
+        }, 300);
+      } else {
+        setPlayerActive4(NET.myPlayer, true);
+        netSend({t:'player_active4', p: NET.myPlayer, active: true, lp: G4.lp[NET.myPlayer]});
+      }
     } else {
       if (NET.isHost) {
         G.deck = buildDeck(); updDeck();
@@ -3666,6 +3990,28 @@ function onNetData(d) {
       const span = lbl.querySelector('span');
       if (span) span.textContent = 'Hand – ' + d.name;
     }
+    // Spieler als aktiv markieren
+    if (!G4.active[d.p]) {
+      G4.active[d.p] = false;
+      setPlayerActive4(d.p, true);
+    }
+  }
+  if (d.t === 'player_active4') {
+    if (d.active) {
+      if (!G4.active[d.p]) {
+        G4.active[d.p] = false;
+        setPlayerActive4(d.p, true);
+      }
+      // LP aus dem Event übernehmen wenn vorhanden
+      if (d.lp !== undefined) {
+        G4.lp[d.p] = d.lp;
+        const lpEl = document.getElementById('p'+d.p+'-lp-4');
+        if (lpEl) lpEl.textContent = d.lp;
+      }
+    }
+  }
+  if (d.t === 'player_eliminated4') {
+    eliminatePlayer4(d.p);
   }
 
   if (d.t === 'state') {
@@ -3805,10 +4151,7 @@ if (d.t === 'state4') {
     applyHandVisibility4();
   }
   if (d.t === 'lp4') {
-    const oldLp4 = G4.lp[d.p] || 0;
-    G4.lp[d.p] = d.val;
-    const lpEl = document.getElementById('p'+d.p+'-lp-4');
-    if (lpEl) { lpEl.textContent = d.val; triggerLPAnim4(d.p, d.increased !== undefined ? d.increased : d.val > oldLp4); }
+    applyLP4withDeathCheck(d.p, d.val, d.increased);
   }
   if (d.t === 'reveal4') {
     if (Array.isArray(d.viewers)) {
@@ -3839,6 +4182,16 @@ if (d.t === 'state4') {
   if (d.t === 'card_remove') {
     const toRemove = G.cards.find(c => String(c.dataset.uid) === String(d.uid));
     if (toRemove) { toRemove.remove(); G.cards = G.cards.filter(c => c !== toRemove); }
+  }
+  if (d.t === 'grave4_update') {
+    G4.graves[d.player] = d.graves;
+    G.graves[d.player] = d.graves;
+    updGrave4(d.player);
+  }
+  if (d.t === 'banish4_update') {
+    G4.banish = d.banish;
+    G.banish = d.banish;
+    updBanish4();
   }
   if (d.t === 'lp') {
     G.lp[d.p] = d.val;
