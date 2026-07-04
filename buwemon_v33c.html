@@ -574,22 +574,22 @@ body {
 
   <div id="p1-grave-4" onclick="openGraveBrowser4('p1')" class="grave4-zone" style="position:absolute;left:1553px;top:755px;width:47px;height:66px;overflow:hidden;cursor:pointer;">
   <span style="position:absolute;top:2px;left:0;right:0;font-size:.48rem;color:rgba(0,0,0,0.38);text-transform:uppercase;text-align:center;pointer-events:none;font-family:'Kievit',sans-serif;">Friedhof</span>
-  <div id="p1-grave-4-preview" style="position:absolute;inset:0;"></div>
+  <div id="p1-grave-4-preview" style="position:absolute;inset:0;pointer-events:none;"></div>
   <div id="p1-grave-4-count" style="position:absolute;top:3px;right:4px;background:rgba(0,0,0,0.6);color:#fff;font-size:.5rem;font-weight:700;border-radius:3px;padding:1px 3px;display:none;">0</div>
 </div>
   <div id="p2-grave-4" onclick="openGraveBrowser4('p2')" class="grave4-zone" style="position:absolute;left:320px;top:129px;width:47px;height:66px;overflow:hidden;cursor:pointer;">
   <span style="position:absolute;top:2px;left:0;right:0;font-size:.48rem;color:rgba(0,0,0,0.38);text-transform:uppercase;text-align:center;pointer-events:none;font-family:'Kievit',sans-serif;">Friedhof</span>
-  <div id="p2-grave-4-preview" style="position:absolute;inset:0;"></div>
+  <div id="p2-grave-4-preview" style="position:absolute;inset:0;pointer-events:none;"></div>
   <div id="p2-grave-4-count" style="position:absolute;top:3px;right:4px;background:rgba(0,0,0,0.6);color:#fff;font-size:.5rem;font-weight:700;border-radius:3px;padding:1px 3px;display:none;">0</div>
 </div>
   <div id="p3-grave-4" onclick="openGraveBrowser4('p3')" class="grave4-zone" style="position:absolute;left:167px;top:794px;width:47px;height:66px;overflow:hidden;cursor:pointer;">
   <span style="position:absolute;top:2px;left:0;right:0;font-size:.48rem;color:rgba(0,0,0,0.38);text-transform:uppercase;text-align:center;pointer-events:none;font-family:'Kievit',sans-serif;">Friedhof</span>
-  <div id="p3-grave-4-preview" style="position:absolute;inset:0;"></div>
+  <div id="p3-grave-4-preview" style="position:absolute;inset:0;pointer-events:none;"></div>
   <div id="p3-grave-4-count" style="position:absolute;top:3px;right:4px;background:rgba(0,0,0,0.6);color:#fff;font-size:.5rem;font-weight:700;border-radius:3px;padding:1px 3px;display:none;">0</div>
 </div>
   <div id="p4-grave-4" onclick="openGraveBrowser4('p4')" class="grave4-zone" style="position:absolute;left:1706px;top:90px;width:47px;height:66px;overflow:hidden;cursor:pointer;">
   <span style="position:absolute;top:2px;left:0;right:0;font-size:.48rem;color:rgba(0,0,0,0.38);text-transform:uppercase;text-align:center;pointer-events:none;font-family:'Kievit',sans-serif;">Friedhof</span>
-  <div id="p4-grave-4-preview" style="position:absolute;inset:0;"></div>
+  <div id="p4-grave-4-preview" style="position:absolute;inset:0;pointer-events:none;"></div>
   <div id="p4-grave-4-count" style="position:absolute;top:3px;right:4px;background:rgba(0,0,0,0.6);color:#fff;font-size:.5rem;font-weight:700;border-radius:3px;padding:1px 3px;display:none;">0</div>
 </div>
   <div style="position:absolute;left:320px;top:741px;width:60px;height:100px;display:flex;flex-direction:column;justify-content:center;gap:5px;align-items:stretch;">
@@ -726,6 +726,8 @@ body {
         <button class="tbtn" onclick="openBrowser4('all')" style="font-size:.75rem;padding:4px 10px;">🔍 Stapel ansehen</button>
         <button class="tbtn" onclick="openOverview4()" style="font-size:.75rem;padding:4px 10px;background:rgba(180,30,30,0.5);color:#fff;">🎴 Schicksal</button>
         <button class="tbtn" onclick="openBrowser4('top4')" style="font-size:.75rem;padding:4px 10px;background:rgba(120,40,180,0.5);color:#fff;">👁 Gossip</button>
+        <button class="tbtn" onclick="confirmLiiinks4()" style="font-size:.75rem;padding:4px 10px;background:rgba(120,40,180,0.5);color:#fff;">↔️ Liiinks</button>
+        <button class="tbtn" onclick="confirmRecast4()" style="font-size:.75rem;padding:4px 10px;background:rgba(0,180,200,0.5);color:#fff;">🎲 Recast</button>
         <button class="tbtn" onclick="openColorRemove4()" style="font-size:.75rem;padding:4px 10px;background:rgba(20,20,20,0.85);color:#fff;">☠️ Raum-Zeit-Genozid</button>
       </div>
     </div>
@@ -1858,15 +1860,42 @@ function resetLocalState(){
   document.getElementById('p1-lp-input').value='';
   // clear slots
   Object.keys(G.slots).forEach(sid => { G.slots[sid]=null; renderSlot(sid); });
+  // 4-Spieler: exakt wie 2-Spieler Reset, nur mit G4-Objekten
+  if (fourPlayerMode) {
+    // Alle 4-Spieler Karten-DOM-Elemente sind bereits durch G.cards.forEach oben entfernt
+    // Graves leeren
+    G4.graves = {p1:[],p2:[],p3:[],p4:[]};
+    G.graves.p1 = G4.graves.p1; G.graves.p2 = G4.graves.p2;
+    G.graves.p3 = []; G.graves.p4 = [];
+    ['p1','p2','p3','p4'].forEach(p => updGrave4(p));
+    // Banish leeren
+    G4.banish = []; G.banish = []; updBanish4();
+    // Neues Deck
+    G4.deck = buildDeck(); G.deck = G4.deck; updDeck4();
+    // IDs zurücksetzen
+    G4.nid = 1; G.nid = 1;
+    // ALLE Slots explizit leeren (inklusive p3/p4 Slots)
+    ['p1','p2','p3','p4'].forEach(pfx4 => {
+      ['buw1','buw2','buw3','ex','eff1','eff2','eff3','eff4','verbot1','verbot2','verbot3'].forEach(s => {
+        const sid = pfx4+'-'+s+'-4';
+        G.slots[sid] = null;
+        renderSlot(sid);
+      });
+    });
+  }
 }
 function doReset(){
+  // Death-Timer aller Spieler abbrechen
+  [1,2,3,4].forEach(p => {
+    if (G4.deathTimers[p]) { clearTimeout(G4.deathTimers[p]); G4.deathTimers[p] = null; }
+  });
   resetLocalState();
   closeConfirm();
   // Im 4-Spieler: alle Spieler die je teilgenommen haben wiederbeleben
   if (fourPlayerMode) {
     G4.everActive.forEach(p => {
       G4.lp[p] = 300;
-      G4.active[p] = false; // reset so setPlayerActive4 wirkt
+      G4.active[p] = false;
       setPlayerActive4(p, true);
     });
   }
@@ -2300,8 +2329,9 @@ function tryDockCard(el) {
       if (isBuwSlot) { checkExBuwemon(player, zoneSuffix); checkZoneColor(player, zoneSuffix); }
       if (isEffSlot || isVerbotSlot) checkVerbote(player, zoneSuffix);
       if (isEffSlot && !zoneSuffix) onCardDockedToEffSlot(player, sid, cd);
-      // Darkschah manual dock (2-player only for now)
       if (isExSlot && cd.color === '#111111' && !zoneSuffix) checkDarkschahWin(player);
+      // Im 4-Spieler: explizit State senden damit Slot sofort synchronisiert wird
+      if (NET.mode === 'multi' && zoneSuffix) { netSendState4(); }
       return true;
     }
   }
@@ -2898,6 +2928,63 @@ function doRecast() {
 }
 
 
+function confirmLiiinks4() {
+  // Funktion kommt im nächsten Schritt
+}
+
+function confirmRecast4() {
+  if (!confirm('Recast! Alle normalen Buwemon in den Buwemonfeldern aller Spieler werden zufällig neu verteilt. Wirklich?')) return;
+  doRecast4();
+}
+
+function doRecast4() {
+  const allSlots = [];
+  ['p1','p2','p3','p4'].forEach(p => {
+    ['buw1','buw2','buw3'].forEach(s => allSlots.push(p+'-'+s+'-4'));
+  });
+
+  // Nur normale Buwemon (type !== 'spec') sammeln
+  const cards = allSlots.map(s => G.slots[s]).filter(c => c && c.type !== 'spec');
+
+  // Nur normale Slots leeren (spec bleiben)
+  allSlots.forEach(s => {
+    if (G.slots[s] && G.slots[s].type !== 'spec') {
+      G.slots[s] = null;
+      renderSlot(s);
+    }
+  });
+
+  // Karten mischen
+  for (let i = cards.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [cards[i],cards[j]] = [cards[j],cards[i]];
+  }
+
+  // Zufällig auf freie Slots verteilen (alle Spieler gleichwertig)
+  const freeSlots = allSlots.filter(s => !G.slots[s]);
+  // Slots zufällig mischen
+  for (let i = freeSlots.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [freeSlots[i],freeSlots[j]] = [freeSlots[j],freeSlots[i]];
+  }
+
+  cards.forEach((cd, i) => {
+    if (i < freeSlots.length) {
+      const sid = freeSlots[i];
+      G.slots[sid] = cd;
+      renderSlot(sid);
+    }
+  });
+
+  // checkExBuwemon für alle Spieler
+  ['p1','p2','p3','p4'].forEach(p => {
+    checkExBuwemon(p, '-4');
+    checkZoneColor(p, '-4');
+  });
+
+  if (NET.mode === 'multi' && fourPlayerMode) netSendState4();
+}
+
 function shuffleHand(player) {
   const handEl = document.getElementById(player+'-hand');
   if (!handEl) return;
@@ -3319,11 +3406,9 @@ function setPlayerActive4(p, active) {
 
   // LP setzen
   if (active) {
-    if (!G4.lp[p] || G4.lp[p] === 0) {
-      G4.lp[p] = 300;
-      const lpEl = document.getElementById('p'+p+'-lp-4');
-      if (lpEl) lpEl.textContent = 300;
-    }
+    G4.lp[p] = 300;
+    const lpEl = document.getElementById('p'+p+'-lp-4');
+    if (lpEl) lpEl.textContent = 300;
   } else {
     G4.lp[p] = 0;
     const lpEl = document.getElementById('p'+p+'-lp-4');
@@ -3334,61 +3419,84 @@ function setPlayerActive4(p, active) {
 function checkDeathCondition4(p) {
   if (!G4.active[p]) return;
   if (G4.lp[p] > 0) {
-    // LP wieder über 0: Tod-Timer abbrechen
     if (G4.deathTimers[p]) { clearTimeout(G4.deathTimers[p]); G4.deathTimers[p] = null; }
     return;
   }
-  // LP = 0: Felder verblassen
+  // LP = 0: Felder verblassen (für alle Clients)
   setPlayerActive4(p, false);
-  // Nach 10 Sekunden: Karten aufräumen
-  if (G4.deathTimers[p]) clearTimeout(G4.deathTimers[p]);
-  G4.deathTimers[p] = setTimeout(() => {
-    eliminatePlayer4(p);
-    G4.deathTimers[p] = null;
-  }, 10000);
+  // Tod-Timer nur beim betroffenen Spieler selbst starten
+  if (NET.mode !== 'multi' || NET.myPlayer === p) {
+    if (G4.deathTimers[p]) clearTimeout(G4.deathTimers[p]);
+    G4.deathTimers[p] = setTimeout(() => {
+      eliminatePlayer4(p);
+      G4.deathTimers[p] = null;
+    }, 10000);
+  }
 }
 
 function eliminatePlayer4(p) {
+  // NUR der betroffene Spieler selbst räumt auf.
+  // Andere Clients empfangen nur grave4_update + card_remove Events.
+  if (NET.mode === 'multi' && NET.myPlayer !== p) return;
+
   const pfx = 'p'+p;
-  const EREIGNIS_TYPES = new Set(['ereignis','ex-ereignis','ex-auto','ex']);
+  const EREIGNIS_TYPES = new Set(['ereignis','ex-ereignis','ex-auto']);
   const VERBOT_SLOTS = ['verbot1','verbot2','verbot3'];
   const FIELD_SLOTS = ['buw1','buw2','buw3','ex','eff1','eff2','eff3','eff4'];
+  const removedUids = [];
 
-  // 1. Slot-Karten: Buwemon+Effekt→Friedhof, Verbot→entfernen, Ereignis→entfernen
+  // 1. Slot-Karten leeren (nur eigene Slots, pfx = eigener Spieler)
   [...FIELD_SLOTS, ...VERBOT_SLOTS].forEach(s => {
     const sid = pfx+'-'+s+'-4';
     const cd = G.slots[sid];
     if (!cd) return;
     G.slots[sid] = null;
     renderSlot(sid);
-    if (VERBOT_SLOTS.includes(s)) return; // Verbotskarte: nur entfernen
-    if (EREIGNIS_TYPES.has(cd.type)) return; // Ereigniskarte: nur entfernen
+    removedUids.push(cd.uid);
+    if (VERBOT_SLOTS.includes(s)) return;
+    if (EREIGNIS_TYPES.has(cd.type) || cd.type === 'ex') return;
     G4.graves[pfx].push({name:cd.name, color:cd.color, type:cd.type, uid:cd.uid});
   });
 
-  // 2. Freie Karten in der Handzone + auf dem Spielfeld die diesem Spieler gehören
-  // "Gehören" = netOwner===pfx (empfangene Karten) ODER eigene Karten (myPlayer===p)
-  const toRemove = G.cards.filter(c => {
-    if (c.dataset.netOwner === pfx) return true;
-    if (!c.dataset.netEnemy && NET.myPlayer === p) return true;
-    return false;
-  });
-  toRemove.forEach(c => {
-    const ctype = c.dataset.ctype;
-    const cd = {name:c.dataset.name, color:c.dataset.color, type:ctype, uid:parseInt(c.dataset.uid)};
-    c.remove();
-    G.cards = G.cards.filter(x => x !== c);
-    if (!EREIGNIS_TYPES.has(ctype)) {
-      G4.graves[pfx].push(cd);
-    }
-  });
+  // 2. NUR Karten in der eigenen Handzone
+  const handEl = document.getElementById(pfx+'-hand-4');
+  if (handEl) {
+    const hr = handEl.getBoundingClientRect();
+    const W=1920, H=980, scale=Math.min(window.innerWidth/W, window.innerHeight/H);
+    const ox=(window.innerWidth-W*scale)/2, oy=(window.innerHeight-H*scale)/2;
+    const hL=(hr.left-ox)/scale, hR=(hr.right-ox)/scale;
+    const hT=(hr.top-oy)/scale,  hB=(hr.bottom-oy)/scale;
+
+    const toRemove = G.cards.filter(c => {
+      if (c.dataset.netEnemy) return false; // keine fremden Karten
+      const cx = parseFloat(c.style.left)+31, cy = parseFloat(c.style.top)+44;
+      return cx>=hL && cx<=hR && cy>=hT && cy<=hB; // nur in MEINER Handzone
+    });
+    toRemove.forEach(c => {
+      const ctype = c.dataset.ctype;
+      const uid = parseInt(c.dataset.uid);
+      const cd = {name:c.dataset.name, color:c.dataset.color, type:ctype, uid};
+      c.remove();
+      G.cards = G.cards.filter(x => x !== c);
+      removedUids.push(uid);
+      if (!EREIGNIS_TYPES.has(ctype) && ctype !== 'ex') {
+        G4.graves[pfx].push(cd);
+      }
+    });
+  }
 
   updGrave4(pfx);
 
+  // Anderen Clients mitteilen: Karten entfernen + Friedhof updaten
   if (NET.mode === 'multi' && fourPlayerMode) {
+    removedUids.forEach(uid => netSend({t:'card_remove', uid}));
     netSend({t:'grave4_update', player: pfx, graves: G4.graves[pfx]});
-    netSend({t:'player_eliminated4', p});
-    netSendState4();
+    // Slots synchronisieren (ohne netSendState4 das Karten neu spawnnen könnte)
+    const slotUpdate = {};
+    ['buw1','buw2','buw3','ex','eff1','eff2','eff3','eff4','verbot1','verbot2','verbot3'].forEach(s => {
+      slotUpdate[pfx+'-'+s+'-4'] = null;
+    });
+    netSend({t:'slots4_update', slots: slotUpdate});
   }
 }
 
@@ -3458,7 +3566,6 @@ function rollDice4() {
   btn.classList.add('rolling');
   btn.textContent = '?';
   const result = Math.floor(Math.random()*6)+1;
-  if (NET.mode === 'multi' && fourPlayerMode) netSend({t:'dice_roll4', result});
   let count = 0;
   const interval = setInterval(() => {
     btn.textContent = Math.floor(Math.random()*6)+1;
@@ -3468,6 +3575,8 @@ function rollDice4() {
   setTimeout(() => {
     clearInterval(interval);
     showDiceResult4(result, false);
+    // Ergebnis erst NACH der lokalen Animation senden → Empfänger zeigt sofort das Ergebnis
+    if (NET.mode === 'multi' && fourPlayerMode) netSend({t:'dice_roll4', result});
   }, 700);
 }
 function showDiceResult4(result, broadcast) {
@@ -3513,18 +3622,22 @@ function netSendState4() {
       };
     });
 
-  // Collect own slots (buw1-3, ex, eff1-2, verbot1-3, all with -4 suffix)
+  // Collect ALL slots (alle Spieler) - wie 2-Spieler der auch p1+p2 sendet
   const mySlots = {};
-  ['buw1','buw2','buw3','ex','eff1','eff2','eff3','eff4','verbot1','verbot2','verbot3'].forEach(s => {
-    const sid = myPfx + '-' + s + '-4';
-    mySlots[sid] = G.slots[sid] || null;
+  ['p1','p2','p3','p4'].forEach(pfx4 => {
+    ['buw1','buw2','buw3','ex','eff1','eff2','eff3','eff4','verbot1','verbot2','verbot3'].forEach(s => {
+      const sid = pfx4 + '-' + s + '-4';
+      mySlots[sid] = G.slots[sid] || null;
+    });
   });
 
-  // Verboten flags for own effekt slots
+  // Verboten flags für alle Spieler
   const verbotenFlags = {};
-  ['eff1','eff2','eff3','eff4'].forEach(es => {
-    const el = document.getElementById(myPfx + '-' + es + '-4');
-    verbotenFlags[myPfx+'-'+es+'-4'] = el ? el.classList.contains('verboten') : false;
+  ['p1','p2','p3','p4'].forEach(pfx4 => {
+    ['eff1','eff2','eff3','eff4'].forEach(es => {
+      const el = document.getElementById(pfx4 + '-' + es + '-4');
+      verbotenFlags[pfx4+'-'+es+'-4'] = el ? el.classList.contains('verboten') : false;
+    });
   });
 
   netSend({
@@ -3563,7 +3676,7 @@ function updDeck4() {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v32v',
+    version: 'v33c',
     deck: G.deck,
     graves: G.graves,
     banish: G.banish,
@@ -3765,7 +3878,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v32v
+    v33c
   </div>
 </div>
 
@@ -4022,7 +4135,15 @@ function onNetData(d) {
     }
   }
   if (d.t === 'player_eliminated4') {
-    eliminatePlayer4(d.p);
+    // Nur verblassen - Karten werden via card_remove + grave4_update synchronisiert
+    setPlayerActive4(d.p, false);
+  }
+  if (d.t === 'slots4_update') {
+    // Slots eines eliminierten Spielers leeren
+    Object.keys(d.slots).forEach(sid => {
+      G.slots[sid] = null;
+      renderSlot(sid);
+    });
   }
 
   if (d.t === 'state') {
@@ -4256,19 +4377,8 @@ if (d.t === 'state4') {
     setTimeout(() => { showDiceResult(d.result, false); }, 700);
   }
   if (d.t === 'dice_roll4') {
-    const btn4 = document.getElementById('dice-btn-4');
-    if (btn4) {
-      btn4.classList.remove('show-result');
-      btn4.classList.add('rolling');
-      btn4.textContent = '?';
-      let c = 0;
-      const iv = setInterval(() => {
-        btn4.textContent = Math.floor(Math.random()*6)+1;
-        c++;
-        if (c > 10) clearInterval(iv);
-      }, 60);
-      setTimeout(() => { showDiceResult4(d.result, false); }, 700);
-    }
+    // Sender hat bereits gerollt und sendet nach seiner Animation → direkt Ergebnis zeigen
+    showDiceResult4(d.result, false);
   }
 }
 
