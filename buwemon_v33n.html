@@ -337,7 +337,7 @@ body {
   90% { transform: translate(-8px,8px) rotate(-1deg); }
 }
 .darkschah-win { animation: buweshake 0.3s infinite; }
-.card.darkschah-win, #ereignis-panel.darkschah-win, #banish-panel.darkschah-win { animation: buweshake 0.3s infinite; }
+.card.darkschah-win, #ereignis-panel.darkschah-win, #banish-panel.darkschah-win, #ereignis-panel-4.darkschah-win, #banish-panel-4.darkschah-win, #board4.darkschah-win { animation: buweshake 0.3s infinite; }
 
 .lobby-pick-btn {
   background: linear-gradient(160deg,#c8ccd4 0%,#e8ecf2 40%,#d0d4dc 70%,#f0f2f6 100%) !important;
@@ -1671,7 +1671,7 @@ function onCarryDrop(e) {
       if (isBuwSlot) { checkExBuwemon(player, zoneSuffix2); checkZoneColor(player, zoneSuffix2); }
       if (isEffSlot || isVerbotSlot) checkVerbote(player, zoneSuffix2);
       if (isEffSlot && !zoneSuffix2) onCardDockedToEffSlot(player, sid, cd);
-      if (isExSlot && cd.color === '#111111' && !zoneSuffix2) checkDarkschahWin(player);
+      if (isExSlot && (cd.color === '#111111' || cd.name === 'Darkschah EX')) checkDarkschahWin(player);
       if (NET.mode==='multi') { zoneSuffix2 ? netSendState4() : netSendState(); }
       return;
     }
@@ -2076,15 +2076,12 @@ function renderSlot(slotId) {
   // Spark animation for spec buwemon - many small sparks around card
   if (cd.type === 'spec' && !existingCard) {
     // Spec shake - whole board + all cards + panels (like darkschah)
-    document.getElementById('board').classList.add('spec-shake');
+    const _specBoards = ['board','board4','ereignis-panel','banish-panel','ereignis-panel-4','banish-panel-4'].map(id=>document.getElementById(id)).filter(Boolean);
+    _specBoards.forEach(el=>el.classList.add('spec-shake'));
     G.cards.forEach(c => c.classList.add('spec-shake'));
-    document.getElementById('ereignis-panel').classList.add('spec-shake');
-    if(document.getElementById('banish-panel')) document.getElementById('banish-panel').classList.add('spec-shake');
     setTimeout(() => {
-      document.getElementById('board').classList.remove('spec-shake');
+      _specBoards.forEach(el=>el.classList.remove('spec-shake'));
       G.cards.forEach(c => c.classList.remove('spec-shake'));
-      document.getElementById('ereignis-panel').classList.remove('spec-shake');
-      if(document.getElementById('banish-panel')) document.getElementById('banish-panel').classList.remove('spec-shake');
     }, 2000);
     if (NET.mode === 'multi') netSend({t:'spec_docked', slotId});
     requestAnimationFrame(() => {
@@ -2261,7 +2258,7 @@ function checkExBuwemon(player, suffix) {
     if (exFile) {
       G.slots[exSlot] = {name: EX_NAMES[s1.color]||'EX', color: s1.color, type: 'ex-auto', file: exFile, uid: 0};
       renderSlot(exSlot);
-      if (s1.color === '#111111' && !suffix) checkDarkschahWin(player);
+      if (s1.color === '#111111') checkDarkschahWin(player);
       checkZoneColor(player, suffix);
       return;
     }
@@ -2329,7 +2326,7 @@ function tryDockCard(el) {
       if (isBuwSlot) { checkExBuwemon(player, zoneSuffix); checkZoneColor(player, zoneSuffix); }
       if (isEffSlot || isVerbotSlot) checkVerbote(player, zoneSuffix);
       if (isEffSlot && !zoneSuffix) onCardDockedToEffSlot(player, sid, cd);
-      if (isExSlot && cd.color === '#111111' && !zoneSuffix) checkDarkschahWin(player);
+      if (isExSlot && (cd.color === '#111111' || cd.name === 'Darkschah EX')) checkDarkschahWin(player);
       // Im 4-Spieler: explizit State senden damit Slot sofort synchronisiert wird
       if (NET.mode === 'multi' && zoneSuffix) { netSendState4(); }
       return true;
@@ -2736,10 +2733,71 @@ function openBrowserCardPopup(realIdx) {
 
 // ── DARKSCHAH WIN ──
 function checkDarkschahWin(player) {
+  if (fourPlayerMode) {
+    checkDarkschahWin4(player);
+    return;
+  }
   const myPlayer = NET.mode === 'multi' ? NET.myPlayer : 1;
   const isWinner = (NET.mode === 'multi') ? (myPlayer === parseInt(player.replace('p',''))) : true;
   showDarkschahWinLose(isWinner);
   if (NET.mode === 'multi') netSend({t:'darkschah', winner: player});
+}
+
+function checkDarkschahWin4(player) {
+  const winnerP = parseInt(player.replace('p',''));
+  const myP = NET.mode === 'multi' ? NET.myPlayer : winnerP;
+  const isWinner = (myP === winnerP);
+  showDarkschahWinLose4(isWinner, winnerP);
+  if (NET.mode === 'multi' && fourPlayerMode) {
+    // Flag setzen damit Receiver es nicht nochmal ausführt
+    G4._darkschahSent = true;
+    netSend({t:'darkschah4', winner: player});
+  }
+}
+
+function showDarkschahWinLose4(isWinner, winnerP) {
+  triggerExplosions();
+  // Alle anderen Spieler bekommen -1000 LP (kann negativ werden)
+  const boards = ['board','board4','ereignis-panel','banish-panel','ereignis-panel-4','banish-panel-4'].map(id=>document.getElementById(id)).filter(Boolean);
+  boards.forEach(el => el.classList.add('darkschah-win'));
+  G.cards.forEach(c => c.classList.add('darkschah-win'));
+  // -1000 LP für alle außer dem Gewinner (kann negativ werden!)
+  // Im Multiplayer: nur aktive Spieler; im Solo: alle außer Gewinner
+  const losers = [1,2,3,4].filter(p => {
+    if (p === winnerP) return false;
+    if (NET.mode === 'multi') return G4.active[p];
+    return G4.everActive.has(p) || G4.lp[p] > 0;
+  });
+  losers.forEach(p => {
+    G4.lp[p] = (G4.lp[p] || 0) - 1000; // darf negativ werden!
+    const lpEl = document.getElementById('p'+p+'-lp-4');
+    if (lpEl) lpEl.textContent = G4.lp[p];
+    triggerLPAnim4(p, false);
+    if (NET.mode === 'multi') netSend({t:'lp4', p, val: G4.lp[p], increased: false});
+  });
+  const text = isWinner ? 'ABSOLUTE VERNICHTUNG' : 'DU WURDEST VERNICHTET!';
+  const overlay = document.getElementById('win-lose-overlay');
+  const el = document.getElementById('win-lose-text');
+  el.textContent = '';
+  el.style.opacity = '1';
+  el.style.transition = '';
+  el.style.color = isWinner ? '#ffffff' : '#000000';
+  el.style.webkitTextStroke = isWinner ? '8px #000000' : '8px #ffffff';
+  el.style.textShadow = '0 4px 24px rgba(0,0,0,0.8), 0 2px 8px rgba(0,0,0,0.9)';
+  overlay.style.display = 'flex';
+  let i = 0;
+  const interval = setInterval(() => {
+    el.textContent = text.slice(0, i+1); i++;
+    if (i >= text.length) {
+      clearInterval(interval);
+      setTimeout(() => {
+        el.style.transition = 'opacity 2s ease'; el.style.opacity = '0';
+        boards.forEach(b => b.classList.remove('darkschah-win'));
+        G.cards.forEach(c => c.classList.remove('darkschah-win'));
+        setTimeout(() => { overlay.style.display = 'none'; }, 2000);
+      }, 10000);
+    }
+  }, 60);
 }
 
 function showDarkschahWinLose(isWinner) {
@@ -3422,18 +3480,45 @@ function dealStartCards4() {
     }
   }
 
+  // Im Multiplayer: nur eigene Karten spawnen
+  const playersToSpawn = (NET.mode === 'multi' && fourPlayerMode)
+    ? activePlayers.filter(p => p === NET.myPlayer)
+    : activePlayers;
+
+  // Deck für alle aktiven Spieler verbrauchen (Reihenfolge beibehalten)
+  // Aber nur die eigenen Karten tatsächlich spawnen
+  const deckCopy = [...G4.deck];
+  const spawnPositions = {}; // p → [{cd, x, y}]
   activePlayers.forEach(p => {
-    if (p === 1 || p === 2) placeHoriz(p);
-    else placeVert(p);
+    spawnPositions[p] = [];
+    for (let i = 0; i < 5; i++) {
+      if (!G4.deck.length) break;
+      const cd = {...G4.deck.shift(), uid: G4.nid++};
+      spawnPositions[p].push(cd);
+    }
+  });
+
+  // Nur eigene Karten spawnen
+  playersToSpawn.forEach(p => {
+    const hz = handZones[p];
+    const cards = spawnPositions[p];
+    if (p === 1 || p === 2) {
+      const totalW = cards.length * CW4 + (cards.length-1) * (GAP4-CW4);
+      const startX = hz.cx - totalW/2;
+      const y = hz.cy - CH4/2;
+      cards.forEach((cd, i) => spawnCard(cd, clampX(startX + i*GAP4), clampY(y), false));
+    } else {
+      const totalH = cards.length * CH4 + (cards.length-1) * (GAP4-CH4);
+      const startY = hz.cy - totalH/2;
+      const x = hz.cx - CW4/2;
+      cards.forEach((cd, i) => spawnCard(cd, clampX(x), clampY(startY + i*GAP4), false));
+    }
   });
 
   updDeck4();
-  // KEIN G.cards = G4.cards - das würde die Referenz brechen!
 
   if (NET.mode === 'multi' && fourPlayerMode) {
-    // Deck-State senden damit alle den gleichen Ziehstapel haben
     netSend({t:'deck4_update', deck: G4.deck, nid: G4.nid});
-    // Dann state4 senden damit Karten bei Gegnern erscheinen
     netSendState4();
   }
 }
@@ -3477,10 +3562,11 @@ function updGrave4(player) {
 }
 
 function setPlayerActive4(p, active) {
-  // Nur im Mehrspieler verblassen
-  if (NET.mode !== 'multi') return;
+  // G4.active immer setzen (auch im Solo)
   G4.active[p] = active;
   if (active) G4.everActive.add(p);
+  // Visuelles Verblassen nur im Mehrspieler
+  if (NET.mode !== 'multi') return;
   const opacity = active ? '1' : '0.15';
   const filter = active ? '' : 'grayscale(80%)';
 
@@ -3544,9 +3630,27 @@ function checkDeathCondition4(p) {
     return;
   }
   // LP = 0
-  if (G4.active[p]) {
-    // Gerade gestorben: Felder verblassen, Timer starten
-    setPlayerActive4(p, false);
+  if (G4.active[p] || G4.everActive.has(p)) {
+    // Gerade gestorben (oder erneut gestorben): Felder verblassen, Timer starten
+    if (G4.active[p]) setPlayerActive4(p, false);
+    // Losetext für den toten Spieler
+    if (NET.mode !== 'multi' || NET.myPlayer === p) {
+      showWinLose(false);
+    }
+    // Prüfen ob nur noch ein Spieler lebt → Wintext
+    const stillAlive = [1,2,3,4].filter(q => G4.active[q] || (q === p)); // p gerade gestorben
+    const aliveAfter = stillAlive.filter(q => q !== p);
+    if (aliveAfter.length === 1) {
+      const winner = aliveAfter[0];
+      if (NET.mode !== 'multi' || NET.myPlayer === winner) {
+        setTimeout(() => showWinLose(true), 1500); // kurz verzögern
+      }
+      if (NET.mode === 'multi' && fourPlayerMode) {
+        netSend({t:'winlose4', loser: p, winner});
+      }
+    } else if (NET.mode === 'multi' && fourPlayerMode) {
+      netSend({t:'winlose4', loser: p, winner: null});
+    }
     if (NET.mode !== 'multi' || NET.myPlayer === p) {
       if (G4.deathTimers[p]) clearTimeout(G4.deathTimers[p]);
       G4.deathTimers[p] = setTimeout(() => {
@@ -3555,7 +3659,6 @@ function checkDeathCondition4(p) {
       }, 10000);
     }
   }
-  // Wenn !G4.active[p] und LP=0: bereits tot, nichts tun
 }
 
 function eliminatePlayer4(p) {
@@ -3582,21 +3685,25 @@ function eliminatePlayer4(p) {
     G4.graves[pfx].push({name:cd.name, color:cd.color, type:cd.type, uid:cd.uid});
   });
 
-  // 2. NUR Karten in der eigenen Handzone
-  // Feste game-coordinates (aus CSS-Layout, identisch zu dealStartCards4)
-  const W=1920, H=980;
-  const HAND_ZONES = {
-    1: {l:320, r:W-320, t:H-8-113, b:H-8},
-    2: {l:320, r:W-320, t:8,       b:8+113},
-    3: {l:8,   r:8+151, t:90,      b:H-90},
-    4: {l:W-8-151, r:W-8, t:90,   b:H-90},
+  // 2. Karten in der Handzone des toten Spielers
+  // Feste game-coordinates aus CSS-Layout
+  const HAND_ZONES4 = {
+    1: {l:320,    r:1600,   t:859, b:972},
+    2: {l:320,    r:1600,   t:8,   b:121},
+    3: {l:8,      r:159,    t:90,  b:890},
+    4: {l:1761,   r:1912,   t:90,  b:890},
   };
-  const hz = HAND_ZONES[p];
+  const hz = HAND_ZONES4[p];
   if (hz) {
+    // Karten in Handzone: entweder eigene (non-netEnemy) ODER netOwner=pfx
     const toRemove = G.cards.filter(c => {
-      if (c.dataset.netEnemy) return false;
       const cx = parseFloat(c.style.left)+31, cy = parseFloat(c.style.top)+44;
-      return cx>=hz.l && cx<=hz.r && cy>=hz.t && cy<=hz.b;
+      const inZone = cx>=hz.l && cx<=hz.r && cy>=hz.t && cy<=hz.b;
+      if (!inZone) return false;
+      // In der Zone: nur wenn es die Karte DIESES Spielers ist
+      if (c.dataset.netOwner === pfx) return true; // explizit diesem Spieler gehörend
+      if (!c.dataset.netEnemy) return true; // eigene Karte (nur der betroffene Spieler hat solche)
+      return false;
     });
     toRemove.forEach(c => {
       const ctype = c.dataset.ctype;
@@ -3803,7 +3910,7 @@ function updDeck4() {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v33g',
+    version: 'v33n',
     deck: G.deck,
     graves: G.graves,
     banish: G.banish,
@@ -4005,7 +4112,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v33g
+    v33n
   </div>
 </div>
 
@@ -4410,7 +4517,15 @@ if (d.t === 'state4') {
     applyHandVisibility4();
   }
   if (d.t === 'lp4') {
-    applyLP4withDeathCheck(d.p, d.val, d.increased);
+    if (d.val < 0) {
+      // Darkschah-Ausnahme: negative LP erlaubt, kein Death-Check
+      G4.lp[d.p] = d.val;
+      const _lpEl = document.getElementById('p'+d.p+'-lp-4');
+      if (_lpEl) _lpEl.textContent = d.val;
+      triggerLPAnim4(d.p, false);
+    } else {
+      applyLP4withDeathCheck(d.p, d.val, d.increased);
+    }
   }
   if (d.t === 'reveal4') {
     if (Array.isArray(d.viewers)) {
@@ -4427,15 +4542,12 @@ if (d.t === 'state4') {
     applyShuffleHand(d.moves);
   }
   if (d.t === 'spec_docked') {
-    document.getElementById('board').classList.add('spec-shake');
+    const _sb = ['board','board4','ereignis-panel','banish-panel','ereignis-panel-4','banish-panel-4'].map(id=>document.getElementById(id)).filter(Boolean);
+    _sb.forEach(el=>el.classList.add('spec-shake'));
     G.cards.forEach(c => c.classList.add('spec-shake'));
-    document.getElementById('ereignis-panel').classList.add('spec-shake');
-    if(document.getElementById('banish-panel')) document.getElementById('banish-panel').classList.add('spec-shake');
     setTimeout(() => {
-      document.getElementById('board').classList.remove('spec-shake');
+      _sb.forEach(el=>el.classList.remove('spec-shake'));
       G.cards.forEach(c => c.classList.remove('spec-shake'));
-      document.getElementById('ereignis-panel').classList.remove('spec-shake');
-      if(document.getElementById('banish-panel')) document.getElementById('banish-panel').classList.remove('spec-shake');
     }, 2000);
   }
   if (d.t === 'card_remove') {
@@ -4482,6 +4594,17 @@ if (d.t === 'state4') {
     const myPlayer = NET.myPlayer;
     const winnerNum = parseInt(d.winner.replace('p',''));
     showDarkschahWinLose(myPlayer === winnerNum);
+  }
+  if (d.t === 'darkschah4') {
+    // Sender hat bereits lokal ausgeführt - nur Empfänger ausführen
+    if (G4._darkschahSent) { G4._darkschahSent = false; return; }
+    const winnerP = parseInt(d.winner.replace('p',''));
+    showDarkschahWinLose4(NET.myPlayer === winnerP, winnerP);
+  }
+  if (d.t === 'winlose4') {
+    // Nur Wintext für den letzten Überlebenden
+    if (d.winner && NET.myPlayer === d.winner) setTimeout(() => showWinLose(true), 1500);
+    // Kein zusätzlicher Losetext - der sterbende Spieler bekommt seinen durch LP=0
   }
   if (d.t === 'reveal') {
     G.reveal[d.p] = d.val;
