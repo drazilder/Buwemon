@@ -895,9 +895,9 @@ const IMG = {
   "Clarry Pather der Maincharacter": "karten/Clarry_Pather.png",
   "ClariSSIO": "karten/ClariSSIO.png",
   "Alicia die ehrenlose Fettsau": "karten/Alicia.png",
-  "Glorian Schniekel": "karten/Glorian_Schniekel.png",
-  "Flosama Op Laden": "karten/Flosama_Op_Laden.png",
-  "Klorian": "karten/Klorian.png",
+  "Glorian": "karten/Glorian_Zensiert.png",
+  "Flosama": "karten/Flosama_Zensiert.png",
+  "Klorian": "karten/Klorian_Zensiert.png",
   "Lisa aus Australien": "karten/Lisa_aus_Australien.png",
   "Suffia": "karten/Suffia.png",
   "Luis Münsters": "karten/Luis_Muensters.png",
@@ -1020,8 +1020,8 @@ const CARD_DB=[
   {name:"Barista Clarista der Mister-Fister",count:3,color:"#008899",type:"buw"},
   {name:"ClariSSIO",count:3,color:"#008899",type:"buw"},
   {name:"Alicia die ehrenlose Fettsau",count:3,color:"#008899",type:"buw"},
-  {name:"Glorian Schniekel",count:3,color:"#aa9900",type:"buw"},
-  {name:"Flosama Op Laden",count:3,color:"#aa9900",type:"buw"},
+  {name:"Glorian",count:3,color:"#aa9900",type:"buw"},
+  {name:"Flosama",count:3,color:"#aa9900",type:"buw"},
   {name:"Klorian",count:3,color:"#aa9900",type:"buw"},
   {name:"Lisa aus Australien",count:3,color:"#aa9900",type:"buw"},
   {name:"Suffia",count:3,color:"#666666",type:"buw"},
@@ -1078,7 +1078,7 @@ const G={deck:[],nid:1,cards:[],reveal:{1:false,2:false},lp:{1:300,2:300},graves
 let fourPlayerMode = false;
 
 let erweiterungAN = true;
-const NO_DLC = {'Gilip der Glibbrige':3,'Lord Phillipp of Glencoe':3,'Phülügülüm':3,'Baby Niko':0,'Grünika':3,'Schwammika':3,'Antika':3,'Marie die Königsgardistin':0,'Marzo der Gott':3,'Marcopter':3,'Marco der Hund':3,'Leonie Norris':0,'Kax Maufmann':3,'Maxodia':3,'Maxibu':3,'Hoffi der rasierte Karnevalsprinz':0,'Barista Clarista der Mister-Fister':3,'Clarry Pather der Maincharacter':3,'ClariSSIO':3,'Alicia die ehrenlose Fettsau':0,'Glorian Schniekel':3,'Flosama Op Laden':3,'Klorian':3,'Lisa aus Australien':0,'Suffia':3,'Luis Münsters':3,'Cedzilla':3,'Griechischer Apored':0,'Fabio das Berlin-City-Girl':3,'Giraffael':3,'Hannah im Bach':3,'Alexerus Snape':0,'Die Pogofanten':1,"L'Enderdragon":1,'Golop der Grobe':0,'Der Zeitführer':1,'BOOM Clan':1,'Glaskuppel':6,'Calgon':6,'Clubmate':5,'Eine Runde noch':5,'RGB':5,'Nachschlag':5,'Mecces':5,'Ablehnt':5,'Dinkelmehl':5,'Wanze':2,'UwU ':2,'Tut mir leid…':2,'Ragequit':2,'Random Vote':2,'Neue BESSERE Karte':2,'Discord Meeting':2,'Zeitmaschinen Veruntreuung':2,'Sigma Transformation':0,'Tristanverbot':2,'Elefanten Aufstand':2,'Stein':2,'13er Bogen':2,'Vertragsbruch':2,'FourAceFour-Feuer-Reverse-Blöff':1};
+const NO_DLC = {'Gilip der Glibbrige':3,'Lord Phillipp of Glencoe':3,'Phülügülüm':3,'Baby Niko':0,'Grünika':3,'Schwammika':3,'Antika':3,'Marie die Königsgardistin':0,'Marzo der Gott':3,'Marcopter':3,'Marco der Hund':3,'Leonie Norris':0,'Kax Maufmann':3,'Maxodia':3,'Maxibu':3,'Hoffi der rasierte Karnevalsprinz':0,'Barista Clarista der Mister-Fister':3,'Clarry Pather der Maincharacter':3,'ClariSSIO':3,'Alicia die ehrenlose Fettsau':0,'Glorian':3,'Flosama':3,'Klorian':3,'Lisa aus Australien':0,'Suffia':3,'Luis Münsters':3,'Cedzilla':3,'Griechischer Apored':0,'Fabio das Berlin-City-Girl':3,'Giraffael':3,'Hannah im Bach':3,'Alexerus Snape':0,'Die Pogofanten':1,"L'Enderdragon":1,'Golop der Grobe':0,'Der Zeitführer':1,'BOOM Clan':1,'Glaskuppel':6,'Calgon':6,'Clubmate':5,'Eine Runde noch':5,'RGB':5,'Nachschlag':5,'Mecces':5,'Ablehnt':5,'Dinkelmehl':5,'Wanze':2,'UwU ':2,'Tut mir leid…':2,'Ragequit':2,'Random Vote':2,'Neue BESSERE Karte':2,'Discord Meeting':2,'Zeitmaschinen Veruntreuung':2,'Sigma Transformation':0,'Tristanverbot':2,'Elefanten Aufstand':2,'Stein':2,'13er Bogen':2,'Vertragsbruch':2,'FourAceFour-Feuer-Reverse-Blöff':1};
 function buildDeck(){let d=[];CARD_DB.forEach(def=>{let cnt=erweiterungAN?def.count:(NO_DLC[def.name]??0);for(let i=0;i<cnt;i++)d.push({name:def.name,color:def.color,type:def.type,uid:G.nid++});});return shuffle(d);}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 G.deck=buildDeck();updDeck();
@@ -2950,7 +2950,7 @@ function checkLPWin(p) {
 // ── LIIINKS & RECAST ──
 
 // ── TOXISCHE MÄNNLICHKEIT ──
-const MAENNLICHE_BUWEMON = ["Gilip der Glibbrige", "Lord Phillipp of Glencoe", "Phülügülüm", "Baby Niko", "Marzo der Gott", "Marcopter", "Marco der Hund", "Kax Maufmann", "Maxodia", "Maxibu", "Hoffi der rasierte Karnevalsprinz", "Glorian Schniekel", "Flosama Op Laden", "Klorian", "Luis Münsters", "Cedzilla", "Griechischer Apored", "Fabio das Berlin-City-Girl", "Giraffael"];
+const MAENNLICHE_BUWEMON = ["Gilip der Glibbrige", "Lord Phillipp of Glencoe", "Phülügülüm", "Baby Niko", "Marzo der Gott", "Marcopter", "Marco der Hund", "Kax Maufmann", "Maxodia", "Maxibu", "Hoffi der rasierte Karnevalsprinz", "Glorian", "Flosama", "Klorian", "Luis Münsters", "Cedzilla", "Griechischer Apored", "Fabio das Berlin-City-Girl", "Giraffael"];
 
 function confirmToxMaennlichkeit() {
   if (!confirm('Toxische Männlichkeit! Alle männlichen Buwemon in gegnerischen Buwemonfeldern werden auf den Entferntstapel verschoben. Wirklich?')) return;
@@ -4182,7 +4182,7 @@ function updDeck4() {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v34h',
+    version: 'v34i',
     deck: G.deck,
     graves: G.graves,
     banish: G.banish,
@@ -4387,7 +4387,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v34h
+    v34i
   </div>
 </div>
 
