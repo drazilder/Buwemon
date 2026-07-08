@@ -459,6 +459,7 @@ body {
   <span id="player-label" style="font-size:.82rem;font-weight:700;color:rgba(0,0,0,0.55);font-family:'AiSpec',sans-serif;font-style:italic;display:none;padding:2px 8px;background:rgba(0,0,0,0.08);border-radius:5px;white-space:nowrap;"></span>
   <span class="sp"></span>
   <button class="tbtn" id="btn-deal" onclick="openDealConfirm()" style="color:#1a4a8a;border-color:rgba(30,80,200,0.3);">🃏 Startkarten ausgeben</button>
+  <button class="tbtn" onclick="openCardCountDebug()" style="color:#666;border-color:rgba(0,0,0,0.2);">🔢 Karten Anzahlen</button>
   <button class="tbtn danger" id="btn-reset" onclick="openConfirm()">↺ Neue Runde</button>
   <span id="conn-dot" style="width:7px;height:7px;border-radius:50%;background:#d95555;display:none;flex-shrink:0;"></span>
   <button class="tbtn" id="btn-lobby">⌂ Startbildschirm</button>
@@ -1906,15 +1907,126 @@ function doReset(){
   });
   resetLocalState();
   closeConfirm();
-  // Im 4-Spieler: alle Spieler die je teilgenommen haben wiederbeleben
+  // Im 4-Spieler: alle 4 Spieler zurücksetzen und wiederbeleben (nicht nur die aus G4.everActive,
+  // da diese Liste im Solo-Modus oft leer/unvollständig ist)
   if (fourPlayerMode) {
-    G4.everActive.forEach(p => {
+    [1,2,3,4].forEach(p => {
+      G4.everActive.add(p);
       G4.lp[p] = 300;
       G4.active[p] = false;
       setPlayerActive4(p, true);
     });
   }
   if (NET.mode==='multi') netSend({t:'gamereset'});
+}
+
+
+// ── KARTEN-ANZAHL DEBUG ──
+function openCardCountDebug() {
+  if (!confirm('Achtung: Nur zum Debuggen!')) return;
+  showCardCountDebug();
+}
+
+function showCardCountDebug() {
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const deck = is4 ? G4.deck : G.deck;
+  const graves = is4 ? G4.graves : G.graves;
+  const banish = is4 ? G4.banish : G.banish;
+
+  // Soll-Anzahl abhängig vom Erweiterung-Toggle:
+  // Erweiterung AN -> CARD_DB.count (volle Anzahl inkl. DLC)
+  // Erweiterung AUS -> NO_DLC[name] (reduzierte Anzahl ohne DLC)
+  const WITH_DLC = {};
+  CARD_DB.forEach(def => { WITH_DLC[def.name] = def.count; });
+  const EXPECTED = erweiterungAN ? WITH_DLC : NO_DLC;
+
+  // Alle Karten zählen (nur buw und spec, keine ereignis/eff)
+  const TYPES = new Set(['buw','spec','eff']);
+
+  // Ziehstapel zählen
+  const deckCount = {};
+  deck.forEach(c => { if (TYPES.has(c.type)) deckCount[c.name] = (deckCount[c.name]||0)+1; });
+
+  // Gesamtzählung
+  const totalCount = {...deckCount};
+
+  function add(c) {
+    if (!c || !TYPES.has(c.type)) return;
+    totalCount[c.name] = (totalCount[c.name]||0)+1;
+  }
+
+  // Spielfeld (G.cards)
+  G.cards.forEach(c => {
+    const t = c.dataset.ctype;
+    if (!t || !TYPES.has(t)) return;
+    totalCount[c.dataset.name] = (totalCount[c.dataset.name]||0)+1;
+  });
+
+  // Slots (Buw+Eff Felder)
+  Object.values(G.slots).forEach(c => add(c));
+
+  // Friedhöfe
+  if (is4) {
+    ['p1','p2','p3','p4'].forEach(p => (graves[p]||[]).forEach(add));
+  } else {
+    ['p1','p2'].forEach(p => (graves[p]||[]).forEach(add));
+  }
+
+  // Entfernt-Stapel
+  banish.forEach(add);
+
+  // Alle bekannten Karten sortiert
+  const allNames = [...new Set([...Object.keys(deckCount), ...Object.keys(totalCount)])].sort();
+
+  // Modal erstellen
+  let existing = document.getElementById('card-count-modal');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'card-count-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9500;display:flex;align-items:center;justify-content:center;';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:32px;max-width:1100px;width:95vw;max-height:92vh;overflow-y:auto;font-family:"Kievit",sans-serif;';
+
+  const title = document.createElement('div');
+  title.style.cssText = "font-size:1.7rem;font-weight:800;margin-bottom:20px;font-family:'AiSpec',sans-serif;font-style:italic;";
+  title.textContent = '🔢 Karten Anzahlen';
+  box.appendChild(title);
+
+  const table = document.createElement('table');
+  table.style.cssText = 'width:100%;border-collapse:collapse;font-size:1.15rem;';
+  table.innerHTML = '<thead><tr style="border-bottom:2px solid #ddd;"><th style="text-align:left;padding:10px 12px;"></th><th style="text-align:left;padding:10px 12px;">Karte</th><th style="text-align:center;padding:10px 12px;">Im Stapel</th><th style="text-align:center;padding:10px 12px;">Gesamt</th><th style="text-align:center;padding:10px 12px;">Status</th></tr></thead>';
+  const tbody = document.createElement('tbody');
+
+  allNames.forEach(name => {
+    const inDeck = deckCount[name] || 0;
+    const inTotal = totalCount[name] || 0;
+    // Erwartete Anzahl aus NO_DLC
+    const expected = EXPECTED[name] ?? '?';
+    const isClone = inTotal > expected && expected !== '?';
+    const isMissing = inTotal < expected && expected !== '?';
+    const tr = document.createElement('tr');
+    tr.style.cssText = 'border-bottom:1px solid #eee;' + (isClone ? 'background:#ffe0e0;' : isMissing ? 'background:#fff3cd;' : '');
+    tr.innerHTML = `<td style="padding:10px 12px;"><img src="${thumbFor(name)}" alt="${name}" style="width:70px;height:98px;object-fit:cover;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,0.25);display:block;"></td>
+      <td style="padding:10px 12px;font-weight:600;">${name}</td>
+      <td style="text-align:center;padding:10px 12px;">${inDeck}</td>
+      <td style="text-align:center;padding:10px 12px;">${inTotal}</td>
+      <td style="text-align:center;padding:10px 12px;font-weight:700;">${isClone ? '🔴 KLON (' + expected + ')' : isMissing ? '🟡 FEHLT (' + expected + ')' : '✅'}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(tbody);
+  box.appendChild(table);
+
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Schließen';
+  closeBtn.style.cssText = 'margin-top:20px;padding:12px 28px;font-size:1.1rem;border-radius:10px;border:none;background:#333;color:#fff;cursor:pointer;font-family:"Kievit",sans-serif;';
+  closeBtn.onclick = () => overlay.remove();
+  box.appendChild(closeBtn);
+
+  overlay.appendChild(box);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
 }
 
 // ── CTX ──
@@ -3818,6 +3930,16 @@ function setPlayerActive4(p, active) {
   // G4.active immer setzen (auch im Solo)
   G4.active[p] = active;
   if (active) G4.everActive.add(p);
+
+  // LP setzen (immer, auch im Solo - nicht nur im Mehrspieler)
+  if (active) {
+    // LP auf 300 setzen wenn 0 oder nicht gesetzt
+    if (!G4.lp[p] || G4.lp[p] <= 0) G4.lp[p] = 300;
+    // Anzeige IMMER aktualisieren
+    const lpElSolo = document.getElementById('p'+p+'-lp-4');
+    if (lpElSolo) lpElSolo.textContent = G4.lp[p];
+  } // LP bei Deaktivierung nicht ändern
+
   // Visuelles Verblassen nur im Mehrspieler
   if (NET.mode !== 'multi') return;
   const opacity = active ? '1' : '0.15';
@@ -3856,16 +3978,6 @@ function setPlayerActive4(p, active) {
     handEl.style.filter = filter;
     handEl.style.pointerEvents = ''; // immer klickbar
   }
-
-  // LP setzen
-  if (active) {
-    // LP nur auf 300 setzen wenn noch auf 0 (nicht bei Wiederbelebung mit höheren LP)
-    if (!G4.lp[p] || G4.lp[p] <= 0) {
-      G4.lp[p] = 300;
-      const lpEl = document.getElementById('p'+p+'-lp-4');
-      if (lpEl) lpEl.textContent = 300;
-    }
-  } // LP bei Deaktivierung nicht ändern - bleibt bei 0 (wurde durch applyLP4withDeathCheck gesetzt)
 }
 
 function checkDeathCondition4(p) {
@@ -4182,7 +4294,7 @@ function updDeck4() {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v34i',
+    version: 'v34p',
     deck: G.deck,
     graves: G.graves,
     banish: G.banish,
@@ -4387,7 +4499,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v34i
+    v34p
   </div>
 </div>
 
