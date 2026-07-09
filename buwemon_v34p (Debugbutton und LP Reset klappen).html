@@ -72,7 +72,7 @@ body{background:linear-gradient(160deg,#909aaa 0%,#d8dce8 45%,#a8aebb 75%,#e4e8f
 #deck-vis{width:var(--cw);height:var(--ch);border-radius:6px;object-fit:cover;display:block;transition:box-shadow .12s;}
 
 /* SIDE BUTTONS */
-#deck-side-btns{display:flex;flex-direction:column;gap:4px;justify-content:center;position:relative;z-index:80;}
+#deck-side-btns{display:flex;flex-direction:column;gap:4px;justify-content:center;}
 #deck-side-btns .tbtn{font-size:.68rem;padding:3px 8px;}
 
 /* DICE */
@@ -1907,11 +1907,11 @@ function doReset(){
   });
   resetLocalState();
   closeConfirm();
-  // Im 4-Spieler: nur die Spieler wiederbeleben/zurücksetzen, die diese Runde
-  // auch tatsächlich teilgenommen haben (G4.everActive - wird gesetzt sobald
-  // sich ein Client mit dem jeweiligen Spieler verbindet)
+  // Im 4-Spieler: alle 4 Spieler zurücksetzen und wiederbeleben (nicht nur die aus G4.everActive,
+  // da diese Liste im Solo-Modus oft leer/unvollständig ist)
   if (fourPlayerMode) {
-    G4.everActive.forEach(p => {
+    [1,2,3,4].forEach(p => {
+      G4.everActive.add(p);
       G4.lp[p] = 300;
       G4.active[p] = false;
       setPlayerActive4(p, true);
@@ -4294,7 +4294,7 @@ function updDeck4() {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v34r',
+    version: 'v34p',
     deck: G.deck,
     graves: G.graves,
     banish: G.banish,
@@ -4499,7 +4499,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v34r
+    v34p
   </div>
 </div>
 
