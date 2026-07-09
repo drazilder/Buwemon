@@ -997,6 +997,14 @@ function startGame(mode) {
       });
     }, 500);
   }
+  // Im Solo 4-Spieler: alle 4 Spieler von Anfang an aktiv (kein Verbindungsaufbau nötig),
+  // damit Elimination bei 0 LP und Wiederbelebung korrekt funktionieren
+  if (mode === 'solo' && fourPlayerMode) {
+    [1,2,3,4].forEach(p => {
+      G4.active[p] = true;
+      G4.everActive.add(p);
+    });
+  }
 }
 
 // ── CARD DB ──
@@ -3074,7 +3082,7 @@ function doToxMaennlichkeit() {
   const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
 
   if (is4) {
-    const targets = [1,2,3,4].filter(p => p !== myP && (NET.mode !== 'multi' || G4.active[p]));
+    const targets = [1,2,3,4].filter(p => p !== myP && (G4.active[p]));
     targets.forEach(p => {
       const pfx = 'p'+p;
       ['buw1','buw2','buw3'].forEach(s => {
@@ -3234,7 +3242,7 @@ function doWuerdMirStinken() {
   }
 
   if (is4) {
-    const targets = [1,2,3,4].filter(p => p !== myP && (NET.mode !== 'multi' || G4.active[p]));
+    const targets = [1,2,3,4].filter(p => p !== myP && (G4.active[p]));
     const clearedSlots = {};
     targets.forEach(p => {
       const pfx = 'p'+p;
@@ -3387,7 +3395,7 @@ function doLiiinks4() {
   // Aber nur aktive Spieler berücksichtigen
   const UZS_ORDER = [1, 3, 2, 4]; // Uhrzeigersinn
   const active = UZS_ORDER.filter(p =>
-    NET.mode !== 'multi' || G4.active[p] || !fourPlayerMode
+    G4.active[p] || !fourPlayerMode
   );
   if (active.length < 2) return; // nichts zu tun
 
@@ -3497,7 +3505,7 @@ function confirmRecast4() {
 function doRecast4() {
   // Nur aktive Spieler berücksichtigen
   const activePlayers = [1,2,3,4].filter(p =>
-    NET.mode !== 'multi' || G4.active[p] || !fourPlayerMode
+    G4.active[p] || !fourPlayerMode
   );
   const allSlots = [];
   activePlayers.forEach(p => {
@@ -3838,7 +3846,7 @@ function dealStartCards4() {
     4: { cx: W - 8 - 151/2, cy: H/2 },
   };
 
-  const activePlayers = [1,2,3,4].filter(p => NET.mode !== 'multi' || G4.active[p]);
+  const activePlayers = [1,2,3,4].filter(p => G4.active[p]);
 
   function calcPositions(playerP, cards) {
     const hz = handZones[playerP];
@@ -3940,8 +3948,7 @@ function setPlayerActive4(p, active) {
     if (lpElSolo) lpElSolo.textContent = G4.lp[p];
   } // LP bei Deaktivierung nicht ändern
 
-  // Visuelles Verblassen nur im Mehrspieler
-  if (NET.mode !== 'multi') return;
+  // Visuelles Verblassen (jetzt auch im Solo, nicht mehr nur im Mehrspieler)
   const opacity = active ? '1' : '0.15';
   const filter = active ? '' : 'grayscale(80%)';
 
@@ -4134,7 +4141,7 @@ function openBrowser4(mode) {
   if (mode === 'top4') {
     // Gossip: 2x Anzahl aktive Spieler
     const activeCnt = [1,2,3,4].filter(p =>
-      NET.mode !== 'multi' || G4.active[p] || !fourPlayerMode
+      G4.active[p] || !fourPlayerMode
     ).length;
     const gossipCount = Math.max(2, activeCnt * 2);
     // Temporär browserMode so setzen dass richtige Anzahl angezeigt wird
@@ -4294,7 +4301,7 @@ function updDeck4() {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v34r',
+    version: 'v34t',
     deck: G.deck,
     graves: G.graves,
     banish: G.banish,
@@ -4499,7 +4506,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v34r
+    v34t
   </div>
 </div>
 
