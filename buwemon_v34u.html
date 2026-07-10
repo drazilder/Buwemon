@@ -8,7 +8,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html,body{width:100%;height:100%;overflow:hidden;font-family:'Kievit','Segoe UI',system-ui,sans-serif;font-size:15px;user-select:none;-webkit-user-select:none;will-change:transform;backface-visibility:hidden;}
-body{background:linear-gradient(160deg,#5c6680 0%,#eef1f7 45%,#838fac 75%,#f8f9fc 100%);transition:background 0.4s;}
+body{background:linear-gradient(160deg,#909aaa 0%,#d8dce8 45%,#a8aebb 75%,#e4e8f0 100%);transition:background 0.4s;}
 
 #topbar{position:fixed;top:0;left:0;right:0;height:30px;background:rgba(255,255,255,0.55);backdrop-filter:blur(8px);border-bottom:1px solid rgba(0,0,0,0.09);display:flex;align-items:center;padding:0 10px;gap:7px;z-index:500;}
 .brand{font-weight:800;font-size:.9rem;letter-spacing:1px;color:#333;font-family:"AiSpec",sans-serif;font-style:italic;}
@@ -468,21 +468,21 @@ body {
   <button class="tbtn" id="btn-save" style="color:#1a6a1a;border-color:rgba(30,120,30,0.3);">💾 Speichern</button>
   <button class="tbtn" id="btn-color">🎨 Tischfarbe</button>
   <div id="cpicker">
-    <div class="swatch" title="Beige" data-bg="linear-gradient(160deg,#a4906c 0%,#fdf8ec 50%,#8c754e 100%)" style="background:linear-gradient(160deg,#a4906c,#fdf8ec,#8c754e);"></div>
-    <div class="swatch" title="Hellblau" data-bg="linear-gradient(160deg,#6f93bd 0%,#eef6fd 50%,#4b6f9b 100%)" style="background:linear-gradient(160deg,#6f93bd,#eef6fd,#4b6f9b);"></div>
-    <div class="swatch" title="Mint" data-bg="linear-gradient(160deg,#6fb377 0%,#eefaee 50%,#4c8f55 100%)" style="background:linear-gradient(160deg,#6fb377,#eefaee,#4c8f55);"></div>
-    <div class="swatch" title="Rosa" data-bg="linear-gradient(160deg,#c47ba0 0%,#fbeef5 50%,#a1567d 100%)" style="background:linear-gradient(160deg,#c47ba0,#fbeef5,#a1567d);"></div>
-    <div class="swatch active" title="Silber" data-bg="linear-gradient(160deg,#5c6680 0%,#eef1f7 45%,#838fac 75%,#f8f9fc 100%)" style="background:linear-gradient(160deg,#5c6680,#eef1f7,#838fac,#f8f9fc);"></div>
-    <div class="swatch" title="Creme-Gold" data-bg="linear-gradient(160deg,#b8903c 0%,#fdf3d6 50%,#8f6c22 100%)" style="background:linear-gradient(160deg,#b8903c,#fdf3d6,#8f6c22);"></div>
-    <div class="swatch" title="Eisblau" data-bg="linear-gradient(160deg,#4a7ba3 0%,#e8f4fb 50%,#305775 100%)" style="background:linear-gradient(160deg,#4a7ba3,#e8f4fb,#305775);"></div>
-    <div class="swatch" title="Dunkelgrün" data-bg="linear-gradient(160deg,#3f6b40 0%,#dcf0dc 50%,#294a2a 100%)" style="background:linear-gradient(160deg,#3f6b40,#dcf0dc,#294a2a);"></div>
+    <div class="swatch" title="Beige" data-bg="linear-gradient(160deg,#e0d8cc 0%,#f2ece0 50%,#d8d0c4 100%)" style="background:linear-gradient(160deg,#e0d8cc,#f2ece0,#d8d0c4);"></div>
+    <div class="swatch" title="Hellblau" data-bg="linear-gradient(160deg,#b8c8dc 0%,#dce8f4 50%,#a8b8d0 100%)" style="background:linear-gradient(160deg,#b8c8dc,#dce8f4,#a8b8d0);"></div>
+    <div class="swatch" title="Mint" data-bg="linear-gradient(160deg,#a8cca8 0%,#d4ecd4 50%,#98bc98 100%)" style="background:linear-gradient(160deg,#a8cca8,#d4ecd4,#98bc98);"></div>
+    <div class="swatch" title="Rosa" data-bg="linear-gradient(160deg,#d4aac0 0%,#f0d4e4 50%,#c898b4 100%)" style="background:linear-gradient(160deg,#d4aac0,#f0d4e4,#c898b4);"></div>
+    <div class="swatch active" title="Silber" data-bg="linear-gradient(160deg,#909aaa 0%,#d8dce8 45%,#a8aebb 75%,#e4e8f0 100%)" style="background:linear-gradient(160deg,#909aaa,#d8dce8,#a8aebb,#e4e8f0);"></div>
+    <div class="swatch" title="Creme-Gold" data-bg="linear-gradient(160deg,#c8aa70 0%,#ecdcaa 50%,#b89858 100%)" style="background:linear-gradient(160deg,#c8aa70,#ecdcaa,#b89858);"></div>
+    <div class="swatch" title="Eisblau" data-bg="linear-gradient(160deg,#7899b8 0%,#c0d8ec 50%,#6888a8 100%)" style="background:linear-gradient(160deg,#7899b8,#c0d8ec,#6888a8);"></div>
+    <div class="swatch" title="Dunkelgrün" data-bg="linear-gradient(160deg,#5a7a5a 0%,#a0c4a0 50%,#4a6a4a 100%)" style="background:linear-gradient(160deg,#5a7a5a,#a0c4a0,#4a6a4a);"></div>
   </div>
 </div>
 
 <div id="board">
   <div class="row-hand">
     <div class="zone zone-hand" id="p2-hand">
-      <span class="zlbl">Hand – Spieler 1 — 0 Karten</span>
+      <span class="zlbl">Hand – Spieler 1</span>
       <button class="reveal-btn" onpointerdown="event.stopPropagation()" onclick="shuffleHand('p2')" style="bottom:32px;">🔀 Hand mischen</button>
       <button class="reveal-btn" id="p2-reveal" onpointerdown="event.stopPropagation()" onclick="toggleReveal(2)">Hand verdeckt</button>
     </div>
@@ -523,6 +523,7 @@ body {
     <!-- Side buttons right -->
     <div id="deck-side-outer">
       <div id="deck-side-btns">
+        <button class="tbtn" onclick="openBrowser('deck','all')">🔍 Stapel ansehen</button>
         <button id="schicksal-btn" class="tbtn" onclick="openOverview()" style="background:rgba(180,30,30,0.5);color:#fff;">🎴 Schicksal</button>
         <button class="tbtn" onclick="confirmToxMaennlichkeit()" style="background:rgba(220,100,0,0.6);color:#fff;">💪 Toxische Männlichkeit</button>
         <button class="tbtn" onclick="confirmWuerdMirStinken()" style="background:rgba(30,100,200,0.6);color:#fff;">🤢 Würd' mir stinken</button>
@@ -549,7 +550,7 @@ body {
 
   <div class="row-hand">
     <div class="zone zone-hand" id="p1-hand">
-      <span class="zlbl">Hand – Spieler 2 — 0 Karten</span>
+      <span class="zlbl">Hand – Spieler 2</span>
       <button class="reveal-btn" onpointerdown="event.stopPropagation()" onclick="shuffleHand('p1')" style="bottom:32px;">🔀 Hand mischen</button>
       <button class="reveal-btn" id="p1-reveal" onpointerdown="event.stopPropagation()" onclick="toggleReveal(1)">Hand verdeckt</button>
     </div>
@@ -557,7 +558,7 @@ body {
 </div>
 
 <!-- 4-PLAYER BOARD -->
-<div id="board4" style="display:none;position:fixed;top:30px;bottom:0;left:0;right:0;overflow:hidden;background:linear-gradient(160deg,#5c6680 0%,#eef1f7 45%,#838fac 75%,#f8f9fc 100%);">
+<div id="board4" style="display:none;position:fixed;top:30px;bottom:0;left:0;right:0;overflow:hidden;background:linear-gradient(160deg,#909aaa 0%,#d8dce8 45%,#a8aebb 75%,#e4e8f0 100%);">
 
   <div id="p2-hand-4" class="hand4-zone" style="position:absolute;top:8px;bottom:auto;left:320px;right:320px;height:113px;">
   <span style="position:absolute;top:4px;left:0;right:0;font-size:.55rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">Hand – Spieler 2</span>
@@ -727,6 +728,7 @@ body {
       <div style="position:absolute;right:calc(100% + 28px);top:50%;transform:translateY(-50%);"><div id="dice-btn-4" onclick="rollDice4()" style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.7);border:2px solid rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:center;font-size:1.4rem;cursor:pointer;font-family:'AiSpec',sans-serif;">?</div></div>
       <!-- Buttons rechts vom Ziehstapel, absolut positioniert -->
       <div style="position:absolute;left:calc(100% + 28px);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;">
+        <button class="tbtn" onclick="openBrowser4('all')" style="font-size:.75rem;padding:4px 10px;">🔍 Stapel ansehen</button>
         <button class="tbtn" onclick="openOverview4()" style="font-size:.75rem;padding:4px 10px;background:rgba(180,30,30,0.5);color:#fff;">🎴 Schicksal</button>
         <button class="tbtn" onclick="confirmToxMaennlichkeit()" style="font-size:.75rem;padding:4px 10px;background:rgba(220,100,0,0.6);color:#fff;">💪 Toxische Männlichkeit</button>
         <button class="tbtn" onclick="confirmWuerdMirStinken()" style="font-size:.75rem;padding:4px 10px;background:rgba(30,100,200,0.6);color:#fff;">🤢 Würd' mir stinken</button>
@@ -951,12 +953,12 @@ function startGame(mode) {
   // Set MY hand label based on which player I am
   const myHandId = (NET.myPlayer === 2) ? '#p2-hand' : '#p1-hand';
   const myHandZlbl = document.querySelector(myHandId + ' .zlbl');
-  if (myHandZlbl) myHandZlbl.textContent = 'Hand – Spieler ' + (NET.myPlayer || 1) + ' — 0 Karten';
+  if (myHandZlbl) myHandZlbl.textContent = 'Hand – ' + (NET.myName || ('Spieler ' + NET.myPlayer));
   // Reset enemy hand label
   const enemyHandId = (NET.myPlayer === 2) ? '#p1-hand' : '#p2-hand';
   const enemyHandZlbl = document.querySelector(enemyHandId + ' .zlbl');
   const enemyNum = NET.myPlayer === 2 ? 1 : 2;
-  if (enemyHandZlbl) enemyHandZlbl.textContent = 'Hand – Spieler ' + enemyNum + ' — 0 Karten';
+  if (enemyHandZlbl) enemyHandZlbl.textContent = 'Hand – Spieler ' + enemyNum;
   const playerLabel = document.getElementById('player-label');
   if (mode === 'multi') {
     const _pname = getLobbyName();
@@ -1958,16 +1960,6 @@ function showDebugMenu() {
   const btnWrap = document.createElement('div');
   btnWrap.style.cssText = 'display:flex;flex-direction:column;gap:12px;';
 
-  const stackBtn = document.createElement('button');
-  stackBtn.textContent = '🔍 Stapel ansehen';
-  stackBtn.style.cssText = 'padding:14px 24px;font-size:1.1rem;border-radius:10px;border:none;background:#333;color:#fff;cursor:pointer;font-family:"Kievit",sans-serif;';
-  stackBtn.onclick = () => {
-    overlay.remove();
-    if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) openBrowser4('all');
-    else openBrowser('deck','all');
-  };
-  btnWrap.appendChild(stackBtn);
-
   const countBtn = document.createElement('button');
   countBtn.textContent = '🔢 Karten Anzahl';
   countBtn.style.cssText = 'padding:14px 24px;font-size:1.1rem;border-radius:10px;border:none;background:#333;color:#fff;cursor:pointer;font-family:"Kievit",sans-serif;';
@@ -2105,16 +2097,7 @@ function showCardCountDebug() {
   banish.forEach(add);
 
   // Alle bekannten Karten sortiert
-  const cardOrder = {};
-  CARD_DB.forEach((def, idx) => { if (!(def.name in cardOrder)) cardOrder[def.name] = idx; });
-  const allNames = [...new Set([...Object.keys(deckCount), ...Object.keys(totalCount)])]
-    .sort((a, b) => {
-      const ia = cardOrder[a], ib = cardOrder[b];
-      if (ia !== undefined && ib !== undefined) return ia - ib;
-      if (ia !== undefined) return -1;
-      if (ib !== undefined) return 1;
-      return a.localeCompare(b);
-    });
+  const allNames = [...new Set([...Object.keys(deckCount), ...Object.keys(totalCount)])].sort();
 
   // Modal erstellen
   let existing = document.getElementById('card-count-modal');
@@ -4431,7 +4414,7 @@ function updDeck4() {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v34x',
+    version: 'v34u',
     deck: G.deck,
     graves: G.graves,
     banish: G.banish,
@@ -4636,7 +4619,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v34x
+    v34u
   </div>
 </div>
 
@@ -4744,27 +4727,9 @@ function multiJoin() {
   });
 }
 
-function updateHandLabels() {
-  ['p1','p2'].forEach(p => {
-    const zoneEl = document.getElementById(p+'-hand');
-    if (!zoneEl) return;
-    const r = zoneEl.getBoundingClientRect();
-    const count = G.cards.filter(c => {
-      const cr = c.getBoundingClientRect();
-      const cx = cr.left+cr.width/2, cy = cr.top+cr.height/2;
-      return cx>=r.left && cx<=r.right && cy>=r.top && cy<=r.bottom;
-    }).length;
-    const lbl = zoneEl.querySelector('.zlbl');
-    if (!lbl) return;
-    const pNum = p === 'p1' ? 1 : 2;
-    lbl.textContent = 'Hand – Spieler ' + pNum + ' — ' + count + ' Karten';
-  });
-}
-
 function netSendState() {
   if (NET.mode !== 'multi') return;
   if (fourPlayerMode) { netSendState4(); return; }
-  updateHandLabels();
   // Collect field cards (only my own, not dragging)
   const board = document.getElementById('board');
   const boardRect = board.getBoundingClientRect();
@@ -5016,8 +4981,10 @@ function onNetData(d) {
     // Re-apply visibility after state update
     applyP1HandVisibility();
 
-    // Hand count label (echte Zählung statt gesendeter Zahl)
-    updateHandLabels();
+    // Hand count label
+    const eZone3 = (NET.myPlayer === 2) ? '#p1-hand' : '#p2-hand';
+    const lbl = document.querySelector(eZone3 + ' .zlbl');
+    if (lbl) lbl.textContent = (NET.enemyName||'Gegner') + ' — ' + (d.handCount||0) + ' Karten';
 
     // Reveal state handled via separate event
   }

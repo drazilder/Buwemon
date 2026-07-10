@@ -482,7 +482,7 @@ body {
 <div id="board">
   <div class="row-hand">
     <div class="zone zone-hand" id="p2-hand">
-      <span class="zlbl">Hand – Spieler 1 — 0 Karten</span>
+      <span class="zlbl">Hand – Spieler 1</span>
       <button class="reveal-btn" onpointerdown="event.stopPropagation()" onclick="shuffleHand('p2')" style="bottom:32px;">🔀 Hand mischen</button>
       <button class="reveal-btn" id="p2-reveal" onpointerdown="event.stopPropagation()" onclick="toggleReveal(2)">Hand verdeckt</button>
     </div>
@@ -549,7 +549,7 @@ body {
 
   <div class="row-hand">
     <div class="zone zone-hand" id="p1-hand">
-      <span class="zlbl">Hand – Spieler 2 — 0 Karten</span>
+      <span class="zlbl">Hand – Spieler 2</span>
       <button class="reveal-btn" onpointerdown="event.stopPropagation()" onclick="shuffleHand('p1')" style="bottom:32px;">🔀 Hand mischen</button>
       <button class="reveal-btn" id="p1-reveal" onpointerdown="event.stopPropagation()" onclick="toggleReveal(1)">Hand verdeckt</button>
     </div>
@@ -951,12 +951,12 @@ function startGame(mode) {
   // Set MY hand label based on which player I am
   const myHandId = (NET.myPlayer === 2) ? '#p2-hand' : '#p1-hand';
   const myHandZlbl = document.querySelector(myHandId + ' .zlbl');
-  if (myHandZlbl) myHandZlbl.textContent = 'Hand – Spieler ' + (NET.myPlayer || 1) + ' — 0 Karten';
+  if (myHandZlbl) myHandZlbl.textContent = 'Hand – ' + (NET.myName || ('Spieler ' + NET.myPlayer));
   // Reset enemy hand label
   const enemyHandId = (NET.myPlayer === 2) ? '#p1-hand' : '#p2-hand';
   const enemyHandZlbl = document.querySelector(enemyHandId + ' .zlbl');
   const enemyNum = NET.myPlayer === 2 ? 1 : 2;
-  if (enemyHandZlbl) enemyHandZlbl.textContent = 'Hand – Spieler ' + enemyNum + ' — 0 Karten';
+  if (enemyHandZlbl) enemyHandZlbl.textContent = 'Hand – Spieler ' + enemyNum;
   const playerLabel = document.getElementById('player-label');
   if (mode === 'multi') {
     const _pname = getLobbyName();
@@ -4431,7 +4431,7 @@ function updDeck4() {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v34x',
+    version: 'v34w',
     deck: G.deck,
     graves: G.graves,
     banish: G.banish,
@@ -4636,7 +4636,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v34x
+    v34w
   </div>
 </div>
 
@@ -4744,27 +4744,9 @@ function multiJoin() {
   });
 }
 
-function updateHandLabels() {
-  ['p1','p2'].forEach(p => {
-    const zoneEl = document.getElementById(p+'-hand');
-    if (!zoneEl) return;
-    const r = zoneEl.getBoundingClientRect();
-    const count = G.cards.filter(c => {
-      const cr = c.getBoundingClientRect();
-      const cx = cr.left+cr.width/2, cy = cr.top+cr.height/2;
-      return cx>=r.left && cx<=r.right && cy>=r.top && cy<=r.bottom;
-    }).length;
-    const lbl = zoneEl.querySelector('.zlbl');
-    if (!lbl) return;
-    const pNum = p === 'p1' ? 1 : 2;
-    lbl.textContent = 'Hand – Spieler ' + pNum + ' — ' + count + ' Karten';
-  });
-}
-
 function netSendState() {
   if (NET.mode !== 'multi') return;
   if (fourPlayerMode) { netSendState4(); return; }
-  updateHandLabels();
   // Collect field cards (only my own, not dragging)
   const board = document.getElementById('board');
   const boardRect = board.getBoundingClientRect();
@@ -5016,8 +4998,10 @@ function onNetData(d) {
     // Re-apply visibility after state update
     applyP1HandVisibility();
 
-    // Hand count label (echte Zählung statt gesendeter Zahl)
-    updateHandLabels();
+    // Hand count label
+    const eZone3 = (NET.myPlayer === 2) ? '#p1-hand' : '#p2-hand';
+    const lbl = document.querySelector(eZone3 + ' .zlbl');
+    if (lbl) lbl.textContent = (NET.enemyName||'Gegner') + ' — ' + (d.handCount||0) + ' Karten';
 
     // Reveal state handled via separate event
   }
