@@ -8,7 +8,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html,body{width:100%;height:100%;overflow:hidden;font-family:'Kievit','Segoe UI',system-ui,sans-serif;font-size:15px;user-select:none;-webkit-user-select:none;will-change:transform;backface-visibility:hidden;}
-body{background:linear-gradient(160deg,#909aaa 0%,#d8dce8 45%,#a8aebb 75%,#e4e8f0 100%);transition:background 0.4s;}
+body{background:linear-gradient(160deg,#5c6680 0%,#eef1f7 45%,#838fac 75%,#f8f9fc 100%);transition:background 0.4s;}
 
 #topbar{position:fixed;top:0;left:0;right:0;height:30px;background:rgba(255,255,255,0.55);backdrop-filter:blur(8px);border-bottom:1px solid rgba(0,0,0,0.09);display:flex;align-items:center;padding:0 10px;gap:7px;z-index:500;}
 .brand{font-weight:800;font-size:.9rem;letter-spacing:1px;color:#333;font-family:"AiSpec",sans-serif;font-style:italic;}
@@ -77,7 +77,7 @@ body{background:linear-gradient(160deg,#909aaa 0%,#d8dce8 45%,#a8aebb 75%,#e4e8f
 
 /* DICE */
 #dice-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;width:48px;}
-#dice-btn{width:48px;height:48px;border-radius:50%;border:2px solid rgba(0,0,0,0.18);background:rgba(255,255,255,0.7);cursor:pointer;font-size:1.4rem;font-weight:900;color:#333;display:flex;align-items:center;justify-content:center;transition:background .15s,box-shadow .15s;user-select:none;backdrop-filter:blur(4px);}
+#dice-btn{width:48px;height:48px;border-radius:50%;border:2px solid rgba(0,0,0,0.18);background:rgba(255,255,255,0.7);cursor:pointer;font-size:1.4rem;font-weight:900;color:#333;display:flex;align-items:center;justify-content:center;transition:background .15s,box-shadow .15s;user-select:none;backdrop-filter:blur(4px);font-family:'AiSpec',sans-serif;}
 #dice-btn:hover,#dice-btn-4:hover{background:rgba(255,255,255,0.9);box-shadow:0 2px 10px rgba(0,0,0,0.15);}
 #dice-btn.rolling,#dice-btn-4.rolling{animation:diceRoll 0.6s ease-in-out;}
 #dice-btn.show-result,#dice-btn-4.show-result{background:rgba(255,255,255,0.95);box-shadow:0 0 0 3px rgba(80,140,220,0.5);}
@@ -459,7 +459,7 @@ body {
   <span id="player-label" style="font-size:.82rem;font-weight:700;color:rgba(0,0,0,0.55);font-family:'AiSpec',sans-serif;font-style:italic;display:none;padding:2px 8px;background:rgba(0,0,0,0.08);border-radius:5px;white-space:nowrap;"></span>
   <span class="sp"></span>
   <button class="tbtn" id="btn-deal" onclick="openDealConfirm()" style="color:#1a4a8a;border-color:rgba(30,80,200,0.3);">🃏 Startkarten ausgeben</button>
-  <button class="tbtn" onclick="openCardCountDebug()" style="color:#666;border-color:rgba(0,0,0,0.2);">🔢 Karten Anzahlen</button>
+  <button class="tbtn" onclick="openDebugMenu()" style="color:#666;border-color:rgba(0,0,0,0.2);">🛠️ Debug</button>
   <button class="tbtn danger" id="btn-reset" onclick="openConfirm()">↺ Neue Runde</button>
   <span id="conn-dot" style="width:7px;height:7px;border-radius:50%;background:#d95555;display:none;flex-shrink:0;"></span>
   <button class="tbtn" id="btn-lobby">⌂ Startbildschirm</button>
@@ -468,21 +468,21 @@ body {
   <button class="tbtn" id="btn-save" style="color:#1a6a1a;border-color:rgba(30,120,30,0.3);">💾 Speichern</button>
   <button class="tbtn" id="btn-color">🎨 Tischfarbe</button>
   <div id="cpicker">
-    <div class="swatch" title="Beige" data-bg="linear-gradient(160deg,#e0d8cc 0%,#f2ece0 50%,#d8d0c4 100%)" style="background:linear-gradient(160deg,#e0d8cc,#f2ece0,#d8d0c4);"></div>
-    <div class="swatch" title="Hellblau" data-bg="linear-gradient(160deg,#b8c8dc 0%,#dce8f4 50%,#a8b8d0 100%)" style="background:linear-gradient(160deg,#b8c8dc,#dce8f4,#a8b8d0);"></div>
-    <div class="swatch" title="Mint" data-bg="linear-gradient(160deg,#a8cca8 0%,#d4ecd4 50%,#98bc98 100%)" style="background:linear-gradient(160deg,#a8cca8,#d4ecd4,#98bc98);"></div>
-    <div class="swatch" title="Rosa" data-bg="linear-gradient(160deg,#d4aac0 0%,#f0d4e4 50%,#c898b4 100%)" style="background:linear-gradient(160deg,#d4aac0,#f0d4e4,#c898b4);"></div>
-    <div class="swatch active" title="Silber" data-bg="linear-gradient(160deg,#909aaa 0%,#d8dce8 45%,#a8aebb 75%,#e4e8f0 100%)" style="background:linear-gradient(160deg,#909aaa,#d8dce8,#a8aebb,#e4e8f0);"></div>
-    <div class="swatch" title="Creme-Gold" data-bg="linear-gradient(160deg,#c8aa70 0%,#ecdcaa 50%,#b89858 100%)" style="background:linear-gradient(160deg,#c8aa70,#ecdcaa,#b89858);"></div>
-    <div class="swatch" title="Eisblau" data-bg="linear-gradient(160deg,#7899b8 0%,#c0d8ec 50%,#6888a8 100%)" style="background:linear-gradient(160deg,#7899b8,#c0d8ec,#6888a8);"></div>
-    <div class="swatch" title="Dunkelgrün" data-bg="linear-gradient(160deg,#5a7a5a 0%,#a0c4a0 50%,#4a6a4a 100%)" style="background:linear-gradient(160deg,#5a7a5a,#a0c4a0,#4a6a4a);"></div>
+    <div class="swatch" title="Beige" data-bg="linear-gradient(160deg,#a4906c 0%,#fdf8ec 50%,#8c754e 100%)" style="background:linear-gradient(160deg,#a4906c,#fdf8ec,#8c754e);"></div>
+    <div class="swatch" title="Hellblau" data-bg="linear-gradient(160deg,#6f93bd 0%,#eef6fd 50%,#4b6f9b 100%)" style="background:linear-gradient(160deg,#6f93bd,#eef6fd,#4b6f9b);"></div>
+    <div class="swatch" title="Mint" data-bg="linear-gradient(160deg,#6fb377 0%,#eefaee 50%,#4c8f55 100%)" style="background:linear-gradient(160deg,#6fb377,#eefaee,#4c8f55);"></div>
+    <div class="swatch" title="Rosa" data-bg="linear-gradient(160deg,#c47ba0 0%,#fbeef5 50%,#a1567d 100%)" style="background:linear-gradient(160deg,#c47ba0,#fbeef5,#a1567d);"></div>
+    <div class="swatch active" title="Silber" data-bg="linear-gradient(160deg,#5c6680 0%,#eef1f7 45%,#838fac 75%,#f8f9fc 100%)" style="background:linear-gradient(160deg,#5c6680,#eef1f7,#838fac,#f8f9fc);"></div>
+    <div class="swatch" title="Creme-Gold" data-bg="linear-gradient(160deg,#b8903c 0%,#fdf3d6 50%,#8f6c22 100%)" style="background:linear-gradient(160deg,#b8903c,#fdf3d6,#8f6c22);"></div>
+    <div class="swatch" title="Eisblau" data-bg="linear-gradient(160deg,#4a7ba3 0%,#e8f4fb 50%,#305775 100%)" style="background:linear-gradient(160deg,#4a7ba3,#e8f4fb,#305775);"></div>
+    <div class="swatch" title="Dunkelgrün" data-bg="linear-gradient(160deg,#3f6b40 0%,#dcf0dc 50%,#294a2a 100%)" style="background:linear-gradient(160deg,#3f6b40,#dcf0dc,#294a2a);"></div>
   </div>
 </div>
 
 <div id="board">
   <div class="row-hand">
     <div class="zone zone-hand" id="p2-hand">
-      <span class="zlbl">Hand – Spieler 1</span>
+      <span class="zlbl">Hand – Spieler 1 – 0 Karten</span>
       <button class="reveal-btn" onpointerdown="event.stopPropagation()" onclick="shuffleHand('p2')" style="bottom:32px;">🔀 Hand mischen</button>
       <button class="reveal-btn" id="p2-reveal" onpointerdown="event.stopPropagation()" onclick="toggleReveal(2)">Hand verdeckt</button>
     </div>
@@ -523,7 +523,6 @@ body {
     <!-- Side buttons right -->
     <div id="deck-side-outer">
       <div id="deck-side-btns">
-        <button class="tbtn" onclick="openBrowser('deck','all')">🔍 Stapel ansehen</button>
         <button id="schicksal-btn" class="tbtn" onclick="openOverview()" style="background:rgba(180,30,30,0.5);color:#fff;">🎴 Schicksal</button>
         <button class="tbtn" onclick="confirmToxMaennlichkeit()" style="background:rgba(220,100,0,0.6);color:#fff;">💪 Toxische Männlichkeit</button>
         <button class="tbtn" onclick="confirmWuerdMirStinken()" style="background:rgba(30,100,200,0.6);color:#fff;">🤢 Würd' mir stinken</button>
@@ -550,7 +549,7 @@ body {
 
   <div class="row-hand">
     <div class="zone zone-hand" id="p1-hand">
-      <span class="zlbl">Hand – Spieler 2</span>
+      <span class="zlbl">Hand – Spieler 2 – 0 Karten</span>
       <button class="reveal-btn" onpointerdown="event.stopPropagation()" onclick="shuffleHand('p1')" style="bottom:32px;">🔀 Hand mischen</button>
       <button class="reveal-btn" id="p1-reveal" onpointerdown="event.stopPropagation()" onclick="toggleReveal(1)">Hand verdeckt</button>
     </div>
@@ -558,22 +557,22 @@ body {
 </div>
 
 <!-- 4-PLAYER BOARD -->
-<div id="board4" style="display:none;position:fixed;top:30px;bottom:0;left:0;right:0;overflow:hidden;background:linear-gradient(160deg,#909aaa 0%,#d8dce8 45%,#a8aebb 75%,#e4e8f0 100%);">
+<div id="board4" style="display:none;position:fixed;top:30px;bottom:0;left:0;right:0;overflow:hidden;background:linear-gradient(160deg,#5c6680 0%,#eef1f7 45%,#838fac 75%,#f8f9fc 100%);">
 
   <div id="p2-hand-4" class="hand4-zone" style="position:absolute;top:8px;bottom:auto;left:320px;right:320px;height:113px;">
-  <span style="position:absolute;top:4px;left:0;right:0;font-size:.55rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">Hand – Spieler 2</span>
+  <span style="position:absolute;top:4px;left:0;right:0;font-size:.55rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">Hand – Spieler 2 – 0 Karten</span>
   <button onpointerdown="event.stopPropagation()" id="p2-hide-4" onclick="hideHand4(2)" style="position:absolute;bottom:22px;right:5px;display:none;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand verbergen</button><button onpointerdown="event.stopPropagation()" onclick="shuffleHand4('p2')" style="position:absolute;bottom:4px;right:75px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">🔀 mischen</button><button onpointerdown="event.stopPropagation()" id="p2-reveal-4" onclick="openRevealPopup4(2)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand öffnen</button>
 </div>
   <div id="p1-hand-4" class="hand4-zone" style="position:absolute;top:auto;bottom:8px;left:320px;right:320px;height:113px;">
-  <span style="position:absolute;top:4px;left:0;right:0;font-size:.55rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">Hand – Spieler 1</span>
+  <span style="position:absolute;top:4px;left:0;right:0;font-size:.55rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">Hand – Spieler 1 – 0 Karten</span>
   <button onpointerdown="event.stopPropagation()" id="p1-hide-4" onclick="hideHand4(1)" style="position:absolute;bottom:22px;right:5px;display:none;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand verbergen</button><button onpointerdown="event.stopPropagation()" onclick="shuffleHand4('p1')" style="position:absolute;bottom:4px;right:75px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">🔀 mischen</button><button onpointerdown="event.stopPropagation()" id="p1-reveal-4" onclick="openRevealPopup4(1)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand öffnen</button>
 </div>
   <div id="p3-hand-4" class="hand4-zone" style="position:absolute;top:90px;bottom:90px;left:8px;right:auto;width:151px;">
-  <span style="position:absolute;top:4px;left:0;right:0;font-size:.55rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">Hand – Spieler 3</span>
+  <span style="position:absolute;top:4px;left:0;right:0;font-size:.55rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">Hand – Spieler 3 – 0 Karten</span>
   <button onpointerdown="event.stopPropagation()" id="p3-hide-4" onclick="hideHand4(3)" style="position:absolute;bottom:22px;right:5px;display:none;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand verbergen</button><button onpointerdown="event.stopPropagation()" onclick="shuffleHand4('p3')" style="position:absolute;bottom:4px;right:75px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">🔀 mischen</button><button onpointerdown="event.stopPropagation()" id="p3-reveal-4" onclick="openRevealPopup4(3)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand öffnen</button>
 </div>
   <div id="p4-hand-4" class="hand4-zone" style="position:absolute;top:90px;bottom:90px;left:auto;right:8px;width:151px;">
-  <span style="position:absolute;top:4px;left:0;right:0;font-size:.55rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">Hand – Spieler 4</span>
+  <span style="position:absolute;top:4px;left:0;right:0;font-size:.55rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">Hand – Spieler 4 – 0 Karten</span>
   <button onpointerdown="event.stopPropagation()" id="p4-hide-4" onclick="hideHand4(4)" style="position:absolute;bottom:22px;right:5px;display:none;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand verbergen</button><button onpointerdown="event.stopPropagation()" onclick="shuffleHand4('p4')" style="position:absolute;bottom:4px;right:75px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">🔀 mischen</button><button onpointerdown="event.stopPropagation()" id="p4-reveal-4" onclick="openRevealPopup4(4)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand öffnen</button>
 </div>
 
@@ -728,7 +727,6 @@ body {
       <div style="position:absolute;right:calc(100% + 28px);top:50%;transform:translateY(-50%);"><div id="dice-btn-4" onclick="rollDice4()" style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.7);border:2px solid rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:center;font-size:1.4rem;cursor:pointer;font-family:'AiSpec',sans-serif;">?</div></div>
       <!-- Buttons rechts vom Ziehstapel, absolut positioniert -->
       <div style="position:absolute;left:calc(100% + 28px);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;">
-        <button class="tbtn" onclick="openBrowser4('all')" style="font-size:.75rem;padding:4px 10px;">🔍 Stapel ansehen</button>
         <button class="tbtn" onclick="openOverview4()" style="font-size:.75rem;padding:4px 10px;background:rgba(180,30,30,0.5);color:#fff;">🎴 Schicksal</button>
         <button class="tbtn" onclick="confirmToxMaennlichkeit()" style="font-size:.75rem;padding:4px 10px;background:rgba(220,100,0,0.6);color:#fff;">💪 Toxische Männlichkeit</button>
         <button class="tbtn" onclick="confirmWuerdMirStinken()" style="font-size:.75rem;padding:4px 10px;background:rgba(30,100,200,0.6);color:#fff;">🤢 Würd' mir stinken</button>
@@ -903,7 +901,7 @@ const IMG = {
   "Suffia": "karten/Suffia.png",
   "Luis Münsters": "karten/Luis_Muensters.png",
   "Cedzilla": "karten/Cedzilla.png",
-  "Griechischer Apored": "karten/Griechischer_ApoRed.png",
+  "Griechischer ApoRed": "karten/Griechischer_ApoRed.png",
   "Fabio das Berlin-City-Girl": "karten/Fabio.png",
   "Giraffael": "karten/Giraffael.png",
   "Hannah im Bach": "karten/Hannah_im_Bach.png",
@@ -953,12 +951,12 @@ function startGame(mode) {
   // Set MY hand label based on which player I am
   const myHandId = (NET.myPlayer === 2) ? '#p2-hand' : '#p1-hand';
   const myHandZlbl = document.querySelector(myHandId + ' .zlbl');
-  if (myHandZlbl) myHandZlbl.textContent = 'Hand – ' + (NET.myName || ('Spieler ' + NET.myPlayer));
+  if (myHandZlbl) myHandZlbl.textContent = 'Hand – Spieler ' + (NET.myPlayer || 1) + ' – 0 Karten';
   // Reset enemy hand label
   const enemyHandId = (NET.myPlayer === 2) ? '#p1-hand' : '#p2-hand';
   const enemyHandZlbl = document.querySelector(enemyHandId + ' .zlbl');
   const enemyNum = NET.myPlayer === 2 ? 1 : 2;
-  if (enemyHandZlbl) enemyHandZlbl.textContent = 'Hand – Spieler ' + enemyNum;
+  if (enemyHandZlbl) enemyHandZlbl.textContent = 'Hand – Spieler ' + enemyNum + ' – 0 Karten';
   const playerLabel = document.getElementById('player-label');
   if (mode === 'multi') {
     const _pname = getLobbyName();
@@ -1036,7 +1034,7 @@ const CARD_DB=[
   {name:"Suffia",count:3,color:"#666666",type:"buw"},
   {name:"Luis Münsters",count:3,color:"#666666",type:"buw"},
   {name:"Cedzilla",count:3,color:"#666666",type:"buw"},
-  {name:"Griechischer Apored",count:3,color:"#666666",type:"buw"},
+  {name:"Griechischer ApoRed",count:3,color:"#666666",type:"buw"},
   {name:"Fabio das Berlin-City-Girl",count:3,color:"#6622aa",type:"buw"},
   {name:"Giraffael",count:3,color:"#6622aa",type:"buw"},
   {name:"Hannah im Bach",count:3,color:"#6622aa",type:"buw"},
@@ -1087,7 +1085,7 @@ const G={deck:[],nid:1,cards:[],reveal:{1:false,2:false},lp:{1:300,2:300},graves
 let fourPlayerMode = false;
 
 let erweiterungAN = true;
-const NO_DLC = {'Gilip der Glibbrige':3,'Lord Phillipp of Glencoe':3,'Phülügülüm':3,'Baby Niko':0,'Grünika':3,'Schwammika':3,'Antika':3,'Marie die Königsgardistin':0,'Marzo der Gott':3,'Marcopter':3,'Marco der Hund':3,'Leonie Norris':0,'Kax Maufmann':3,'Maxodia':3,'Maxibu':3,'Hoffi der rasierte Karnevalsprinz':0,'Barista Clarista der Mister-Fister':3,'Clarry Pather der Maincharacter':3,'ClariSSIO':3,'Alicia die ehrenlose Fettsau':0,'Glorian':3,'Flosama':3,'Klorian':3,'Lisa aus Australien':0,'Suffia':3,'Luis Münsters':3,'Cedzilla':3,'Griechischer Apored':0,'Fabio das Berlin-City-Girl':3,'Giraffael':3,'Hannah im Bach':3,'Alexerus Snape':0,'Die Pogofanten':1,"L'Enderdragon":1,'Golop der Grobe':0,'Der Zeitführer':1,'BOOM Clan':1,'Glaskuppel':6,'Calgon':6,'Clubmate':5,'Eine Runde noch':5,'RGB':5,'Nachschlag':5,'Mecces':5,'Ablehnt':5,'Dinkelmehl':5,'Wanze':2,'UwU ':2,'Tut mir leid…':2,'Ragequit':2,'Random Vote':2,'Neue BESSERE Karte':2,'Discord Meeting':2,'Zeitmaschinen Veruntreuung':2,'Sigma Transformation':0,'Tristanverbot':2,'Elefanten Aufstand':2,'Stein':2,'13er Bogen':2,'Vertragsbruch':2,'FourAceFour-Feuer-Reverse-Blöff':1};
+const NO_DLC = {'Gilip der Glibbrige':3,'Lord Phillipp of Glencoe':3,'Phülügülüm':3,'Baby Niko':0,'Grünika':3,'Schwammika':3,'Antika':3,'Marie die Königsgardistin':0,'Marzo der Gott':3,'Marcopter':3,'Marco der Hund':3,'Leonie Norris':0,'Kax Maufmann':3,'Maxodia':3,'Maxibu':3,'Hoffi der rasierte Karnevalsprinz':0,'Barista Clarista der Mister-Fister':3,'Clarry Pather der Maincharacter':3,'ClariSSIO':3,'Alicia die ehrenlose Fettsau':0,'Glorian':3,'Flosama':3,'Klorian':3,'Lisa aus Australien':0,'Suffia':3,'Luis Münsters':3,'Cedzilla':3,'Griechischer ApoRed':0,'Fabio das Berlin-City-Girl':3,'Giraffael':3,'Hannah im Bach':3,'Alexerus Snape':0,'Die Pogofanten':1,"L'Enderdragon":1,'Golop der Grobe':0,'Der Zeitführer':1,'BOOM Clan':1,'Glaskuppel':6,'Calgon':6,'Clubmate':5,'Eine Runde noch':5,'RGB':5,'Nachschlag':5,'Mecces':5,'Ablehnt':5,'Dinkelmehl':5,'Wanze':2,'UwU ':2,'Tut mir leid…':2,'Ragequit':2,'Random Vote':2,'Neue BESSERE Karte':2,'Discord Meeting':2,'Zeitmaschinen Veruntreuung':2,'Sigma Transformation':0,'Tristanverbot':2,'Elefanten Aufstand':2,'Stein':2,'13er Bogen':2,'Vertragsbruch':2,'FourAceFour-Feuer-Reverse-Blöff':1};
 function buildDeck(){let d=[];CARD_DB.forEach(def=>{let cnt=erweiterungAN?def.count:(NO_DLC[def.name]??0);for(let i=0;i<cnt;i++)d.push({name:def.name,color:def.color,type:def.type,uid:G.nid++});});return shuffle(d);}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 G.deck=buildDeck();updDeck();
@@ -1281,9 +1279,8 @@ function openGraveBrowser(player){openBrowser(player,'all');}
 function openBrowser(source,mode){
   G.browserSource=source;G.browserMode=mode;
   const isGrave=source==='p1'||source==='p2'||source==='p3'||source==='p4';
-  document.getElementById('browser-shuffle-btn').style.display=isGrave?'none':'inline-block';
   const isBanish=source==='banish';
-  document.getElementById('browser-shuffle-btn').style.display=(isGrave||isBanish)?'none':document.getElementById('browser-shuffle-btn').style.display;
+  document.getElementById('browser-shuffle-btn').style.display=(isGrave||isBanish||mode==='top4')?'none':'inline-block';
   const titles={deck:{all:'Ziehstapel',top4:'Gossip'},p1:'Friedhof Spieler 1',p2:'Friedhof Spieler 2',p3:'Friedhof Spieler 3',p4:'Friedhof Spieler 4',banish:'Entfernt-Stapel'};
   document.getElementById('browser-title').textContent=(isGrave||isBanish)?(isBanish?titles.banish:titles[source]):titles.deck[mode];
   renderBrowserList();
@@ -1316,9 +1313,8 @@ function renderBrowserList(){
       <div class="deck-row-btns">
         ${(!isGrave&&!isBanish)?`<button onclick="moveBCard(${realIdx},-1)" ${realIdx===0?'disabled':''}>↑</button>
         <button onclick="moveBCard(${realIdx},1)" ${realIdx===rawData.length-1?'disabled':''}>↓</button>
-        <button onclick="moveBCardTop(${realIdx})">⤒</button>`:''}
+        <button onclick="moveBCardTop(${realIdx})" title="Ganz nach oben">⏫ Ganz nach oben</button>`:''}
         <button class="field-btn" onclick="bCardToField(${realIdx},'${G.browserSource}')">🃏 Aufs Spielfeld</button>
-        <button class="rm-btn" onclick="bRemoveCard(${realIdx},'${G.browserSource}')">✕</button>
       </div>`;
     // Double-click to show popup
     let clickCount=0,clickTimer=null;
@@ -1929,6 +1925,126 @@ function doReset(){
 }
 
 
+// ── DEBUG-MENÜ ──
+function openDebugMenu() {
+  if (!confirm('Achtung: Nur zum Debuggen!')) return;
+  showDebugMenu();
+}
+
+function closeAllDebugModals() {
+  ['debug-menu-modal','card-count-modal','add-card-modal'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  });
+}
+
+function showDebugMenu() {
+  let existing = document.getElementById('debug-menu-modal');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'debug-menu-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9500;display:flex;align-items:center;justify-content:center;';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:32px;min-width:320px;font-family:"Kievit",sans-serif;';
+
+  const title = document.createElement('div');
+  title.style.cssText = "font-size:1.5rem;font-weight:800;margin-bottom:20px;font-family:'AiSpec',sans-serif;font-style:italic;";
+  title.textContent = '🛠️ Debug';
+  box.appendChild(title);
+
+  const btnWrap = document.createElement('div');
+  btnWrap.style.cssText = 'display:flex;flex-direction:column;gap:12px;';
+
+  const stackBtn = document.createElement('button');
+  stackBtn.textContent = '🔍 Stapel ansehen';
+  stackBtn.style.cssText = 'padding:14px 24px;font-size:1.1rem;border-radius:10px;border:none;background:#333;color:#fff;cursor:pointer;font-family:"Kievit",sans-serif;';
+  stackBtn.onclick = () => {
+    overlay.remove();
+    if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) openBrowser4('all');
+    else openBrowser('deck','all');
+  };
+  btnWrap.appendChild(stackBtn);
+
+  const countBtn = document.createElement('button');
+  countBtn.textContent = '🔢 Karten Anzahl';
+  countBtn.style.cssText = 'padding:14px 24px;font-size:1.1rem;border-radius:10px;border:none;background:#333;color:#fff;cursor:pointer;font-family:"Kievit",sans-serif;';
+  countBtn.onclick = () => { overlay.remove(); showCardCountDebug(); };
+  btnWrap.appendChild(countBtn);
+
+  const addBtn = document.createElement('button');
+  addBtn.textContent = '➕ Karte hinzufügen';
+  addBtn.style.cssText = 'padding:14px 24px;font-size:1.1rem;border-radius:10px;border:none;background:#1a7a3a;color:#fff;cursor:pointer;font-family:"Kievit",sans-serif;';
+  addBtn.onclick = () => { overlay.remove(); showAddCardMenu(); };
+  btnWrap.appendChild(addBtn);
+
+  box.appendChild(btnWrap);
+
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Schließen';
+  closeBtn.style.cssText = 'margin-top:20px;padding:12px 28px;font-size:1.1rem;border-radius:10px;border:none;background:#999;color:#fff;cursor:pointer;font-family:"Kievit",sans-serif;';
+  closeBtn.onclick = () => overlay.remove();
+  box.appendChild(closeBtn);
+
+  overlay.appendChild(box);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+// ── KARTE HINZUFÜGEN (Debug) ──
+function showAddCardMenu() {
+  let existing = document.getElementById('add-card-modal');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'add-card-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9500;display:flex;align-items:center;justify-content:center;';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:32px;max-width:1100px;width:95vw;max-height:92vh;overflow-y:auto;font-family:"Kievit",sans-serif;';
+
+  const title = document.createElement('div');
+  title.style.cssText = "font-size:1.7rem;font-weight:800;margin-bottom:8px;font-family:'AiSpec',sans-serif;font-style:italic;";
+  title.textContent = '➕ Karte hinzufügen';
+  box.appendChild(title);
+
+  const hint = document.createElement('div');
+  hint.style.cssText = 'font-size:0.95rem;color:#666;margin-bottom:20px;';
+  hint.textContent = 'Doppelklick auf eine Karte, um sie neu (nicht aus dem Ziehstapel) zum Spiel hinzuzufügen.';
+  box.appendChild(hint);
+
+  const table = document.createElement('table');
+  table.style.cssText = 'width:100%;border-collapse:collapse;font-size:1.15rem;';
+  const tbody = document.createElement('tbody');
+
+  // Alle einzigartigen Karten, sortiert nach Farbe (Rot, Orange, Gelb, Grün, Blau, Violett, Grau, Cyan, Spezial, Effekt)
+  UNIQUE_CARDS.forEach(def => {
+    const tr = document.createElement('tr');
+    tr.style.cssText = 'border-bottom:1px solid #eee;cursor:pointer;';
+    tr.innerHTML = `<td style="padding:10px 12px;"><img src="${thumbFor(def.name)}" alt="${def.name}" style="width:70px;height:98px;object-fit:cover;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,0.25);display:block;"></td>
+      <td style="padding:10px 12px;font-weight:600;">${def.name}</td>`;
+    tr.addEventListener('dblclick', () => {
+      closeAllDebugModals();
+      startCarry({name: def.name, color: def.color, type: def.type, uid: G.nid++});
+    });
+    tr.addEventListener('mouseenter', () => tr.style.background = '#f2f2f2');
+    tr.addEventListener('mouseleave', () => tr.style.background = '');
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(tbody);
+  box.appendChild(table);
+
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Schließen';
+  closeBtn.style.cssText = 'margin-top:20px;padding:12px 28px;font-size:1.1rem;border-radius:10px;border:none;background:#333;color:#fff;cursor:pointer;font-family:"Kievit",sans-serif;';
+  closeBtn.onclick = () => overlay.remove();
+  box.appendChild(closeBtn);
+
+  overlay.appendChild(box);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
 // ── KARTEN-ANZAHL DEBUG ──
 function openCardCountDebug() {
   if (!confirm('Achtung: Nur zum Debuggen!')) return;
@@ -1983,8 +2099,17 @@ function showCardCountDebug() {
   // Entfernt-Stapel
   banish.forEach(add);
 
-  // Alle bekannten Karten sortiert
-  const allNames = [...new Set([...Object.keys(deckCount), ...Object.keys(totalCount)])].sort();
+  // Alle bekannten Karten sortiert (Rot, Orange, Gelb, Grün, Blau, Violett, Grau, Cyan, Spezial, Effekt)
+  const cardOrder = {};
+  UNIQUE_CARDS.forEach((def, idx) => { if (!(def.name in cardOrder)) cardOrder[def.name] = idx; });
+  const allNames = [...new Set([...Object.keys(deckCount), ...Object.keys(totalCount)])]
+    .sort((a, b) => {
+      const ia = cardOrder[a], ib = cardOrder[b];
+      if (ia !== undefined && ib !== undefined) return ia - ib;
+      if (ia !== undefined) return -1;
+      if (ib !== undefined) return 1;
+      return a.localeCompare(b);
+    });
 
   // Modal erstellen
   let existing = document.getElementById('card-count-modal');
@@ -2437,9 +2562,10 @@ function checkExBuwemon(player, suffix) {
   if (s1 && s2 && s3 && s1.color === s2.color && s2.color === s3.color) {
     const exFile = EX_MAP[s1.color];
     if (exFile) {
+      const wasAlreadyThisExAuto = G.slots[exSlot] && G.slots[exSlot].type === 'ex-auto' && G.slots[exSlot].color === s1.color;
       G.slots[exSlot] = {name: EX_NAMES[s1.color]||'EX', color: s1.color, type: 'ex-auto', file: exFile, uid: 0};
       renderSlot(exSlot);
-      if (s1.color === '#111111') checkDarkschahWin(player);
+      if (s1.color === '#111111' && !wasAlreadyThisExAuto) checkDarkschahWin(player);
       checkZoneColor(player, suffix);
       return;
     }
@@ -2918,14 +3044,15 @@ function checkDarkschahWin4(player) {
   }
 }
 
-function showDarkschahWinLose4(isWinner, winnerP) {
+function showDarkschahWinLose4(isWinner, winnerP, applyLP) {
+  applyLP = applyLP !== false;
   triggerExplosions();
   // Alle anderen Spieler bekommen -1000 LP (kann negativ werden)
   const boards = ['board','board4','ereignis-panel','banish-panel','ereignis-panel-4','banish-panel-4'].map(id=>document.getElementById(id)).filter(Boolean);
   boards.forEach(el => el.classList.add('darkschah-win'));
   G.cards.forEach(c => c.classList.add('darkschah-win'));
-  // -1000 LP nur beim Gewinner-Client ausführen (verhindert Doppelabzug beim Empfänger)
-  if (isWinner || NET.mode !== 'multi') {
+  // Nur EINMAL abziehen (beim Auslöser) - Empfänger übernehmen den Wert per {t:'lp4'}-Sync
+  if (applyLP) {
     const losers = [1,2,3,4].filter(p => {
       if (p === winnerP) return false;
       if (NET.mode === 'multi') return G4.active[p];
@@ -2964,17 +3091,21 @@ function showDarkschahWinLose4(isWinner, winnerP) {
   }, 60);
 }
 
-function showDarkschahWinLose(isWinner) {
+function showDarkschahWinLose(isWinner, applyLP) {
+  applyLP = applyLP !== false;
   triggerExplosions();
   // LP -1000 for loser (bypasses normal 0 floor, only Darkschah can go negative)
-  const loserP = isWinner
-    ? (NET.mode === 'multi' ? (NET.myPlayer === 1 ? 2 : 1) : 2)
-    : (NET.mode === 'multi' ? NET.myPlayer : 2);
-  G.lp[loserP] = (G.lp[loserP] || 0) - 1000;
-  const _lpEl = document.getElementById('p'+loserP+'-lp');
-  if (_lpEl) _lpEl.textContent = G.lp[loserP];
-  triggerLPAnim(loserP, false);
-  if (NET.mode === 'multi') netSend({t:'lp', p: loserP, val: G.lp[loserP], increased: false});
+  // Nur EINMAL abziehen (beim Auslöser) - der Empfänger übernimmt den Wert per {t:'lp'}-Sync
+  if (applyLP) {
+    const loserP = isWinner
+      ? (NET.mode === 'multi' ? (NET.myPlayer === 1 ? 2 : 1) : 2)
+      : (NET.mode === 'multi' ? NET.myPlayer : 2);
+    G.lp[loserP] = (G.lp[loserP] || 0) - 1000;
+    const _lpEl = document.getElementById('p'+loserP+'-lp');
+    if (_lpEl) _lpEl.textContent = G.lp[loserP];
+    triggerLPAnim(loserP, false);
+    if (NET.mode === 'multi') netSend({t:'lp', p: loserP, val: G.lp[loserP], increased: false});
+  }
   const text = isWinner ? 'ABSOLUTE VERNICHTUNG' : 'DU WURDEST VERNICHTET!';
   const overlay = document.getElementById('win-lose-overlay');
   const el = document.getElementById('win-lose-text');
@@ -3070,7 +3201,7 @@ function checkLPWin(p) {
 // ── LIIINKS & RECAST ──
 
 // ── TOXISCHE MÄNNLICHKEIT ──
-const MAENNLICHE_BUWEMON = ["Gilip der Glibbrige", "Lord Phillipp of Glencoe", "Phülügülüm", "Baby Niko", "Marzo der Gott", "Marcopter", "Marco der Hund", "Kax Maufmann", "Maxodia", "Maxibu", "Hoffi der rasierte Karnevalsprinz", "Glorian", "Flosama", "Klorian", "Luis Münsters", "Cedzilla", "Griechischer Apored", "Fabio das Berlin-City-Girl", "Giraffael"];
+const MAENNLICHE_BUWEMON = ["Gilip der Glibbrige", "Lord Phillipp of Glencoe", "Phülügülüm", "Baby Niko", "Marzo der Gott", "Marcopter", "Marco der Hund", "Kax Maufmann", "Maxodia", "Maxibu", "Hoffi der rasierte Karnevalsprinz", "Glorian", "Flosama", "Klorian", "Luis Münsters", "Cedzilla", "Griechischer ApoRed", "Fabio das Berlin-City-Girl", "Giraffael"];
 
 function confirmToxMaennlichkeit() {
   if (!confirm('Toxische Männlichkeit! Alle männlichen Buwemon in gegnerischen Buwemonfeldern werden auf den Entferntstapel verschoben. Wirklich?')) return;
@@ -4301,7 +4432,7 @@ function updDeck4() {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v34t',
+    version: 'v35b',
     deck: G.deck,
     graves: G.graves,
     banish: G.banish,
@@ -4506,7 +4637,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v34t
+    v35b
   </div>
 </div>
 
@@ -4613,6 +4744,63 @@ function multiJoin() {
     NET.ws.send(JSON.stringify({t:'join', code}));
   });
 }
+
+function updateHandLabels() {
+  ['p1','p2'].forEach(p => {
+    const zoneEl = document.getElementById(p+'-hand');
+    if (!zoneEl) return;
+    const r = zoneEl.getBoundingClientRect();
+    const count = G.cards.filter(c => {
+      const cr = c.getBoundingClientRect();
+      const cx = cr.left+cr.width/2, cy = cr.top+cr.height/2;
+      return cx>=r.left && cx<=r.right && cy>=r.top && cy<=r.bottom;
+    }).length;
+    const lbl = zoneEl.querySelector('.zlbl');
+    if (!lbl) return;
+    const pNum = p === 'p1' ? 1 : 2;
+    let name = 'Spieler ' + pNum;
+    if (NET.mode === 'multi') {
+      const myZone = (NET.myPlayer === 2) ? 'p2' : 'p1';
+      name = (p === myZone) ? (NET.myName || name) : (NET.enemyName || name);
+    }
+    lbl.textContent = 'Hand – ' + name + ' – ' + count + ' Karten';
+  });
+}
+
+function updateHandLabels4() {
+  ['p1','p2','p3','p4'].forEach(p => {
+    const zoneEl = document.getElementById(p+'-hand-4');
+    if (!zoneEl) return;
+    const r = zoneEl.getBoundingClientRect();
+    const count = G.cards.filter(c => {
+      const cr = c.getBoundingClientRect();
+      const cx = cr.left+cr.width/2, cy = cr.top+cr.height/2;
+      return cx>=r.left && cx<=r.right && cy>=r.top && cy<=r.bottom;
+    }).length;
+    // Das Label ist der erste <span> in der Handzone (nicht die Buttons)
+    const lbl = zoneEl.querySelector('span');
+    if (!lbl) return;
+    const pNum = p[1];
+    lbl.textContent = 'Hand – ' + getPlayerName4(parseInt(pNum)) + ' – ' + count + ' Karten';
+  });
+}
+
+// Automatisches Update bei jeder Karten-Bewegung (Solo & Mehrspieler, 2- & 4-Spieler),
+// unabhängig davon welche Funktion die Änderung ausgelöst hat
+let _handLabelRaf = null;
+function scheduleHandLabelUpdate() {
+  if (_handLabelRaf) return;
+  _handLabelRaf = requestAnimationFrame(() => {
+    _handLabelRaf = null;
+    updateHandLabels();
+    updateHandLabels4();
+  });
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const obs = new MutationObserver(scheduleHandLabelUpdate);
+  obs.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['style']});
+  scheduleHandLabelUpdate();
+});
 
 function netSendState() {
   if (NET.mode !== 'multi') return;
@@ -4732,9 +4920,7 @@ function onNetData(d) {
   }
   if (d.t === 'hello') {
     NET.enemyName = d.name;
-    const eZone2 = (NET.myPlayer === 2) ? '#p1-hand' : '#p2-hand';
-    const lbl = document.querySelector(eZone2 + ' .zlbl');
-    if (lbl) lbl.textContent = 'Hand – ' + NET.enemyName;
+    updateHandLabels();
     if (false) { // no hello loop
       netSend({t:'hello', name:NET.myName});
       startGame('multi');
@@ -4868,10 +5054,8 @@ function onNetData(d) {
     // Re-apply visibility after state update
     applyP1HandVisibility();
 
-    // Hand count label
-    const eZone3 = (NET.myPlayer === 2) ? '#p1-hand' : '#p2-hand';
-    const lbl = document.querySelector(eZone3 + ' .zlbl');
-    if (lbl) lbl.textContent = (NET.enemyName||'Gegner') + ' — ' + (d.handCount||0) + ' Karten';
+    // Hand count label (echte Zählung statt gesendeter Zahl)
+    updateHandLabels();
 
     // Reveal state handled via separate event
   }
@@ -5018,13 +5202,11 @@ if (d.t === 'state4') {
   if (d.t === 'darkschah') {
     const myPlayer = NET.myPlayer;
     const winnerNum = parseInt(d.winner.replace('p',''));
-    showDarkschahWinLose(myPlayer === winnerNum);
+    showDarkschahWinLose(myPlayer === winnerNum, false);
   }
   if (d.t === 'darkschah4') {
-    // Sender hat bereits lokal ausgeführt - nur Empfänger ausführen
-    if (G4._darkschahSent) { G4._darkschahSent = false; return; }
     const winnerP = parseInt(d.winner.replace('p',''));
-    showDarkschahWinLose4(NET.myPlayer === winnerP, winnerP);
+    showDarkschahWinLose4(NET.myPlayer === winnerP, winnerP, false);
   }
   if (d.t === 'winlose4') {
     // Nur Wintext für den letzten Überlebenden
