@@ -450,6 +450,10 @@ body {
 .hand4-zone{border-radius:6px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(0,0,0,0.03);}
 .grave4-zone{border-radius:6px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);}
 .lp-ok-4{background:rgba(0,0,0,0.1);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 4px;font-size:.6rem;cursor:pointer;color:#333;font-family:'Kievit',sans-serif;}
+.turn-btn{background:rgba(210,30,30,0.12);border:1.5px solid rgba(210,30,30,0.4);border-radius:5px;padding:3px 4px;font-size:.62rem;font-weight:700;color:#a01818;cursor:pointer;font-family:'Kievit',sans-serif;white-space:nowrap;width:100%;}
+.turn-btn:hover:not(:disabled){background:rgba(210,30,30,0.22);}
+.turn-btn:disabled{opacity:0.32;cursor:default;}
+.my-turn{border-color:#e00000 !important;border-width:2px !important;box-shadow:0 0 4px rgba(224,0,0,0.5);}
 </style>
 </head>
 <body>
@@ -457,6 +461,12 @@ body {
 <div id="topbar">
   <span class="brand">BUWEMON</span>
   <span id="player-label" style="font-size:.82rem;font-weight:700;color:rgba(0,0,0,0.55);font-family:'AiSpec',sans-serif;font-style:italic;display:none;padding:2px 8px;background:rgba(0,0,0,0.08);border-radius:5px;white-space:nowrap;"></span>
+  <span class="sp"></span>
+  <div id="topbar-mid" style="display:flex;gap:26px;align-items:center;height:100%;">
+    <span id="topbar-round" style="font-family:'Kievit',sans-serif;font-size:1rem;font-weight:700;color:rgba(0,0,0,0.6);white-space:nowrap;line-height:1;display:inline-flex;align-items:center;">Runde 1</span>
+    <span id="topbar-timer" style="font-family:'AiSpec',sans-serif;font-size:1.05rem;color:rgba(0,0,0,0.6);white-space:nowrap;line-height:1;display:inline-flex;align-items:center;height:1em;padding-top:0.15em;box-sizing:content-box;">00:00</span>
+    <span id="topbar-score" style="font-family:'Kievit',sans-serif;font-size:1rem;font-weight:700;color:rgba(0,0,0,0.6);white-space:nowrap;line-height:1;display:inline-flex;align-items:center;"></span>
+  </div>
   <span class="sp"></span>
   <button class="tbtn" id="btn-deal" onclick="openDealConfirm()" style="color:#1a4a8a;border-color:rgba(30,80,200,0.3);">🃏 Startkarten ausgeben</button>
   <button class="tbtn" onclick="openDebugMenu()" style="color:#666;border-color:rgba(0,0,0,0.2);">🛠️ Debug</button>
@@ -488,7 +498,7 @@ body {
     </div>
   </div>
 
-  <div class="row-zones" style="position:relative;"><div class="grave-wrap" style="align-self:flex-start;"><div class="zone zone-grave" id="p2-grave" onclick="openGraveBrowser('p2')" title="Friedhof ansehen"><span class="zlbl" style="font-size:.62rem;">Friedhof</span><div class="grave-preview" id="p2-grave-preview"></div><div class="grave-count" id="p2-grave-count" style="display:none;"></div></div></div><div class="push" style="min-width:20px;"></div><div class="buw-group"><div class="buw-slot" id="p2-buw1"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p2-buw2"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p2-buw3"><span class="zlbl">Buwemon</span></div></div><div class="push" style="flex:2;"></div><div style="flex:1;min-width:0;"></div><div style="position:absolute;right:0;top:0;bottom:0;display:flex;align-items:stretch;gap:50px;margin-left:200px;"><div class="buw-group" id="p2-effekt-group"><div class="buw-slot effekt-slot" id="p2-eff1"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff2"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff3"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff4"><span class="zlbl">Effekt</span></div></div><div class="grave-wrap" style="gap:6px;align-self:flex-start;"><div class="zone zone-grave verbot-slot" id="p2-verbot1"></div><div class="zone zone-grave verbot-slot" id="p2-verbot2"></div><div class="zone zone-grave verbot-slot" id="p2-verbot3"></div></div><div class="grave-wrap" style="align-self:flex-start;"><div class="lp-box"><div class="lp-display" id="p2-lp" contenteditable="true" onblur="lpDirectEdit(2)" onkeydown="lpDirectKey(event,2)">300</div><div class="lp-calc"><input type="text" id="p2-lp-input" placeholder="" onkeydown="lpKey(event,2)"><button onclick="applyLP(2)" class="lp-ok" id="p2-lp-ok">OK</button></div></div></div></div></div>
+  <div class="row-zones" style="position:relative;"><div class="grave-wrap" style="align-self:flex-start;"><div class="zone zone-grave" id="p2-grave" onclick="openGraveBrowser('p2')" title="Friedhof ansehen"><span class="zlbl" style="font-size:.62rem;">Friedhof</span><div class="grave-preview" id="p2-grave-preview"></div><div class="grave-count" id="p2-grave-count" style="display:none;"></div></div></div><div class="push" style="min-width:20px;"></div><div class="buw-group"><div class="buw-slot" id="p2-buw1"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p2-buw2"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p2-buw3"><span class="zlbl">Buwemon</span></div></div><div class="push" style="flex:2;"></div><div style="flex:1;min-width:0;"></div><div style="position:absolute;right:0;top:0;bottom:0;display:flex;align-items:stretch;gap:50px;margin-left:200px;"><div class="buw-group" id="p2-effekt-group"><div class="buw-slot effekt-slot" id="p2-eff1"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff2"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff3"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff4"><span class="zlbl">Effekt</span></div></div><div class="grave-wrap" style="gap:6px;align-self:flex-start;"><div class="zone zone-grave verbot-slot" id="p2-verbot1"></div><div class="zone zone-grave verbot-slot" id="p2-verbot2"></div><div class="zone zone-grave verbot-slot" id="p2-verbot3"></div></div><div class="grave-wrap" style="align-self:flex-start;"><div class="lp-box" style="position:relative;"><div class="lp-display" id="p2-lp" contenteditable="true" onblur="lpDirectEdit(2)" onkeydown="lpDirectKey(event,2)">300</div><div class="lp-calc"><input type="text" id="p2-lp-input" placeholder="" onkeydown="lpKey(event,2)"><button onclick="applyLP(2)" class="lp-ok" id="p2-lp-ok">OK</button></div><button class="turn-btn" id="turn-btn-p2" onclick="endTurn(2)" disabled style="position:absolute;left:0;right:0;top:100%;margin-top:4px;">Zug beendet</button></div></div></div></div>
 
   <div class="row-ex" id="p2-ex-row" style="display:flex;align-items:stretch;flex:11;min-height:0;">
     <div id="p2-ex-space" style="flex:none;width:0;"></div><!-- grave spacer -->
@@ -545,7 +555,7 @@ body {
     <div style="width:calc(var(--cw) + 4px);flex-shrink:0;"></div><!-- grave spacer -->
   </div>
 
-  <div class="row-zones" style="position:relative;"><div style="flex:1;min-width:0;"></div><div class="push" style="flex:2;"></div><div class="buw-group"><div class="buw-slot" id="p1-buw1"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p1-buw2"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p1-buw3"><span class="zlbl">Buwemon</span></div></div><div class="push" style="min-width:20px;"></div><div class="grave-wrap" style="align-self:flex-end;"><div class="zone zone-grave" id="p1-grave" onclick="openGraveBrowser('p1')" title="Friedhof ansehen"><span class="zlbl" style="font-size:.62rem;">Friedhof</span><div class="grave-preview" id="p1-grave-preview"></div><div class="grave-count" id="p1-grave-count" style="display:none;"></div></div></div><div style="position:absolute;left:0;top:0;bottom:0;display:flex;align-items:stretch;gap:50px;margin-right:200px;"><div class="grave-wrap" style="align-self:flex-end;"><div class="lp-box"><div class="lp-display" id="p1-lp" contenteditable="true" onblur="lpDirectEdit(1)" onkeydown="lpDirectKey(event,1)">300</div><div class="lp-calc"><input type="text" id="p1-lp-input" placeholder="" onkeydown="lpKey(event,1)"><button onclick="applyLP(1)" class="lp-ok" id="p1-lp-ok">OK</button></div></div></div><div class="grave-wrap" style="gap:6px;align-self:flex-end;"><div class="zone zone-grave verbot-slot" id="p1-verbot1"></div><div class="zone zone-grave verbot-slot" id="p1-verbot2"></div><div class="zone zone-grave verbot-slot" id="p1-verbot3"></div></div><div class="buw-group" id="p1-effekt-group"><div class="buw-slot effekt-slot" id="p1-eff1"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff2"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff3"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff4"><span class="zlbl">Effekt</span></div></div></div></div>
+  <div class="row-zones" style="position:relative;"><div style="flex:1;min-width:0;"></div><div class="push" style="flex:2;"></div><div class="buw-group"><div class="buw-slot" id="p1-buw1"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p1-buw2"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p1-buw3"><span class="zlbl">Buwemon</span></div></div><div class="push" style="min-width:20px;"></div><div class="grave-wrap" style="align-self:flex-end;"><div class="zone zone-grave" id="p1-grave" onclick="openGraveBrowser('p1')" title="Friedhof ansehen"><span class="zlbl" style="font-size:.62rem;">Friedhof</span><div class="grave-preview" id="p1-grave-preview"></div><div class="grave-count" id="p1-grave-count" style="display:none;"></div></div></div><div style="position:absolute;left:0;top:0;bottom:0;display:flex;align-items:stretch;gap:50px;margin-right:200px;"><div class="grave-wrap" style="align-self:flex-end;"><div class="lp-box" style="position:relative;"><button class="turn-btn" id="turn-btn-p1" onclick="endTurn(1)" disabled style="position:absolute;left:0;right:0;bottom:100%;margin-bottom:4px;">Zug beendet</button><div class="lp-display" id="p1-lp" contenteditable="true" onblur="lpDirectEdit(1)" onkeydown="lpDirectKey(event,1)">300</div><div class="lp-calc"><input type="text" id="p1-lp-input" placeholder="" onkeydown="lpKey(event,1)"><button onclick="applyLP(1)" class="lp-ok" id="p1-lp-ok">OK</button></div></div></div><div class="grave-wrap" style="gap:6px;align-self:flex-end;"><div class="zone zone-grave verbot-slot" id="p1-verbot1"></div><div class="zone zone-grave verbot-slot" id="p1-verbot2"></div><div class="zone zone-grave verbot-slot" id="p1-verbot3"></div></div><div class="buw-group" id="p1-effekt-group"><div class="buw-slot effekt-slot" id="p1-eff1"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff2"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff3"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff4"><span class="zlbl">Effekt</span></div></div></div></div>
 
   <div class="row-hand">
     <div class="zone zone-hand" id="p1-hand">
@@ -597,31 +607,43 @@ body {
   <div id="p4-grave-4-count" style="position:absolute;top:3px;right:4px;background:rgba(0,0,0,0.6);color:#fff;font-size:.5rem;font-weight:700;border-radius:3px;padding:1px 3px;display:none;">0</div>
 </div>
   <div style="position:absolute;left:320px;top:741px;width:60px;height:100px;display:flex;flex-direction:column;justify-content:center;gap:5px;align-items:stretch;">
+  <div style="position:relative;">
+  <button class="turn-btn" id="turn-btn-p1-4" onclick="endTurn4(1)" disabled style="position:absolute;left:0;right:0;bottom:100%;margin-bottom:6px;">Zug beendet</button>
   <div id="p1-lp-4" contenteditable="true" onblur="lpDirectEdit4(1)" onkeydown="lpDirectKey4(event,1)" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:text;outline:none;font-family:'AiSpec',sans-serif;font-style:italic;">300</div>
-  <div style="display:flex;gap:2px;">
+  <div style="display:flex;gap:2px;margin-top:5px;">
     <input id="p1-lp-inp-4" type="text" onkeydown="lpKey4(event,1)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
     <button id="p1-lp-ok-4" onclick="applyLP4(1)" class="lp-ok-4">OK</button>
   </div>
+  </div>
 </div>
   <div style="position:absolute;left:1540px;top:107px;width:60px;height:100px;display:flex;flex-direction:column;justify-content:center;gap:5px;align-items:stretch;">
+  <div style="position:relative;">
   <div id="p2-lp-4" contenteditable="true" onblur="lpDirectEdit4(2)" onkeydown="lpDirectKey4(event,2)" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:text;outline:none;font-family:'AiSpec',sans-serif;font-style:italic;">300</div>
-  <div style="display:flex;gap:2px;">
+  <div style="display:flex;gap:2px;margin-top:5px;">
     <input id="p2-lp-inp-4" type="text" onkeydown="lpKey4(event,2)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
     <button id="p2-lp-ok-4" onclick="applyLP4(2)" class="lp-ok-4">OK</button>
   </div>
+  <button class="turn-btn" id="turn-btn-p2-4" onclick="endTurn4(2)" disabled style="position:absolute;left:0;right:0;top:100%;margin-top:6px;">Zug beendet</button>
+  </div>
 </div>
   <div style="position:absolute;left:167px;top:70px;width:60px;height:100px;display:flex;flex-direction:column;justify-content:center;gap:5px;align-items:stretch;">
+  <div style="position:relative;">
+  <button class="turn-btn" id="turn-btn-p3-4" onclick="endTurn4(3)" disabled style="position:absolute;left:0;right:0;bottom:100%;margin-bottom:6px;">Zug beendet</button>
   <div id="p3-lp-4" contenteditable="true" onblur="lpDirectEdit4(3)" onkeydown="lpDirectKey4(event,3)" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:text;outline:none;font-family:'AiSpec',sans-serif;font-style:italic;">300</div>
-  <div style="display:flex;gap:2px;">
+  <div style="display:flex;gap:2px;margin-top:5px;">
     <input id="p3-lp-inp-4" type="text" onkeydown="lpKey4(event,3)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
     <button id="p3-lp-ok-4" onclick="applyLP4(3)" class="lp-ok-4">OK</button>
   </div>
+  </div>
 </div>
   <div style="position:absolute;left:1693px;top:780px;width:60px;height:100px;display:flex;flex-direction:column;justify-content:center;gap:5px;align-items:stretch;">
+  <div style="position:relative;">
   <div id="p4-lp-4" contenteditable="true" onblur="lpDirectEdit4(4)" onkeydown="lpDirectKey4(event,4)" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:text;outline:none;font-family:'AiSpec',sans-serif;font-style:italic;">300</div>
-  <div style="display:flex;gap:2px;">
+  <div style="display:flex;gap:2px;margin-top:5px;">
     <input id="p4-lp-inp-4" type="text" onkeydown="lpKey4(event,4)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
     <button id="p4-lp-ok-4" onclick="applyLP4(4)" class="lp-ok-4">OK</button>
+  </div>
+  <button class="turn-btn" id="turn-btn-p4-4" onclick="endTurn4(4)" disabled style="position:absolute;left:0;right:0;top:100%;margin-top:6px;">Zug beendet</button>
   </div>
 </div>
 
@@ -887,7 +909,7 @@ const IMG = {
   "Marco der Hund": "karten/Marco_der_Hund.png",
   "Leonie Norris": "karten/Leonie_Norris.png",
   "Kax Maufmann": "karten/Kax_Maufmann.png",
-  "Maxodia": "karten/Maxodia.png",
+  "Maxodia der Verbotene": "karten/Maxodia.png",
   "Maxibu": "karten/Maxibu.png",
   "Hoffi der rasierte Karnevalsprinz": "karten/Hoffi.png",
   "Barista Clarista der Mister-Fister": "karten/Barista_Clarista.png",
@@ -901,7 +923,7 @@ const IMG = {
   "Suffia": "karten/Suffia.png",
   "Luis Münsters": "karten/Luis_Muensters.png",
   "Cedzilla": "karten/Cedzilla.png",
-  "Griechischer Apored": "karten/Griechischer_ApoRed.png",
+  "Griechischer ApoRed": "karten/Griechischer_ApoRed.png",
   "Fabio das Berlin-City-Girl": "karten/Fabio.png",
   "Giraffael": "karten/Giraffael.png",
   "Hannah im Bach": "karten/Hannah_im_Bach.png",
@@ -940,9 +962,211 @@ const BACK = "karten/Rueckseite.png";
 
 
 // ── LOBBY ──
+// ── RUNDE / STOPPUHR / PUNKTZAHL ──
+let ROUND_NUM = 1;
+let SCORE2 = {1:0, 2:0};
+let SCORE4 = {1:0, 2:0, 3:0, 4:0};
+let _roundScored = false; // verhindert doppeltes Hochzählen pro Runde
+let _timerSeconds = 0;
+let _timerInterval = null;
+let _timerStarted = false; // schon gestartet in dieser Runde?
+
+function formatTimer(totalSeconds) {
+  const h = Math.floor(totalSeconds/3600);
+  const m = Math.floor((totalSeconds%3600)/60);
+  const s = totalSeconds%60;
+  const pad = n => String(n).padStart(2,'0');
+  return h > 0 ? (h+':'+pad(m)+':'+pad(s)) : (pad(m)+':'+pad(s));
+}
+
+function updateTopbarRound() {
+  const el = document.getElementById('topbar-round');
+  if (el) el.textContent = 'Runde ' + ROUND_NUM;
+}
+
+function updateTopbarTimer() {
+  const el = document.getElementById('topbar-timer');
+  if (el) el.textContent = formatTimer(_timerSeconds);
+}
+
+function updateTopbarScore() {
+  const el = document.getElementById('topbar-score');
+  if (!el) return;
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  if (is4) {
+    el.textContent = '🏆 ' + [1,2,3,4].map(p => getPlayerName4(p)+': '+SCORE4[p]).join('   ');
+  } else {
+    const n1 = (NET.mode === 'multi') ? (NET.myPlayer === 1 ? (NET.myName||'Spieler 1') : (NET.enemyName||'Spieler 1')) : 'Spieler 1';
+    const n2 = (NET.mode === 'multi') ? (NET.myPlayer === 2 ? (NET.myName||'Spieler 2') : (NET.enemyName||'Spieler 2')) : 'Spieler 2';
+    el.textContent = '🏆 ' + n1 + ': ' + SCORE2[1] + '   ' + n2 + ': ' + SCORE2[2];
+  }
+}
+
+function startGameTimer() {
+  if (_timerStarted) return;
+  _timerStarted = true;
+  if (_timerInterval) clearInterval(_timerInterval);
+  _timerInterval = setInterval(() => {
+    _timerSeconds++;
+    updateTopbarTimer();
+  }, 1000);
+}
+
+function stopGameTimer() {
+  if (_timerInterval) { clearInterval(_timerInterval); _timerInterval = null; }
+}
+
+function resetGameTimer() {
+  stopGameTimer();
+  _timerSeconds = 0;
+  _timerStarted = false;
+  updateTopbarTimer();
+}
+
+// Beim frischen Betreten des Boards (Solo oder Mehrspieler): alles auf Anfang
+function resetRoundSessionState() {
+  ROUND_NUM = 1;
+  SCORE2 = {1:0, 2:0};
+  SCORE4 = {1:0, 2:0, 3:0, 4:0};
+  _roundScored = false;
+  resetGameTimer();
+  updateTopbarRound();
+  updateTopbarScore();
+}
+
+// Bei "Neue Runde": Rundenzähler hoch, Timer zurück, Punktzahl bleibt
+function advanceRound() {
+  ROUND_NUM++;
+  _roundScored = false;
+  resetGameTimer();
+  updateTopbarRound();
+  updateTopbarScore();
+}
+
+function awardRoundWin(winnerP, is4) {
+  if (_roundScored) return;
+  _roundScored = true;
+  stopGameTimer();
+  if (is4) {
+    SCORE4[winnerP] = (SCORE4[winnerP]||0) + 1;
+    if (NET.mode === 'multi') netSend({t:'score4', score: SCORE4});
+  } else {
+    SCORE2[winnerP] = (SCORE2[winnerP]||0) + 1;
+    if (NET.mode === 'multi') netSend({t:'score', score: SCORE2});
+  }
+  updateTopbarScore();
+}
+
+// ── ZUG-SYSTEM (wer ist dran) ──
+let TURN_2P = null;   // null = noch niemand dran
+let TURN_4P = null;
+const TURN_ORDER_4P = [1,3,2,4]; // Uhrzeigersinn
+const TURN_ZONE_SLOTS = ['buw1','buw2','buw3','ex','eff1','eff2','eff3','eff4','verbot1','verbot2','verbot3'];
+
+function screenToGameRect(r) {
+  const W=1920, H=980;
+  const scale = Math.min(window.innerWidth/W, window.innerHeight/H);
+  const ox = (window.innerWidth - W*scale)/2;
+  const oy = (window.innerHeight - H*scale)/2;
+  return { left:(r.left-ox)/scale, right:(r.right-ox)/scale, top:(r.top-oy)/scale, bottom:(r.bottom-oy)/scale };
+}
+// Welcher Spieler besitzt die Handzone, in der die Karte gerade liegt? (für Zug-Start)
+function findHandZonePlayer(cx, cy, is4) {
+  const suf = is4 ? '-4' : '';
+  const players = is4 ? [1,2,3,4] : [1,2];
+  for (const p of players) {
+    const zoneEl = document.getElementById('p'+p+'-hand'+suf);
+    if (!zoneEl) continue;
+    const zr = screenToGameRect(zoneEl.getBoundingClientRect());
+    if (cx >= zr.left && cx <= zr.right && cy >= zr.top && cy <= zr.bottom) return p;
+  }
+  return null;
+}
+
+function setPlayerZoneBorder(p, on, is4) {
+  const suf = is4 ? '-4' : '';
+  const pfx = 'p'+p;
+  TURN_ZONE_SLOTS.forEach(s => {
+    const el = document.getElementById(pfx+'-'+s+suf);
+    if (el) el.classList.toggle('my-turn', on);
+  });
+  const hand = document.getElementById(pfx+'-hand'+suf);
+  if (hand) hand.classList.toggle('my-turn', on);
+  const grave = document.getElementById(pfx+'-grave'+suf);
+  if (grave) grave.classList.toggle('my-turn', on);
+}
+
+function updateTurnUI2p() {
+  [1,2].forEach(p => {
+    const on = TURN_2P === p;
+    setPlayerZoneBorder(p, on, false);
+    const btn = document.getElementById('turn-btn-p'+p);
+    if (btn) btn.disabled = !on;
+  });
+}
+
+function updateTurnUI4p() {
+  [1,2,3,4].forEach(p => {
+    const on = TURN_4P === p;
+    setPlayerZoneBorder(p, on, true);
+    const btn = document.getElementById('turn-btn-p'+p+'-4');
+    if (btn) btn.disabled = !on;
+  });
+}
+
+function setTurn2p(p) { TURN_2P = p; updateTurnUI2p(); }
+function setTurn4p(p) { TURN_4P = p; updateTurnUI4p(); }
+
+function resetTurnState() {
+  TURN_2P = null;
+  TURN_4P = null;
+  updateTurnUI2p();
+  updateTurnUI4p();
+}
+
+// Erste manuell gezogene Karte startet den Zug
+function maybeStartTurn2p(p) {
+  if (TURN_2P !== null) return;
+  setTurn2p(p);
+  if (NET.mode === 'multi') netSend({t:'turn2', p});
+}
+function maybeStartTurn4p(p) {
+  if (TURN_4P !== null) return;
+  setTurn4p(p);
+  if (NET.mode === 'multi' && fourPlayerMode) netSend({t:'turn4', p});
+}
+
+function endTurn(p) {
+  if (TURN_2P !== p) return;
+  const next = p === 1 ? 2 : 1;
+  setTurn2p(next);
+  if (NET.mode === 'multi') netSend({t:'turn2', p: next});
+}
+
+function nextTurnPlayer4(current) {
+  const order = TURN_ORDER_4P;
+  const idx = order.indexOf(current);
+  for (let i = 1; i <= order.length; i++) {
+    const cand = order[(idx+i) % order.length];
+    if (G4.active[cand]) return cand;
+  }
+  return current;
+}
+
+function endTurn4(p) {
+  if (TURN_4P !== p) return;
+  const next = nextTurnPlayer4(p);
+  setTurn4p(next);
+  if (NET.mode === 'multi' && fourPlayerMode) netSend({t:'turn4', p: next});
+}
+
 function startGame(mode) {
+
+
   NET.mode = mode;
   document.getElementById('lobby').style.display = 'none';
+  resetRoundSessionState();
+  resetTurnState();
   G.deck=buildDeck();updDeck();
   const _sch=document.getElementById('schicksal-btn');if(_sch)_sch.style.display=erweiterungAN?'':'none';
   // Update zone labels
@@ -1020,7 +1244,7 @@ const CARD_DB=[
   {name:"Marco der Hund",count:3,color:"#cc5500",type:"buw"},
   {name:"Leonie Norris",count:3,color:"#cc5500",type:"buw"},
   {name:"Kax Maufmann",count:3,color:"#1a44bb",type:"buw"},
-  {name:"Maxodia",count:3,color:"#1a44bb",type:"buw"},
+  {name:"Maxodia der Verbotene",count:3,color:"#1a44bb",type:"buw"},
   {name:"Maxibu",count:3,color:"#1a44bb",type:"buw"},
   {name:"Hoffi der rasierte Karnevalsprinz",count:3,color:"#1a44bb",type:"buw"},
   {name:"Clarry Pather der Maincharacter",count:3,color:"#008899",type:"buw"},
@@ -1034,7 +1258,7 @@ const CARD_DB=[
   {name:"Suffia",count:3,color:"#666666",type:"buw"},
   {name:"Luis Münsters",count:3,color:"#666666",type:"buw"},
   {name:"Cedzilla",count:3,color:"#666666",type:"buw"},
-  {name:"Griechischer Apored",count:3,color:"#666666",type:"buw"},
+  {name:"Griechischer ApoRed",count:3,color:"#666666",type:"buw"},
   {name:"Fabio das Berlin-City-Girl",count:3,color:"#6622aa",type:"buw"},
   {name:"Giraffael",count:3,color:"#6622aa",type:"buw"},
   {name:"Hannah im Bach",count:3,color:"#6622aa",type:"buw"},
@@ -1085,7 +1309,7 @@ const G={deck:[],nid:1,cards:[],reveal:{1:false,2:false},lp:{1:300,2:300},graves
 let fourPlayerMode = false;
 
 let erweiterungAN = true;
-const NO_DLC = {'Gilip der Glibbrige':3,'Lord Phillipp of Glencoe':3,'Phülügülüm':3,'Baby Niko':0,'Grünika':3,'Schwammika':3,'Antika':3,'Marie die Königsgardistin':0,'Marzo der Gott':3,'Marcopter':3,'Marco der Hund':3,'Leonie Norris':0,'Kax Maufmann':3,'Maxodia':3,'Maxibu':3,'Hoffi der rasierte Karnevalsprinz':0,'Barista Clarista der Mister-Fister':3,'Clarry Pather der Maincharacter':3,'ClariSSIO':3,'Alicia die ehrenlose Fettsau':0,'Glorian':3,'Flosama':3,'Klorian':3,'Lisa aus Australien':0,'Suffia':3,'Luis Münsters':3,'Cedzilla':3,'Griechischer Apored':0,'Fabio das Berlin-City-Girl':3,'Giraffael':3,'Hannah im Bach':3,'Alexerus Snape':0,'Die Pogofanten':1,"L'Enderdragon":1,'Golop der Grobe':0,'Der Zeitführer':1,'BOOM Clan':1,'Glaskuppel':6,'Calgon':6,'Clubmate':5,'Eine Runde noch':5,'RGB':5,'Nachschlag':5,'Mecces':5,'Ablehnt':5,'Dinkelmehl':5,'Wanze':2,'UwU ':2,'Tut mir leid…':2,'Ragequit':2,'Random Vote':2,'Neue BESSERE Karte':2,'Discord Meeting':2,'Zeitmaschinen Veruntreuung':2,'Sigma Transformation':0,'Tristanverbot':2,'Elefanten Aufstand':2,'Stein':2,'13er Bogen':2,'Vertragsbruch':2,'FourAceFour-Feuer-Reverse-Blöff':1};
+const NO_DLC = {'Gilip der Glibbrige':3,'Lord Phillipp of Glencoe':3,'Phülügülüm':3,'Baby Niko':0,'Grünika':3,'Schwammika':3,'Antika':3,'Marie die Königsgardistin':0,'Marzo der Gott':3,'Marcopter':3,'Marco der Hund':3,'Leonie Norris':0,'Kax Maufmann':3,'Maxodia der Verbotene':3,'Maxibu':3,'Hoffi der rasierte Karnevalsprinz':0,'Barista Clarista der Mister-Fister':3,'Clarry Pather der Maincharacter':3,'ClariSSIO':3,'Alicia die ehrenlose Fettsau':0,'Glorian':3,'Flosama':3,'Klorian':3,'Lisa aus Australien':0,'Suffia':3,'Luis Münsters':3,'Cedzilla':3,'Griechischer ApoRed':0,'Fabio das Berlin-City-Girl':3,'Giraffael':3,'Hannah im Bach':3,'Alexerus Snape':0,'Die Pogofanten':1,"L'Enderdragon":1,'Golop der Grobe':0,'Der Zeitführer':1,'BOOM Clan':1,'Glaskuppel':6,'Calgon':6,'Clubmate':5,'Eine Runde noch':5,'RGB':5,'Nachschlag':5,'Mecces':5,'Ablehnt':5,'Dinkelmehl':5,'Wanze':2,'UwU ':2,'Tut mir leid…':2,'Ragequit':2,'Random Vote':2,'Neue BESSERE Karte':2,'Discord Meeting':2,'Zeitmaschinen Veruntreuung':2,'Sigma Transformation':0,'Tristanverbot':2,'Elefanten Aufstand':2,'Stein':2,'13er Bogen':2,'Vertragsbruch':2,'FourAceFour-Feuer-Reverse-Blöff':1};
 function buildDeck(){let d=[];CARD_DB.forEach(def=>{let cnt=erweiterungAN?def.count:(NO_DLC[def.name]??0);for(let i=0;i<cnt;i++)d.push({name:def.name,color:def.color,type:def.type,uid:G.nid++});});return shuffle(d);}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 G.deck=buildDeck();updDeck();
@@ -1105,7 +1329,7 @@ window.addEventListener('resize',alignEX);
 function drawCard(e){
   if(!G.deck.length)return;
   if(e){ e.preventDefault(); e.stopPropagation(); }
-  const cd=G.deck.shift();updDeck();
+  const cd=G.deck.shift();updDeck();startGameTimer();
   if(e && e.clientX){
     const gp=clientToGame(e.clientX, e.clientY);
     const el=spawnCard(cd, clampX(gp.x-31), clampY(gp.y-44), true);
@@ -1190,6 +1414,12 @@ function makeDraggable(el){
     // Release deck-drawn card - let applyP1HandVisibility decide fd (no premature flip)
     if (el.dataset.drawnFromDeck) {
       delete el.dataset.drawnFromDeck;
+      // Zug-Start: nur wenn die gezogene Karte in einer Handzone landet
+      const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+      const cx = parseFloat(el.style.left) + (is4 ? 23 : 31);
+      const cy = parseFloat(el.style.top) + (is4 ? 33 : 44);
+      const landedP = findHandZonePlayer(cx, cy, is4);
+      if (landedP) { if (is4) maybeStartTurn4p(landedP); else maybeStartTurn2p(landedP); }
       if (NET.mode === 'multi') {
         if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) applyHandVisibility4();
         else applyP1HandVisibility();
@@ -1279,9 +1509,8 @@ function openGraveBrowser(player){openBrowser(player,'all');}
 function openBrowser(source,mode){
   G.browserSource=source;G.browserMode=mode;
   const isGrave=source==='p1'||source==='p2'||source==='p3'||source==='p4';
-  document.getElementById('browser-shuffle-btn').style.display=isGrave?'none':'inline-block';
   const isBanish=source==='banish';
-  document.getElementById('browser-shuffle-btn').style.display=(isGrave||isBanish)?'none':document.getElementById('browser-shuffle-btn').style.display;
+  document.getElementById('browser-shuffle-btn').style.display=(isGrave||isBanish||mode==='top4')?'none':'inline-block';
   const titles={deck:{all:'Ziehstapel',top4:'Gossip'},p1:'Friedhof Spieler 1',p2:'Friedhof Spieler 2',p3:'Friedhof Spieler 3',p4:'Friedhof Spieler 4',banish:'Entfernt-Stapel'};
   document.getElementById('browser-title').textContent=(isGrave||isBanish)?(isBanish?titles.banish:titles[source]):titles.deck[mode];
   renderBrowserList();
@@ -1314,9 +1543,8 @@ function renderBrowserList(){
       <div class="deck-row-btns">
         ${(!isGrave&&!isBanish)?`<button onclick="moveBCard(${realIdx},-1)" ${realIdx===0?'disabled':''}>↑</button>
         <button onclick="moveBCard(${realIdx},1)" ${realIdx===rawData.length-1?'disabled':''}>↓</button>
-        <button onclick="moveBCardTop(${realIdx})">⤒</button>`:''}
+        <button onclick="moveBCardTop(${realIdx})" title="Ganz nach oben">⏫ Ganz nach oben</button>`:''}
         <button class="field-btn" onclick="bCardToField(${realIdx},'${G.browserSource}')">🃏 Aufs Spielfeld</button>
-        <button class="rm-btn" onclick="bRemoveCard(${realIdx},'${G.browserSource}')">✕</button>
       </div>`;
     // Double-click to show popup
     let clickCount=0,clickTimer=null;
@@ -1907,6 +2135,8 @@ function resetLocalState(){
   }
 }
 function doReset(){
+  advanceRound();
+  resetTurnState();
   // Death-Timer aller Spieler abbrechen
   [1,2,3,4].forEach(p => {
     if (G4.deathTimers[p]) { clearTimeout(G4.deathTimers[p]); G4.deathTimers[p] = null; }
@@ -2018,11 +2248,8 @@ function showAddCardMenu() {
   table.style.cssText = 'width:100%;border-collapse:collapse;font-size:1.15rem;';
   const tbody = document.createElement('tbody');
 
-  // Alle einzigartigen Karten aus CARD_DB (gleiche Liste wie bei Karten Anzahl)
-  const seen = new Set();
-  CARD_DB.forEach(def => {
-    if (seen.has(def.name)) return;
-    seen.add(def.name);
+  // Alle einzigartigen Karten, sortiert nach Farbe (Rot, Orange, Gelb, Grün, Blau, Violett, Grau, Cyan, Spezial, Effekt)
+  UNIQUE_CARDS.forEach(def => {
     const tr = document.createElement('tr');
     tr.style.cssText = 'border-bottom:1px solid #eee;cursor:pointer;';
     tr.innerHTML = `<td style="padding:10px 12px;"><img src="${thumbFor(def.name)}" alt="${def.name}" style="width:70px;height:98px;object-fit:cover;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,0.25);display:block;"></td>
@@ -2104,9 +2331,9 @@ function showCardCountDebug() {
   // Entfernt-Stapel
   banish.forEach(add);
 
-  // Alle bekannten Karten sortiert
+  // Alle bekannten Karten sortiert (Rot, Orange, Gelb, Grün, Blau, Violett, Grau, Cyan, Spezial, Effekt)
   const cardOrder = {};
-  CARD_DB.forEach((def, idx) => { if (!(def.name in cardOrder)) cardOrder[def.name] = idx; });
+  UNIQUE_CARDS.forEach((def, idx) => { if (!(def.name in cardOrder)) cardOrder[def.name] = idx; });
   const allNames = [...new Set([...Object.keys(deckCount), ...Object.keys(totalCount)])]
     .sort((a, b) => {
       const ia = cardOrder[a], ib = cardOrder[b];
@@ -2567,9 +2794,10 @@ function checkExBuwemon(player, suffix) {
   if (s1 && s2 && s3 && s1.color === s2.color && s2.color === s3.color) {
     const exFile = EX_MAP[s1.color];
     if (exFile) {
+      const wasAlreadyThisExAuto = G.slots[exSlot] && G.slots[exSlot].type === 'ex-auto' && G.slots[exSlot].color === s1.color;
       G.slots[exSlot] = {name: EX_NAMES[s1.color]||'EX', color: s1.color, type: 'ex-auto', file: exFile, uid: 0};
       renderSlot(exSlot);
-      if (s1.color === '#111111') checkDarkschahWin(player);
+      if (s1.color === '#111111' && !wasAlreadyThisExAuto) checkDarkschahWin(player);
       checkZoneColor(player, suffix);
       return;
     }
@@ -3048,14 +3276,15 @@ function checkDarkschahWin4(player) {
   }
 }
 
-function showDarkschahWinLose4(isWinner, winnerP) {
+function showDarkschahWinLose4(isWinner, winnerP, applyLP) {
+  applyLP = applyLP !== false;
   triggerExplosions();
   // Alle anderen Spieler bekommen -1000 LP (kann negativ werden)
   const boards = ['board','board4','ereignis-panel','banish-panel','ereignis-panel-4','banish-panel-4'].map(id=>document.getElementById(id)).filter(Boolean);
   boards.forEach(el => el.classList.add('darkschah-win'));
   G.cards.forEach(c => c.classList.add('darkschah-win'));
-  // -1000 LP nur beim Gewinner-Client ausführen (verhindert Doppelabzug beim Empfänger)
-  if (isWinner || NET.mode !== 'multi') {
+  // Nur EINMAL abziehen (beim Auslöser) - Empfänger übernehmen den Wert per {t:'lp4'}-Sync
+  if (applyLP) {
     const losers = [1,2,3,4].filter(p => {
       if (p === winnerP) return false;
       if (NET.mode === 'multi') return G4.active[p];
@@ -3067,6 +3296,7 @@ function showDarkschahWinLose4(isWinner, winnerP) {
       if (lpEl) lpEl.textContent = G4.lp[p];
       triggerLPAnim4(p, false);
       if (NET.mode === 'multi') netSend({t:'lp4', p, val: G4.lp[p], increased: false});
+      checkDeathCondition4(p);
     });
   }
   const text = isWinner ? 'ABSOLUTE VERNICHTUNG' : 'DU WURDEST VERNICHTET!';
@@ -3094,17 +3324,22 @@ function showDarkschahWinLose4(isWinner, winnerP) {
   }, 60);
 }
 
-function showDarkschahWinLose(isWinner) {
+function showDarkschahWinLose(isWinner, applyLP) {
+  applyLP = applyLP !== false;
   triggerExplosions();
   // LP -1000 for loser (bypasses normal 0 floor, only Darkschah can go negative)
-  const loserP = isWinner
-    ? (NET.mode === 'multi' ? (NET.myPlayer === 1 ? 2 : 1) : 2)
-    : (NET.mode === 'multi' ? NET.myPlayer : 2);
-  G.lp[loserP] = (G.lp[loserP] || 0) - 1000;
-  const _lpEl = document.getElementById('p'+loserP+'-lp');
-  if (_lpEl) _lpEl.textContent = G.lp[loserP];
-  triggerLPAnim(loserP, false);
-  if (NET.mode === 'multi') netSend({t:'lp', p: loserP, val: G.lp[loserP], increased: false});
+  // Nur EINMAL abziehen (beim Auslöser) - der Empfänger übernimmt den Wert per {t:'lp'}-Sync
+  if (applyLP) {
+    const loserP = isWinner
+      ? (NET.mode === 'multi' ? (NET.myPlayer === 1 ? 2 : 1) : 2)
+      : (NET.mode === 'multi' ? NET.myPlayer : 2);
+    G.lp[loserP] = (G.lp[loserP] || 0) - 1000;
+    const _lpEl = document.getElementById('p'+loserP+'-lp');
+    if (_lpEl) _lpEl.textContent = G.lp[loserP];
+    triggerLPAnim(loserP, false);
+    if (NET.mode === 'multi') netSend({t:'lp', p: loserP, val: G.lp[loserP], increased: false});
+    awardRoundWin(loserP === 1 ? 2 : 1, false);
+  }
   const text = isWinner ? 'ABSOLUTE VERNICHTUNG' : 'DU WURDEST VERNICHTET!';
   const overlay = document.getElementById('win-lose-overlay');
   const el = document.getElementById('win-lose-text');
@@ -3190,6 +3425,7 @@ function checkLPWin(p) {
     document.getElementById('p'+p+'-lp').textContent = '0';
     const myPlayer = NET.mode === 'multi' ? NET.myPlayer : 1;
     showWinLose(myPlayer !== p);
+    awardRoundWin(other, false);
     if (NET.mode === 'multi') {
       netSend({t:'winlose', loser: p});
     }
@@ -3200,7 +3436,7 @@ function checkLPWin(p) {
 // ── LIIINKS & RECAST ──
 
 // ── TOXISCHE MÄNNLICHKEIT ──
-const MAENNLICHE_BUWEMON = ["Gilip der Glibbrige", "Lord Phillipp of Glencoe", "Phülügülüm", "Baby Niko", "Marzo der Gott", "Marcopter", "Marco der Hund", "Kax Maufmann", "Maxodia", "Maxibu", "Hoffi der rasierte Karnevalsprinz", "Glorian", "Flosama", "Klorian", "Luis Münsters", "Cedzilla", "Griechischer Apored", "Fabio das Berlin-City-Girl", "Giraffael"];
+const MAENNLICHE_BUWEMON = ["Gilip der Glibbrige", "Lord Phillipp of Glencoe", "Phülügülüm", "Baby Niko", "Marzo der Gott", "Marcopter", "Marco der Hund", "Kax Maufmann", "Maxodia der Verbotene", "Maxibu", "Hoffi der rasierte Karnevalsprinz", "Glorian", "Flosama", "Klorian", "Luis Münsters", "Cedzilla", "Griechischer ApoRed", "Fabio das Berlin-City-Girl", "Giraffael"];
 
 function confirmToxMaennlichkeit() {
   if (!confirm('Toxische Männlichkeit! Alle männlichen Buwemon in gegnerischen Buwemonfeldern werden auf den Entferntstapel verschoben. Wirklich?')) return;
@@ -3957,6 +4193,7 @@ function dealStartCards2() {
   placeCards(h1, 'p1', G.deck, false);
   placeCards(h2, 'p2', G.deck, false);
   updDeck();
+  startGameTimer();
 
   if (NET.mode === 'multi') {
     netSendState();
@@ -4007,6 +4244,7 @@ function dealStartCards4() {
   });
 
   updDeck4();
+  startGameTimer();
 
   if (NET.mode === 'multi' && fourPlayerMode) {
     const myP = NET.myPlayer;
@@ -4135,6 +4373,14 @@ function checkDeathCondition4(p) {
   if (G4.active[p] || G4.everActive.has(p)) {
     // Gerade gestorben (oder erneut gestorben): Felder verblassen, Timer starten
     if (G4.active[p]) setPlayerActive4(p, false);
+    // Falls der gerade eliminierte Spieler dran war: Zug weitergeben
+    if (TURN_4P === p) {
+      const next = nextTurnPlayer4(p);
+      if (next !== p) {
+        setTurn4p(next);
+        if (NET.mode === 'multi' && fourPlayerMode) netSend({t:'turn4', p: next});
+      }
+    }
     // Losetext für den toten Spieler
     if (NET.mode !== 'multi' || NET.myPlayer === p) {
       showWinLose(false);
@@ -4144,6 +4390,7 @@ function checkDeathCondition4(p) {
     const aliveAfter = stillAlive.filter(q => q !== p);
     if (aliveAfter.length === 1) {
       const winner = aliveAfter[0];
+      awardRoundWin(winner, true);
       if (NET.mode === 'multi' && fourPlayerMode) {
         // Im Multiplayer: Wintext nur per Receiver (verhindert Doppel-Anzeige)
         netSend({t:'winlose4', loser: p, winner});
@@ -4413,8 +4660,10 @@ function drawCard4(e) {
   if (e) { e.preventDefault(); e.stopPropagation(); }
   const cd = G4.deck.shift();
   updDeck4();
+  startGameTimer();
   const gp = clientToGame(e.clientX, e.clientY);
   const el = spawnCard(cd, clampX(gp.x-31), clampY(gp.y-44), false);
+  el.dataset.drawnFromDeck = '1';
   el.classList.add('dragging');
   drag = {el, ox:31, oy:44};
   el.setPointerCapture(e.pointerId);
@@ -4431,7 +4680,7 @@ function updDeck4() {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v35a',
+    version: 'v35o',
     deck: G.deck,
     graves: G.graves,
     banish: G.banish,
@@ -4636,7 +4885,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v35a
+    v35o
   </div>
 </div>
 
@@ -5184,6 +5433,8 @@ if (d.t === 'state4') {
     triggerLPAnim(d.p, d.increased);
   }
   if (d.t === 'gamereset') {
+    advanceRound();
+    resetTurnState();
     resetLocalState();
     // 4-Spieler: alle everActive Spieler wiederbeleben
     if (fourPlayerMode) {
@@ -5194,6 +5445,20 @@ if (d.t === 'state4') {
       });
     }
   }
+  if (d.t === 'turn2') {
+    setTurn2p(d.p);
+  }
+  if (d.t === 'turn4') {
+    setTurn4p(d.p);
+  }
+  if (d.t === 'score') {
+    SCORE2 = d.score;
+    updateTopbarScore();
+  }
+  if (d.t === 'score4') {
+    SCORE4 = d.score;
+    updateTopbarScore();
+  }
   if (d.t === 'winlose') {
     const myPlayer = NET.myPlayer;
     showWinLose(myPlayer !== d.loser);
@@ -5201,13 +5466,11 @@ if (d.t === 'state4') {
   if (d.t === 'darkschah') {
     const myPlayer = NET.myPlayer;
     const winnerNum = parseInt(d.winner.replace('p',''));
-    showDarkschahWinLose(myPlayer === winnerNum);
+    showDarkschahWinLose(myPlayer === winnerNum, false);
   }
   if (d.t === 'darkschah4') {
-    // Sender hat bereits lokal ausgeführt - nur Empfänger ausführen
-    if (G4._darkschahSent) { G4._darkschahSent = false; return; }
     const winnerP = parseInt(d.winner.replace('p',''));
-    showDarkschahWinLose4(NET.myPlayer === winnerP, winnerP);
+    showDarkschahWinLose4(NET.myPlayer === winnerP, winnerP, false);
   }
   if (d.t === 'winlose4') {
     // Nur Wintext für den letzten Überlebenden
