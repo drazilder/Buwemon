@@ -450,7 +450,7 @@ body {
 .hand4-zone{border-radius:6px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(0,0,0,0.03);}
 .grave4-zone{border-radius:6px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);}
 .lp-ok-4{background:rgba(0,0,0,0.1);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 4px;font-size:.6rem;cursor:pointer;color:#333;font-family:'Kievit',sans-serif;}
-.turn-btn{background:rgba(210,30,30,0.12);border:1.5px solid rgba(210,30,30,0.4);border-radius:5px;padding:3px 4px;font-size:.62rem;font-weight:700;color:#a01818;cursor:pointer;font-family:'Kievit',sans-serif;white-space:nowrap;width:100%;}
+.turn-btn{background:rgba(210,30,30,0.12);border:1.5px solid rgba(210,30,30,0.4);border-radius:5px;padding:3px 4px;font-size:.56rem;font-weight:700;color:#a01818;cursor:pointer;font-family:'Kievit',sans-serif;white-space:nowrap;width:100%;}
 .turn-btn:hover:not(:disabled){background:rgba(210,30,30,0.22);}
 .turn-btn:disabled{opacity:0.32;cursor:default;}
 .my-turn{border-color:#e00000 !important;border-width:2px !important;box-shadow:0 0 4px rgba(224,0,0,0.5);}
@@ -464,8 +464,8 @@ body {
   <span class="sp"></span>
   <div id="topbar-mid" style="display:flex;gap:26px;align-items:center;height:100%;">
     <span id="topbar-round" style="font-family:'Kievit',sans-serif;font-size:1rem;font-weight:700;color:rgba(0,0,0,0.6);white-space:nowrap;line-height:1;display:inline-flex;align-items:center;">Runde 1</span>
-    <span id="topbar-timer" style="font-family:'AiSpec',sans-serif;font-size:1.05rem;color:rgba(0,0,0,0.6);white-space:nowrap;line-height:1;display:inline-flex;align-items:center;height:1em;padding-top:0.15em;box-sizing:content-box;">00:00</span>
-    <span id="topbar-score" style="font-family:'AiSpec',sans-serif;font-size:1rem;font-weight:700;color:rgba(0,0,0,0.6);white-space:nowrap;line-height:1;display:inline-flex;align-items:center;"></span>
+    <span id="topbar-timer" style="font-family:'AiSpec',sans-serif;font-size:1.05rem;color:rgba(0,0,0,0.6);white-space:nowrap;line-height:1;display:inline-flex;align-items:center;height:1em;padding-top:0.3em;box-sizing:content-box;">00:00</span>
+    <span id="topbar-score" style="font-family:'Kievit',sans-serif;font-size:1rem;font-weight:500;color:rgba(0,0,0,0.6);white-space:nowrap;line-height:1;"></span>
   </div>
   <span class="sp"></span>
   <button class="tbtn" id="btn-deal" onclick="openDealConfirm()" style="color:#1a4a8a;border-color:rgba(30,80,200,0.3);">🃏 Startkarten ausgeben</button>
@@ -498,7 +498,7 @@ body {
     </div>
   </div>
 
-  <div class="row-zones" style="position:relative;"><div class="grave-wrap" style="align-self:flex-start;"><div class="zone zone-grave" id="p2-grave" onclick="openGraveBrowser('p2')" title="Friedhof ansehen"><span class="zlbl" style="font-size:.62rem;">Friedhof</span><div class="grave-preview" id="p2-grave-preview"></div><div class="grave-count" id="p2-grave-count" style="display:none;"></div></div></div><div class="push" style="min-width:20px;"></div><div class="buw-group"><div class="buw-slot" id="p2-buw1"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p2-buw2"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p2-buw3"><span class="zlbl">Buwemon</span></div></div><div class="push" style="flex:2;"></div><div style="flex:1;min-width:0;"></div><div style="position:absolute;right:0;top:0;bottom:0;display:flex;align-items:stretch;gap:50px;margin-left:200px;"><div class="buw-group" id="p2-effekt-group"><div class="buw-slot effekt-slot" id="p2-eff1"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff2"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff3"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff4"><span class="zlbl">Effekt</span></div></div><div class="grave-wrap" style="gap:6px;align-self:flex-start;"><div class="zone zone-grave verbot-slot" id="p2-verbot1"></div><div class="zone zone-grave verbot-slot" id="p2-verbot2"></div><div class="zone zone-grave verbot-slot" id="p2-verbot3"></div></div><div class="grave-wrap" style="align-self:flex-start;"><div class="lp-box" style="position:relative;"><div class="lp-display" id="p2-lp" contenteditable="true" onblur="lpDirectEdit(2)" onkeydown="lpDirectKey(event,2)">300</div><div class="lp-calc"><input type="text" id="p2-lp-input" placeholder="" onkeydown="lpKey(event,2)"><button onclick="applyLP(2)" class="lp-ok" id="p2-lp-ok">OK</button></div><button class="turn-btn" id="turn-btn-p2" onclick="endTurn(2)" disabled style="position:absolute;left:0;right:0;top:100%;margin-top:4px;">Zug beendet</button></div></div></div></div>
+  <div class="row-zones" style="position:relative;"><div class="grave-wrap" style="align-self:flex-start;"><div class="zone zone-grave" id="p2-grave" onclick="openGraveBrowser('p2')" title="Friedhof ansehen"><span class="zlbl" style="font-size:.62rem;">Friedhof</span><div class="grave-preview" id="p2-grave-preview"></div><div class="grave-count" id="p2-grave-count" style="display:none;"></div></div></div><div class="push" style="min-width:20px;"></div><div class="buw-group"><div class="buw-slot" id="p2-buw1"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p2-buw2"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p2-buw3"><span class="zlbl">Buwemon</span></div></div><div class="push" style="flex:2;"></div><div style="flex:1;min-width:0;"></div><div style="position:absolute;right:0;top:0;bottom:0;display:flex;align-items:stretch;gap:50px;margin-left:200px;"><div class="buw-group" id="p2-effekt-group"><div class="buw-slot effekt-slot" id="p2-eff1"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff2"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff3"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff4"><span class="zlbl">Effekt</span></div></div><div class="grave-wrap" style="gap:6px;align-self:flex-start;"><div class="zone zone-grave verbot-slot" id="p2-verbot1"></div><div class="zone zone-grave verbot-slot" id="p2-verbot2"></div><div class="zone zone-grave verbot-slot" id="p2-verbot3"></div></div><div class="grave-wrap" style="align-self:flex-start;"><div class="lp-box" style="position:relative;"><div class="lp-display" id="p2-lp" contenteditable="true" onblur="lpDirectEdit(2)" onkeydown="lpDirectKey(event,2)">300</div><div class="lp-calc"><input type="text" id="p2-lp-input" placeholder="" onkeydown="lpKey(event,2)"><button onclick="applyLP(2)" class="lp-ok" id="p2-lp-ok">OK</button></div><button class="turn-btn" id="turn-btn-p2" onclick="endTurn(2)" disabled style="position:absolute;left:0;right:0;top:100%;margin-top:4px;">Zug beenden</button></div></div></div></div>
 
   <div class="row-ex" id="p2-ex-row" style="display:flex;align-items:stretch;flex:11;min-height:0;">
     <div id="p2-ex-space" style="flex:none;width:0;"></div><!-- grave spacer -->
@@ -555,7 +555,7 @@ body {
     <div style="width:calc(var(--cw) + 4px);flex-shrink:0;"></div><!-- grave spacer -->
   </div>
 
-  <div class="row-zones" style="position:relative;"><div style="flex:1;min-width:0;"></div><div class="push" style="flex:2;"></div><div class="buw-group"><div class="buw-slot" id="p1-buw1"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p1-buw2"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p1-buw3"><span class="zlbl">Buwemon</span></div></div><div class="push" style="min-width:20px;"></div><div class="grave-wrap" style="align-self:flex-end;"><div class="zone zone-grave" id="p1-grave" onclick="openGraveBrowser('p1')" title="Friedhof ansehen"><span class="zlbl" style="font-size:.62rem;">Friedhof</span><div class="grave-preview" id="p1-grave-preview"></div><div class="grave-count" id="p1-grave-count" style="display:none;"></div></div></div><div style="position:absolute;left:0;top:0;bottom:0;display:flex;align-items:stretch;gap:50px;margin-right:200px;"><div class="grave-wrap" style="align-self:flex-end;"><div class="lp-box" style="position:relative;"><button class="turn-btn" id="turn-btn-p1" onclick="endTurn(1)" disabled style="position:absolute;left:0;right:0;bottom:100%;margin-bottom:4px;">Zug beendet</button><div class="lp-display" id="p1-lp" contenteditable="true" onblur="lpDirectEdit(1)" onkeydown="lpDirectKey(event,1)">300</div><div class="lp-calc"><input type="text" id="p1-lp-input" placeholder="" onkeydown="lpKey(event,1)"><button onclick="applyLP(1)" class="lp-ok" id="p1-lp-ok">OK</button></div></div></div><div class="grave-wrap" style="gap:6px;align-self:flex-end;"><div class="zone zone-grave verbot-slot" id="p1-verbot1"></div><div class="zone zone-grave verbot-slot" id="p1-verbot2"></div><div class="zone zone-grave verbot-slot" id="p1-verbot3"></div></div><div class="buw-group" id="p1-effekt-group"><div class="buw-slot effekt-slot" id="p1-eff1"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff2"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff3"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff4"><span class="zlbl">Effekt</span></div></div></div></div>
+  <div class="row-zones" style="position:relative;"><div style="flex:1;min-width:0;"></div><div class="push" style="flex:2;"></div><div class="buw-group"><div class="buw-slot" id="p1-buw1"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p1-buw2"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p1-buw3"><span class="zlbl">Buwemon</span></div></div><div class="push" style="min-width:20px;"></div><div class="grave-wrap" style="align-self:flex-end;"><div class="zone zone-grave" id="p1-grave" onclick="openGraveBrowser('p1')" title="Friedhof ansehen"><span class="zlbl" style="font-size:.62rem;">Friedhof</span><div class="grave-preview" id="p1-grave-preview"></div><div class="grave-count" id="p1-grave-count" style="display:none;"></div></div></div><div style="position:absolute;left:0;top:0;bottom:0;display:flex;align-items:stretch;gap:50px;margin-right:200px;"><div class="grave-wrap" style="align-self:flex-end;"><div class="lp-box" style="position:relative;"><button class="turn-btn" id="turn-btn-p1" onclick="endTurn(1)" disabled style="position:absolute;left:0;right:0;bottom:100%;margin-bottom:4px;">Zug beenden</button><div class="lp-display" id="p1-lp" contenteditable="true" onblur="lpDirectEdit(1)" onkeydown="lpDirectKey(event,1)">300</div><div class="lp-calc"><input type="text" id="p1-lp-input" placeholder="" onkeydown="lpKey(event,1)"><button onclick="applyLP(1)" class="lp-ok" id="p1-lp-ok">OK</button></div></div></div><div class="grave-wrap" style="gap:6px;align-self:flex-end;"><div class="zone zone-grave verbot-slot" id="p1-verbot1"></div><div class="zone zone-grave verbot-slot" id="p1-verbot2"></div><div class="zone zone-grave verbot-slot" id="p1-verbot3"></div></div><div class="buw-group" id="p1-effekt-group"><div class="buw-slot effekt-slot" id="p1-eff1"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff2"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff3"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff4"><span class="zlbl">Effekt</span></div></div></div></div>
 
   <div class="row-hand">
     <div class="zone zone-hand" id="p1-hand">
@@ -608,7 +608,7 @@ body {
 </div>
   <div style="position:absolute;left:320px;top:741px;width:60px;height:100px;display:flex;flex-direction:column;justify-content:center;gap:5px;align-items:stretch;">
   <div style="position:relative;">
-  <button class="turn-btn" id="turn-btn-p1-4" onclick="endTurn4(1)" disabled style="position:absolute;left:0;right:0;bottom:100%;margin-bottom:6px;">Zug beendet</button>
+  <button class="turn-btn" id="turn-btn-p1-4" onclick="endTurn4(1)" disabled style="position:absolute;left:0;right:0;bottom:100%;margin-bottom:6px;">Zug beenden</button>
   <div id="p1-lp-4" contenteditable="true" onblur="lpDirectEdit4(1)" onkeydown="lpDirectKey4(event,1)" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:text;outline:none;font-family:'AiSpec',sans-serif;font-style:italic;">300</div>
   <div style="display:flex;gap:2px;margin-top:5px;">
     <input id="p1-lp-inp-4" type="text" onkeydown="lpKey4(event,1)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
@@ -623,12 +623,12 @@ body {
     <input id="p2-lp-inp-4" type="text" onkeydown="lpKey4(event,2)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
     <button id="p2-lp-ok-4" onclick="applyLP4(2)" class="lp-ok-4">OK</button>
   </div>
-  <button class="turn-btn" id="turn-btn-p2-4" onclick="endTurn4(2)" disabled style="position:absolute;left:0;right:0;top:100%;margin-top:6px;">Zug beendet</button>
+  <button class="turn-btn" id="turn-btn-p2-4" onclick="endTurn4(2)" disabled style="position:absolute;left:0;right:0;top:100%;margin-top:6px;">Zug beenden</button>
   </div>
 </div>
   <div style="position:absolute;left:167px;top:70px;width:60px;height:100px;display:flex;flex-direction:column;justify-content:center;gap:5px;align-items:stretch;">
   <div style="position:relative;">
-  <button class="turn-btn" id="turn-btn-p3-4" onclick="endTurn4(3)" disabled style="position:absolute;left:0;right:0;bottom:100%;margin-bottom:6px;">Zug beendet</button>
+  <button class="turn-btn" id="turn-btn-p3-4" onclick="endTurn4(3)" disabled style="position:absolute;left:0;right:0;bottom:100%;margin-bottom:6px;">Zug beenden</button>
   <div id="p3-lp-4" contenteditable="true" onblur="lpDirectEdit4(3)" onkeydown="lpDirectKey4(event,3)" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:text;outline:none;font-family:'AiSpec',sans-serif;font-style:italic;">300</div>
   <div style="display:flex;gap:2px;margin-top:5px;">
     <input id="p3-lp-inp-4" type="text" onkeydown="lpKey4(event,3)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
@@ -643,7 +643,7 @@ body {
     <input id="p4-lp-inp-4" type="text" onkeydown="lpKey4(event,4)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
     <button id="p4-lp-ok-4" onclick="applyLP4(4)" class="lp-ok-4">OK</button>
   </div>
-  <button class="turn-btn" id="turn-btn-p4-4" onclick="endTurn4(4)" disabled style="position:absolute;left:0;right:0;top:100%;margin-top:6px;">Zug beendet</button>
+  <button class="turn-btn" id="turn-btn-p4-4" onclick="endTurn4(4)" disabled style="position:absolute;left:0;right:0;top:100%;margin-top:6px;">Zug beenden</button>
   </div>
 </div>
 
@@ -995,16 +995,25 @@ function updateTopbarTimer() {
   if (el) el.textContent = formatTimer(currentTimerSeconds());
 }
 
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function scoreNum(n) {
+  return '<span style="font-weight:900;font-size:1.15em;margin-left:5px;vertical-align:middle;">' + n + '</span>';
+}
+function scoreSep() {
+  return '<span style="margin:0 5px;">|</span>';
+}
 function updateTopbarScore() {
   const el = document.getElementById('topbar-score');
   if (!el) return;
   const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
   if (is4) {
-    el.textContent = '🏆 ' + [1,2,3,4].map(p => getPlayerName4(p)+': '+SCORE4[p]).join('  |  ');
+    el.innerHTML = '🏆 ' + [1,2,3,4].map(p => escHtml(getPlayerName4(p))+':'+scoreNum(SCORE4[p])).join(scoreSep());
   } else {
     const n1 = (NET.mode === 'multi') ? (NET.myPlayer === 1 ? (NET.myName||'Spieler 1') : (NET.enemyName||'Spieler 1')) : 'Spieler 1';
     const n2 = (NET.mode === 'multi') ? (NET.myPlayer === 2 ? (NET.myName||'Spieler 2') : (NET.enemyName||'Spieler 2')) : 'Spieler 2';
-    el.textContent = '🏆 ' + n1 + ': ' + SCORE2[1] + '  |  ' + n2 + ': ' + SCORE2[2];
+    el.innerHTML = '🏆 ' + escHtml(n1) + ':' + scoreNum(SCORE2[1]) + scoreSep() + escHtml(n2) + ':' + scoreNum(SCORE2[2]);
   }
 }
 
@@ -4701,7 +4710,7 @@ function updDeck4() {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v35p',
+    version: 'v36b',
     deck: G.deck,
     graves: G.graves,
     banish: G.banish,
@@ -4906,7 +4915,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v35p
+    v36b
   </div>
 </div>
 
