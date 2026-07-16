@@ -735,12 +735,8 @@ body {
   <div id="p4-verbot1-4" class="verbot4-slot" style="position:absolute;left:1865px;top:868px;width:47px;height:66px;"></div>
   <div id="p4-verbot2-4" class="verbot4-slot" style="position:absolute;left:1813px;top:868px;width:47px;height:66px;"></div>
   <div id="p4-verbot3-4" class="verbot4-slot" style="position:absolute;left:1761px;top:868px;width:47px;height:66px;"></div>
-  <!-- CENTER: Ereignis, deck, Entfernt - all mini-size, stacked -->
+  <!-- CENTER: nur noch der Ziehstapel bleibt hier zentriert -->
   <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:6px;">
-    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;" onclick="openEreignis()">
-      <img id="ereignis-back-4" src="karten/Rueckseite_Ereigniskarten.png" style="width:47px;height:66px;border-radius:6px;object-fit:cover;">
-      <span style="font-size:.5rem;color:rgba(0,0,0,0.4);font-family:'Kievit',sans-serif;">Ereignis</span>
-    </div>
     <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;">
       <div id="deck-card-4" onpointerdown="drawCard4(event)" style="width:47px;height:66px;border-radius:6px;overflow:hidden;cursor:grab;"><img id="deck-vis-4" src="karten/Rueckseite.png" draggable="false" style="width:100%;height:100%;object-fit:cover;display:block;"></div>
       <span style="font-size:.5rem;color:rgba(0,0,0,0.4);font-family:'Kievit',sans-serif;">Ziehstapel</span>
@@ -759,13 +755,21 @@ body {
         <button class="tbtn" onclick="openColorRemove4()" style="font-size:.75rem;padding:4px 10px;background:rgba(20,20,20,0.85);color:#fff;">☠️ Raum-Zeit-Genozid</button>
       </div>
     </div>
-    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;" onclick="openBanishBrowser4()">
-      <div id="banish-zone-4" style="width:47px;height:66px;position:relative;overflow:hidden;border-radius:6px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);">
-        <span style="position:absolute;top:2px;left:0;right:0;font-size:.48rem;color:rgba(0,0,0,0.38);text-transform:uppercase;text-align:center;font-family:'Kievit',sans-serif;">Entfernt</span>
-        <div id="banish-preview-4" style="position:absolute;inset:0;"></div>
-      </div>
-      <span id="banish-cnt-4" style="font-size:.5rem;color:rgba(0,0,0,0.4);font-family:'Kievit',sans-serif;">0 Karten</span>
+  </div>
+
+  <!-- ENTFERNT-STAPEL: weit links vom Ziehstapel, vertikal zentriert, genug Abstand zu P3 -->
+  <div style="position:absolute;left:480px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;" onclick="openBanishBrowser4()">
+    <div id="banish-zone-4" style="width:47px;height:66px;position:relative;overflow:hidden;border-radius:6px;border:1.5px solid rgba(0,0,0,0.15);background:rgba(0,0,0,0.05);">
+      <span style="position:absolute;top:2px;left:0;right:0;font-size:.48rem;color:rgba(0,0,0,0.38);text-transform:uppercase;text-align:center;font-family:'Kievit',sans-serif;">Entfernt</span>
+      <div id="banish-preview-4" style="position:absolute;inset:0;"></div>
     </div>
+    <span id="banish-cnt-4" style="font-size:.5rem;color:rgba(0,0,0,0.4);font-family:'Kievit',sans-serif;">0 Karten</span>
+  </div>
+
+  <!-- EREIGNISSTAPEL: weit rechts vom Ziehstapel, vertikal zentriert, genug Abstand zu P4 -->
+  <div style="position:absolute;left:1370px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;" onclick="openEreignis()">
+    <img id="ereignis-back-4" src="karten/Rueckseite_Ereigniskarten.png" style="width:47px;height:66px;border-radius:6px;object-fit:cover;">
+    <span style="font-size:.5rem;color:rgba(0,0,0,0.4);font-family:'Kievit',sans-serif;">Ereignis</span>
   </div>
 
 </div><!-- end board4 -->
@@ -1055,6 +1059,7 @@ function resetRoundSessionState() {
   SCORE2 = {1:0, 2:0};
   SCORE4 = {1:0, 2:0, 3:0, 4:0};
   _roundScored = false;
+  _winShown = false;
   resetGameTimer();
   updateTopbarRound();
   updateTopbarScore();
@@ -1064,9 +1069,17 @@ function resetRoundSessionState() {
 function advanceRound() {
   ROUND_NUM++;
   _roundScored = false;
+  _winShown = false;
   resetGameTimer();
   updateTopbarRound();
   updateTopbarScore();
+}
+
+let _winShown = false;
+function showWinOnce() {
+  if (_winShown) return;
+  _winShown = true;
+  showWinLose(true);
 }
 
 function awardRoundWin(winnerP, is4) {
@@ -1819,8 +1832,8 @@ document.getElementById('popup-remove-btn').onclick=()=>{
   const ctype=el.dataset.ctype;
   if(ctype!=='ereignis'&&ctype!=='ex-ereignis') {
     const bcd={name:el.dataset.name,color:el.dataset.color,type:ctype,file:el.dataset.file||''};
-    G.banish.push(bcd);
-    updBanish();
+    if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) { G4.banish.push(bcd); updBanish4(); }
+    else { G.banish.push(bcd); updBanish(); }
   }
   removeCardSynced(el);
   closePopup();
@@ -2458,7 +2471,19 @@ function openCtx(e,el){
     ['⬆️ Auf Stapel (oben)',stackUp],
     ['⬇️ Auf Stapel (unten)',stackDown],
     ...graveOptions,
-    ['🗑 Aus dem Spiel',()=>{removeCardSynced(el);}],
+    ['🗑 Aus dem Spiel entfernen',()=>{
+      const ctype=el.dataset.ctype;
+      if(ctype!=='ereignis'&&ctype!=='ex-ereignis') {
+        const bcd={name:el.dataset.name,color:el.dataset.color,type:ctype,file:el.dataset.file||''};
+        if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) { G4.banish.push(bcd); updBanish4(); }
+        else { G.banish.push(bcd); updBanish(); }
+      }
+      removeCardSynced(el);
+    }],
+    ['❌ Löschen',()=>{
+      if(!confirm('Diese Karte wirklich komplett löschen? Sie taucht danach nirgends mehr auf.'))return;
+      removeCardSynced(el);
+    }],
   ].forEach(([lbl,fn])=>{
     const d=document.createElement('div');d.className='ci';d.textContent=lbl;
     d.onclick=()=>{fn();closeCtx();};ctxEl.appendChild(d);
@@ -3308,6 +3333,9 @@ function checkDarkschahWin4(player) {
 
 function showDarkschahWinLose4(isWinner, winnerP, applyLP) {
   applyLP = applyLP !== false;
+  // Verhindert, dass der reguläre Wintext/Losetext (ausgelöst durch den gleich
+  // folgenden LP-Abzug) den Darkschah-Spezialtext gleich wieder überschreibt
+  _winShown = true;
   triggerExplosions();
   // Alle anderen Spieler bekommen -1000 LP (kann negativ werden)
   const boards = ['board','board4','ereignis-panel','banish-panel','ereignis-panel-4','banish-panel-4'].map(id=>document.getElementById(id)).filter(Boolean);
@@ -4234,11 +4262,11 @@ function dealStartCards2() {
 function dealStartCards4() {
   const CARDS = 5;
   const GAP4 = 68;
-  const CW4 = 60, CH4 = 99;
+  const CW4 = 47, CH4 = 66;
   const W=1920, H=980;
   const handZones = {
     1: { cx: W/2, cy: H - 8 - 113/2 },
-    2: { cx: W/2, cy: 8 + 113/2 },
+    2: { cx: W/2, cy: 30 + 8 + 113/2 },
     3: { cx: 8 + 151/2, cy: H/2 },
     4: { cx: W - 8 - 151/2, cy: H/2 },
   };
@@ -4411,8 +4439,8 @@ function checkDeathCondition4(p) {
         if (NET.mode === 'multi' && fourPlayerMode) netSend({t:'turn4', p: next});
       }
     }
-    // Losetext für den toten Spieler
-    if (NET.mode !== 'multi' || NET.myPlayer === p) {
+    // Losetext für den toten Spieler (nicht, wenn schon ein Sieg z.B. durch Darkschah angezeigt wird)
+    if (!_winShown && (NET.mode !== 'multi' || NET.myPlayer === p)) {
       showWinLose(false);
     }
     // Prüfen ob nur noch ein Spieler lebt → Wintext
@@ -4422,12 +4450,17 @@ function checkDeathCondition4(p) {
       const winner = aliveAfter[0];
       awardRoundWin(winner, true);
       if (NET.mode === 'multi' && fourPlayerMode) {
-        // Im Multiplayer: Wintext nur per Receiver (verhindert Doppel-Anzeige)
+        // Andere Clients per Receiver benachrichtigen
         netSend({t:'winlose4', loser: p, winner});
+        // Falls ICH selbst der Gewinner bin (z.B. weil ich gerade Darkschah beschworen
+        // und die Elimination lokal ausgelöst habe): mir auch selbst den Sieg zeigen
+        if (NET.myPlayer === winner) {
+          setTimeout(() => showWinOnce(), 1500);
+        }
       } else {
         // Im Solo: direkt zeigen
         if (NET.myPlayer === winner || !NET.myPlayer) {
-          setTimeout(() => showWinLose(true), 1500);
+          setTimeout(() => showWinOnce(), 1500);
         }
       }
     } else if (NET.mode === 'multi' && fourPlayerMode) {
@@ -4710,7 +4743,7 @@ function updDeck4() {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v36b',
+    version: 'v36k',
     deck: G.deck,
     graves: G.graves,
     banish: G.banish,
@@ -4787,8 +4820,34 @@ function loadGame() {
 }
 
 // ── LOBBY BUTTON ──
+function resetToLobby() {
+  // Alle Death-Timer abbrechen
+  [1,2,3,4].forEach(p => {
+    if (G4.deathTimers[p]) { clearTimeout(G4.deathTimers[p]); G4.deathTimers[p] = null; }
+  });
+  // Karten, Decks, Gräber, Entfernt-Stapel, Slots, LP (2p + 4p) zurücksetzen
+  resetLocalState();
+  // 4-Spieler Aktiv-Status komplett zurücksetzen (nicht nur teilweise wie bei "Neue Runde")
+  G4.active = {1:false, 2:false, 3:false, 4:false};
+  G4.everActive = new Set();
+  G4.names = {1:'Spieler 1', 2:'Spieler 2', 3:'Spieler 3', 4:'Spieler 4'};
+  // Visuelles Ausblassen (falls ein Spieler beim Verlassen inaktiv/tot war) zurücksetzen
+  [1,2,3,4].forEach(p => setPlayerActive4(p, true));
+  G4.active = {1:false, 2:false, 3:false, 4:false};
+  // Zug-System sowie Runde/Timer/Punktzahl zurücksetzen
+  resetTurnState();
+  resetRoundSessionState();
+  // Netzwerkverbindung trennen, falls eine bestand
+  if (NET.ws) { try { NET.ws.close(); } catch(e) {} NET.ws = null; }
+  NET.mode = null;
+  NET.isHost = false;
+  NET.myPlayer = null;
+  NET.enemyName = null;
+}
+
 document.getElementById('btn-lobby').onclick = () => {
   if (confirm('Zurück zum Startbildschirm? Ungespeicherter Fortschritt geht verloren.')) {
+    resetToLobby();
     document.getElementById('lobby').style.display = 'flex';
   }
 };
@@ -4915,7 +4974,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v36b
+    v36k
   </div>
 </div>
 
@@ -5510,7 +5569,7 @@ if (d.t === 'state4') {
   }
   if (d.t === 'winlose4') {
     // Nur Wintext für den letzten Überlebenden
-    if (d.winner && NET.myPlayer === d.winner) setTimeout(() => showWinLose(true), 1500);
+    if (d.winner && NET.myPlayer === d.winner) setTimeout(() => showWinOnce(), 1500);
     // Kein zusätzlicher Losetext - der sterbende Spieler bekommt seinen durch LP=0
   }
   if (d.t === 'reveal') {
