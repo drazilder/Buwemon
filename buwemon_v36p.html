@@ -511,19 +511,18 @@ body {
   </div>
 
   <div class="row-center">
-    <!-- Dice left -->
-    <div id="dice-outer">
-      <div id="dice-card-align">
-        <div id="dice-btn" onclick="rollDice()" title="Würfeln (1–6)">?</div>
-      </div>
-      <div id="dice-lbl">Würfeln</div>
-    </div>
-
     <!-- Deck center -->
     <div id="center-wrap">
       <div class="deck-zone-bg">
         <div id="deck-card" onpointerdown="drawCard(event)">
           <img id="deck-vis" src="karten/Rueckseite.png" alt="Stapel" draggable="false">
+        </div>
+        <!-- Würfel links vom Ziehstapel: NUR der Kreis wird zentriert, Text wird nur mitverschoben -->
+        <div id="dice-outer" style="position:absolute;right:calc(100% + 20px);top:50%;transform:translateY(-50%);">
+          <div id="dice-card-align" style="position:relative;">
+            <div id="dice-btn" onclick="rollDice()" title="Würfeln (1–6)">?</div>
+            <div id="dice-lbl" style="position:absolute;left:0;right:0;top:100%;margin-top:2px;">Würfeln</div>
+          </div>
         </div>
       </div>
       <span class="pile-lbl">Ziehstapel</span>
@@ -738,11 +737,13 @@ body {
   <!-- CENTER: nur noch der Ziehstapel bleibt hier zentriert -->
   <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:6px;">
     <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;">
-      <div id="deck-card-4" onpointerdown="drawCard4(event)" style="width:47px;height:66px;border-radius:6px;overflow:hidden;cursor:grab;"><img id="deck-vis-4" src="karten/Rueckseite.png" draggable="false" style="width:100%;height:100%;object-fit:cover;display:block;"></div>
+      <div style="position:relative;">
+        <div id="deck-card-4" onpointerdown="drawCard4(event)" style="width:47px;height:66px;border-radius:6px;overflow:hidden;cursor:grab;"><img id="deck-vis-4" src="karten/Rueckseite.png" draggable="false" style="width:100%;height:100%;object-fit:cover;display:block;"></div>
+        <!-- Würfel links vom Ziehstapel, relativ zum Ziehstapel selbst zentriert (nur der Kreis, Text wird nur mitverschoben) -->
+        <div style="position:absolute;right:calc(100% + 28px);top:50%;transform:translateY(-50%);"><div style="position:relative;"><div id="dice-btn-4" onclick="rollDice4()" style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.7);border:2px solid rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:center;font-size:1.4rem;cursor:pointer;font-family:'AiSpec',sans-serif;">?</div><div style="position:absolute;left:0;right:0;top:100%;margin-top:2px;font-size:.5rem;color:rgba(0,0,0,0.4);font-family:'Kievit',sans-serif;text-align:center;">Würfel</div></div></div>
+      </div>
       <span style="font-size:.5rem;color:rgba(0,0,0,0.4);font-family:'Kievit',sans-serif;">Ziehstapel</span>
       <span id="deck-cnt-4" style="font-size:.5rem;color:rgba(0,0,0,0.4);font-family:'Kievit',sans-serif;">0 Karten</span>
-      <!-- Würfel links vom Ziehstapel, absolut positioniert -->
-      <div style="position:absolute;right:calc(100% + 28px);top:50%;transform:translateY(-50%);"><div id="dice-btn-4" onclick="rollDice4()" style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.7);border:2px solid rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:center;font-size:1.4rem;cursor:pointer;font-family:'AiSpec',sans-serif;">?</div></div>
       <!-- Buttons rechts vom Ziehstapel, absolut positioniert -->
       <div style="position:absolute;left:calc(100% + 28px);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;">
         <button class="tbtn" onclick="openOverview4()" style="font-size:.75rem;padding:4px 10px;background:rgba(180,30,30,0.5);color:#fff;">🎴 Schicksal</button>
@@ -1210,6 +1211,7 @@ function startGame(mode) {
   document.getElementById('lobby').style.display = 'none';
   resetRoundSessionState();
   resetTurnState();
+  preloadAnleitung();
   G.deck=buildDeck();updDeck();
   const _sch=document.getElementById('schicksal-btn');if(_sch)_sch.style.display=erweiterungAN?'':'none';
   // Update zone labels
@@ -4743,7 +4745,7 @@ function updDeck4() {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v36k',
+    version: 'v36p',
     deck: G.deck,
     graves: G.graves,
     banish: G.banish,
@@ -4974,7 +4976,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v36k
+    v36p
   </div>
 </div>
 
@@ -5671,7 +5673,7 @@ function toggleErweiterung() {
 </script>
 
 <!-- ANLEITUNG POPUP -->
-<div id="anleitung-modal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;">
+<div id="anleitung-modal" style="display:flex;opacity:0;pointer-events:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;transition:opacity .15s;">
   <div style="position:relative;width:94%;height:94%;background:#fff;border-radius:10px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.4);">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 14px;background:#f5f5f5;border-bottom:1px solid rgba(0,0,0,0.12);flex-shrink:0;">
       <span style="font-family:'AiSpec',sans-serif;font-size:.95rem;letter-spacing:1px;color:#2a2e3a;">Buwemon Anleitung</span>
@@ -5683,16 +5685,23 @@ function toggleErweiterung() {
 <script>
 function openAnleitung() {
   const modal = document.getElementById('anleitung-modal');
+  modal.style.opacity = '1';
+  modal.style.pointerEvents = 'auto';
+}
+function preloadAnleitung() {
+  if (window._anleitungPreloaded) return;
+  window._anleitungPreloaded = true;
   const iframe = document.getElementById('anleitung-iframe');
-  modal.style.display = 'flex';
-  if (!iframe.getAttribute('data-loaded')) {
-    iframe.src = 'bilder/Buwemon Anleitung.pdf';
-    iframe.setAttribute('data-loaded','1');
-  }
+  // Modal ist nicht mehr display:none, sondern nur unsichtbar (opacity:0) -
+  // dadurch lädt/rendert das iframe die PDF jetzt wirklich schon im Hintergrund
+  iframe.src = 'bilder/Buwemon Anleitung.pdf';
 }
 function closeAnleitung() {
-  document.getElementById('anleitung-modal').style.display = 'none';
+  const modal = document.getElementById('anleitung-modal');
+  modal.style.opacity = '0';
+  modal.style.pointerEvents = 'none';
 }
+preloadAnleitung();
 </script>
 <script>
 function animEl(el, duration, keyframes) {

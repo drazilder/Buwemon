@@ -1452,6 +1452,14 @@ function makeDraggable(el){
     const gp=clientToGame(e.clientX,e.clientY);
     el.style.left=clampX(gp.x-drag.ox)+'px';
     el.style.top=clampY(gp.y-drag.oy)+'px';
+    // Live-Sync der Ziehbewegung an alle anderen Spieler (gedrosselt)
+    if (NET.mode === 'multi' && !el.dataset.netEnemy) {
+      const now = performance.now();
+      if (!el._lastDragSync || now - el._lastDragSync > 50) {
+        el._lastDragSync = now;
+        netSend({t:'card_drag', uid: el.dataset.uid, x: parseFloat(el.style.left), y: parseFloat(el.style.top)});
+      }
+    }
   });
   el.addEventListener('pointerup',e=>{
     if(!drag||drag.el!==el)return;
@@ -4745,7 +4753,7 @@ function updDeck4() {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v36p',
+    version: 'v36q',
     deck: G.deck,
     graves: G.graves,
     banish: G.banish,
@@ -4976,7 +4984,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v36p
+    v36q
   </div>
 </div>
 
@@ -5516,6 +5524,13 @@ if (d.t === 'state4') {
     G4.banish = d.banish;
     G.banish = d.banish;
     updBanish4();
+  }
+  if (d.t === 'card_drag') {
+    const el = G.cards.find(c => c.dataset.uid === String(d.uid));
+    if (el && !el.classList.contains('dragging')) {
+      el.style.left = d.x + 'px';
+      el.style.top = d.y + 'px';
+    }
   }
   if (d.t === 'lp') {
     G.lp[d.p] = d.val;
