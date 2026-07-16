@@ -4799,7 +4799,7 @@ function updDeck4() {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v36z',
+    version: 'v37a',
     deck: G.deck,
     graves: G.graves,
     banish: G.banish,
@@ -5030,7 +5030,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v36z
+    v37a
   </div>
 </div>
 
@@ -5684,6 +5684,7 @@ if (d.t === 'state4') {
   if (d.t === 'winlose') {
     const myPlayer = NET.myPlayer;
     showWinLose(myPlayer !== d.loser);
+    stopGameTimer();
   }
   if (d.t === 'darkschah') {
     const myPlayer = NET.myPlayer;
