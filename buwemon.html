@@ -173,6 +173,7 @@ body{background:linear-gradient(160deg,#5c6680 0%,#eef1f7 45%,#838fac 75%,#f8f9f
   box-shadow: 0 8px 28px rgba(0,0,0,0.35);
 }
 #carry-card.card4-size { width: 47px; height: 66px; }
+#remote-carry-card.card4-size { width: 47px; height: 66px; }
 #carry-card img { width:100%; height:100%; border-radius:6px; object-fit:cover; display:block; }
 body.carrying { cursor: grabbing !important; }
 body.carrying * { cursor: grabbing !important; }
@@ -377,7 +378,6 @@ body {
 .verbot-slot{border-style:dashed;border-color:rgba(0,0,0,0.18);background:rgba(0,0,0,0.02);}
 .verbot-slot .docked-card img{width:var(--cw);height:var(--ch);border-radius:6px;object-fit:cover;}
 #board4 *{box-sizing:border-box;}
-.effekt-slot.verboten,.buw4-slot.verboten{border:3px solid #cc2222 !important;box-shadow:0 0 6px rgba(204,34,34,0.5);}
 .effekt-slot.verboten::after,.buw4-slot.verboten::after{content:'🚫';position:absolute;top:2px;right:2px;font-size:.8rem;z-index:20;filter:drop-shadow(0 0 2px rgba(255,255,255,0.9));}
 
 #popup-name, #bpopup-name{font-family:'AiSpec',sans-serif;font-style:italic;}
@@ -453,7 +453,8 @@ body {
 .turn-btn{background:rgba(210,30,30,0.12);border:1.5px solid rgba(210,30,30,0.4);border-radius:5px;padding:3px 4px;font-size:.56rem;font-weight:700;color:#a01818;cursor:pointer;font-family:'Kievit',sans-serif;white-space:nowrap;width:100%;}
 .turn-btn:hover:not(:disabled){background:rgba(210,30,30,0.22);}
 .turn-btn:disabled{opacity:0.32;cursor:default;}
-.my-turn{border-color:#e00000 !important;border-width:2px !important;box-shadow:0 0 4px rgba(224,0,0,0.5);}
+.my-turn{border-color:#000000 !important;border-width:3px !important;box-shadow:0 0 4px rgba(0,0,0,0.5);}
+.effekt-slot.verboten,.buw4-slot.verboten{border:3px solid #cc2222 !important;box-shadow:0 0 6px rgba(204,34,34,0.5);}
 </style>
 </head>
 <body>
@@ -864,6 +865,7 @@ body {
 </div>
 
 <div id="carry-card"><img id="carry-img" src="" alt=""></div>
+<div id="remote-carry-card" style="position:fixed;width:63px;height:88px;border-radius:6px;pointer-events:none;z-index:99998;transform:translate(-50%,-50%);display:none;box-shadow:0 8px 28px rgba(0,0,0,0.35);"><img id="remote-carry-img" src="" alt="" style="width:100%;height:100%;border-radius:6px;object-fit:cover;display:block;"></div>
 
 <!-- EREIGNIS PANEL -->
 
@@ -1382,7 +1384,10 @@ function drawCard(e){
     el.classList.add('dragging');
     drag={el, ox:31, oy:44};
     el.setPointerCapture(e.pointerId);
-    if(NET.mode==='multi') netSendState();
+    if(NET.mode==='multi') {
+      netSendState();
+      broadcastGhostCreate(cd.uid, cd.name, cd.color, cd.type, cd.file, true, parseFloat(el.style.left), parseFloat(el.style.top), null, false, true);
+    }
   } else {
     startCarry(cd);
     if(NET.mode==='multi') netSendState();
@@ -1435,6 +1440,11 @@ function clientToGame(clientX, clientY) {
 
 // ── DRAG ──
 let drag=null;
+function broadcastGhostCreate(uid, name, color, ctype, file, fd, x, y, originSlot, is4, drawnFromDeck) {
+  if (NET.mode !== 'multi') return;
+  netSend({t:'card_drag_start', uid: String(uid), name, color, ctype, file: file||'', fd: fd?'1':'0', x, y, originSlot: originSlot||null, is4: !!is4, drawnFromDeck: !!drawnFromDeck});
+}
+
 function makeDraggable(el){
   el.addEventListener('pointerdown',e=>{
     if(e.button===2)return;
@@ -1452,6 +1462,14 @@ function makeDraggable(el){
     const gp=clientToGame(e.clientX,e.clientY);
     el.style.left=clampX(gp.x-drag.ox)+'px';
     el.style.top=clampY(gp.y-drag.oy)+'px';
+    // Live-Sync der Ziehbewegung an alle anderen Spieler (gedrosselt)
+    if (NET.mode === 'multi' && !el.dataset.netEnemy) {
+      const now = performance.now();
+      if (!el._lastDragSync || now - el._lastDragSync > 50) {
+        el._lastDragSync = now;
+        netSend({t:'card_drag', uid: el.dataset.uid, x: parseFloat(el.style.left), y: parseFloat(el.style.top)});
+      }
+    }
   });
   el.addEventListener('pointerup',e=>{
     if(!drag||drag.el!==el)return;
@@ -1655,7 +1673,7 @@ function bCardToField(i, src){
       netSendState();
     }
   }
-  startCarry(cd);
+  startCarry(cd, isGrave);
 }
 function shuffleAndClose(){shuffle(G.deck);updDeck();closeBrowser();if(NET.mode==='multi')netSendState();}
 
@@ -1847,11 +1865,12 @@ let carryData = null;
 const carryEl = document.getElementById('carry-card');
 const carryImg = document.getElementById('carry-img');
 
-function startCarry(cd) {
+function startCarry(cd, hidden) {
   // small delay so the closing modal's click doesn't immediately drop
   setTimeout(() => {
     carryData = cd;
-    carryImg.src = imgFor(cd.name, false, cd.file);
+    carryData._hidden = !!hidden;
+    carryImg.src = hidden ? BACK : imgFor(cd.name, false, cd.file);
     // Kartengröße je nach Modus
     if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) {
       carryEl.classList.add('card4-size');
@@ -1869,6 +1888,15 @@ function onCarryMove(e) {
   const gp = clientToGame(e.clientX, e.clientY);
   carryEl.style.left = gp.x + 'px';
   carryEl.style.top  = gp.y + 'px';
+  // Live-Sync: Gegner sieht dieselbe Karte am Cursor kleben
+  if (NET.mode === 'multi' && carryData) {
+    const now = performance.now();
+    if (!window._lastCarrySync || now - window._lastCarrySync > 50) {
+      window._lastCarrySync = now;
+      const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+      netSend({t:'carry_move', name:carryData.name, color:carryData.color, ctype:carryData.type, file:carryData.file||'', x:gp.x, y:gp.y, is4, hidden: !!carryData._hidden});
+    }
+  }
 }
 
 function onCarryDrop(e) {
@@ -1880,6 +1908,7 @@ function onCarryDrop(e) {
   document.removeEventListener('pointerdown', onCarryDrop);
   const cd = carryData;
   carryData = null;
+  if (NET.mode === 'multi') netSend({t:'carry_end'});
 
   // Check if dropped on banish zone (2-player)
   const banishZoneEl = document.getElementById('banish-zone');
@@ -3011,11 +3040,23 @@ function releaseSlot(slotId, x, y) {
       el.classList.add('dragging');
       drag = { el, ox: 31, oy: 44 };
       el.setPointerCapture(e.pointerId);
+      if (NET.mode === 'multi') {
+        const is4slot = sid.endsWith('-4');
+        broadcastGhostCreate(cd.uid, cd.name, cd.color, cd.type, cd.file, false, parseFloat(el.style.left), parseFloat(el.style.top), sid, is4slot);
+      }
       el.addEventListener('pointermove', ev => {
         if (!drag || drag.el !== el) return;
         const gpm = clientToGame(ev.clientX, ev.clientY);
         el.style.left = clampX(gpm.x - drag.ox) + 'px';
         el.style.top  = clampY(gpm.y - drag.oy) + 'px';
+        // Live-Sync der Ziehbewegung an alle anderen Spieler (gedrosselt)
+        if (NET.mode === 'multi' && !el.dataset.netEnemy) {
+          const now = performance.now();
+          if (!el._lastDragSync || now - el._lastDragSync > 50) {
+            el._lastDragSync = now;
+            netSend({t:'card_drag', uid: el.dataset.uid, x: parseFloat(el.style.left), y: parseFloat(el.style.top)});
+          }
+        }
       });
       el.addEventListener('pointerup', ev => {
         if (!drag || drag.el !== el) return;
@@ -4727,12 +4768,16 @@ function drawCard4(e) {
   updDeck4();
   startGameTimer();
   const gp = clientToGame(e.clientX, e.clientY);
-  const el = spawnCard(cd, clampX(gp.x-31), clampY(gp.y-44), false);
+  const el = spawnCard(cd, clampX(gp.x-31), clampY(gp.y-44), true);
   el.dataset.drawnFromDeck = '1';
   el.classList.add('dragging');
   drag = {el, ox:31, oy:44};
   el.setPointerCapture(e.pointerId);
   G4.cards = G.cards; // share card array
+  if (NET.mode === 'multi' && fourPlayerMode) {
+    netSendState4();
+    broadcastGhostCreate(cd.uid, cd.name, cd.color, cd.type, cd.file, true, parseFloat(el.style.left), parseFloat(el.style.top), null, true, true);
+  }
 }
 
 function updDeck4() {
@@ -4745,7 +4790,7 @@ function updDeck4() {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v36p',
+    version: 'v36u',
     deck: G.deck,
     graves: G.graves,
     banish: G.banish,
@@ -4976,7 +5021,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v36p
+    v36u
   </div>
 </div>
 
@@ -5373,6 +5418,7 @@ function onNetData(d) {
         el.style.left = clampX(fc.x) + 'px';
         el.style.top  = clampY(fc.y) + 'px';
         el.dataset.realFd = fc.fd;
+        delete el.dataset.drawnFromDeck; // Drag ist vorbei, normale Sichtbarkeitsregeln gelten wieder
       } else {
         // New card - spawn at same absolute position
         el = spawnCard(
@@ -5437,6 +5483,7 @@ if (d.t === 'state4') {
         el.style.left = clampX(fc.x) + 'px';
         el.style.top  = clampY(fc.y) + 'px';
         el.dataset.realFd = fc.fd;
+        delete el.dataset.drawnFromDeck; // Drag ist vorbei, normale Sichtbarkeitsregeln gelten wieder
       } else {
         el = spawnCard(
           {name:fc.name, color:fc.color, type:fc.ctype, uid:fc.uid, file:fc.file||''},
@@ -5516,6 +5563,48 @@ if (d.t === 'state4') {
     G4.banish = d.banish;
     G.banish = d.banish;
     updBanish4();
+  }
+  if (d.t === 'carry_move') {
+    const remoteEl = document.getElementById('remote-carry-card');
+    const remoteImg = document.getElementById('remote-carry-img');
+    if (remoteEl && remoteImg) {
+      remoteImg.src = d.hidden ? BACK : imgFor(d.name, false, d.file);
+      if (d.is4) { remoteEl.style.width = '47px'; remoteEl.style.height = '66px'; }
+      else { remoteEl.style.width = '63px'; remoteEl.style.height = '88px'; }
+      remoteEl.style.display = 'block';
+      remoteEl.style.left = d.x + 'px';
+      remoteEl.style.top = d.y + 'px';
+    }
+  }
+  if (d.t === 'carry_end') {
+    const remoteEl = document.getElementById('remote-carry-card');
+    if (remoteEl) remoteEl.style.display = 'none';
+  }
+  if (d.t === 'card_drag_start') {
+    if (d.originSlot) {
+      // renderSlot() liest IMMER aus G.slots (auch im 4p-Modus) - das muss geleert werden,
+      // sonst bleibt die Karte optisch im Dock-Feld sichtbar ("Klon")
+      G.slots[d.originSlot] = null;
+      if (d.is4) G4.slots[d.originSlot] = null;
+      renderSlot(d.originSlot);
+    }
+    let el = G.cards.find(c => c.dataset.uid === String(d.uid));
+    if (!el) {
+      el = spawnCard({name:d.name, color:d.color, type:d.ctype, uid:d.uid, file:d.file}, d.x, d.y, d.fd === '1');
+      el.dataset.netEnemy = '1';
+      if (d.drawnFromDeck) el.dataset.drawnFromDeck = '1';
+    } else {
+      el.style.left = d.x + 'px';
+      el.style.top = d.y + 'px';
+      if (d.drawnFromDeck) el.dataset.drawnFromDeck = '1';
+    }
+  }
+  if (d.t === 'card_drag') {
+    const el = G.cards.find(c => c.dataset.uid === String(d.uid));
+    if (el && !el.classList.contains('dragging')) {
+      el.style.left = d.x + 'px';
+      el.style.top = d.y + 'px';
+    }
   }
   if (d.t === 'lp') {
     G.lp[d.p] = d.val;

@@ -378,7 +378,6 @@ body {
 .verbot-slot{border-style:dashed;border-color:rgba(0,0,0,0.18);background:rgba(0,0,0,0.02);}
 .verbot-slot .docked-card img{width:var(--cw);height:var(--ch);border-radius:6px;object-fit:cover;}
 #board4 *{box-sizing:border-box;}
-.effekt-slot.verboten,.buw4-slot.verboten{border:3px solid #cc2222 !important;box-shadow:0 0 6px rgba(204,34,34,0.5);}
 .effekt-slot.verboten::after,.buw4-slot.verboten::after{content:'🚫';position:absolute;top:2px;right:2px;font-size:.8rem;z-index:20;filter:drop-shadow(0 0 2px rgba(255,255,255,0.9));}
 
 #popup-name, #bpopup-name{font-family:'AiSpec',sans-serif;font-style:italic;}
@@ -454,7 +453,8 @@ body {
 .turn-btn{background:rgba(210,30,30,0.12);border:1.5px solid rgba(210,30,30,0.4);border-radius:5px;padding:3px 4px;font-size:.56rem;font-weight:700;color:#a01818;cursor:pointer;font-family:'Kievit',sans-serif;white-space:nowrap;width:100%;}
 .turn-btn:hover:not(:disabled){background:rgba(210,30,30,0.22);}
 .turn-btn:disabled{opacity:0.32;cursor:default;}
-.my-turn{border-color:#e00000 !important;border-width:2px !important;box-shadow:0 0 4px rgba(224,0,0,0.5);}
+.my-turn{border-color:#000000 !important;border-width:3px !important;box-shadow:0 0 4px rgba(0,0,0,0.5);}
+.effekt-slot.verboten,.buw4-slot.verboten{border:3px solid #cc2222 !important;box-shadow:0 0 6px rgba(204,34,34,0.5);}
 </style>
 </head>
 <body>
@@ -1673,7 +1673,7 @@ function bCardToField(i, src){
       netSendState();
     }
   }
-  startCarry(cd);
+  startCarry(cd, isGrave);
 }
 function shuffleAndClose(){shuffle(G.deck);updDeck();closeBrowser();if(NET.mode==='multi')netSendState();}
 
@@ -1865,11 +1865,12 @@ let carryData = null;
 const carryEl = document.getElementById('carry-card');
 const carryImg = document.getElementById('carry-img');
 
-function startCarry(cd) {
+function startCarry(cd, hidden) {
   // small delay so the closing modal's click doesn't immediately drop
   setTimeout(() => {
     carryData = cd;
-    carryImg.src = imgFor(cd.name, false, cd.file);
+    carryData._hidden = !!hidden;
+    carryImg.src = hidden ? BACK : imgFor(cd.name, false, cd.file);
     // Kartengröße je nach Modus
     if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) {
       carryEl.classList.add('card4-size');
@@ -1893,7 +1894,7 @@ function onCarryMove(e) {
     if (!window._lastCarrySync || now - window._lastCarrySync > 50) {
       window._lastCarrySync = now;
       const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
-      netSend({t:'carry_move', name:carryData.name, color:carryData.color, ctype:carryData.type, file:carryData.file||'', x:gp.x, y:gp.y, is4});
+      netSend({t:'carry_move', name:carryData.name, color:carryData.color, ctype:carryData.type, file:carryData.file||'', x:gp.x, y:gp.y, is4, hidden: !!carryData._hidden});
     }
   }
 }
@@ -4789,7 +4790,7 @@ function updDeck4() {
 // ── SAVE / LOAD ──
 function saveGame() {
   const state = {
-    version: 'v36t',
+    version: 'v36u',
     deck: G.deck,
     graves: G.graves,
     banish: G.banish,
@@ -5020,7 +5021,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v36t
+    v36u
   </div>
 </div>
 
@@ -5567,7 +5568,7 @@ if (d.t === 'state4') {
     const remoteEl = document.getElementById('remote-carry-card');
     const remoteImg = document.getElementById('remote-carry-img');
     if (remoteEl && remoteImg) {
-      remoteImg.src = imgFor(d.name, false, d.file);
+      remoteImg.src = d.hidden ? BACK : imgFor(d.name, false, d.file);
       if (d.is4) { remoteEl.style.width = '47px'; remoteEl.style.height = '66px'; }
       else { remoteEl.style.width = '63px'; remoteEl.style.height = '88px'; }
       remoteEl.style.display = 'block';
