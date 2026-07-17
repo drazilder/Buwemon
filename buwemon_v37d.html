@@ -547,7 +547,7 @@ body {
         <button class="tbtn abil-btn" onclick="confirmPickyEating(this)" style="background:rgba(120,120,120,0.6);color:#fff;">🥗 Picky Eating</button>
         <button class="tbtn abil-btn" onclick="confirmRecast(this)" style="background:rgba(0,180,200,0.5);color:#fff;">🎲 Recast</button>
         <button class="tbtn abil-btn abil-btn-white" onclick="openColorRemove(this)" style="background:rgba(20,20,20,0.85);color:#fff;">☠️ Raum-Zeit-Genozid</button>
-        <button class="tbtn abil-btn" onclick="confirmRandomVote(this)" style="background:#fff;color:#111;border-color:rgba(0,0,0,0.3);">🎲 Random Vote</button>
+        <button class="tbtn abil-btn abil-btn-white" onclick="confirmRandomVote(this)" style="background:rgba(90,90,90,0.8);color:#fff;">🎲 Random Vote</button>
       </div>
     </div>
   </div>
@@ -762,7 +762,7 @@ body {
           <button class="tbtn abil-btn" onclick="confirmPickyEating(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(120,120,120,0.6);color:#fff;">🥗 Picky Eating</button>
           <button class="tbtn abil-btn" onclick="confirmRecast4(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(0,180,200,0.5);color:#fff;">🎲 Recast</button>
           <button class="tbtn abil-btn abil-btn-white" onclick="openColorRemove4(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(20,20,20,0.85);color:#fff;">☠️ Raum-Zeit-Genozid</button>
-          <button class="tbtn abil-btn" onclick="confirmRandomVote(this)" style="font-size:.75rem;padding:4px 10px;background:#fff;color:#111;border-color:rgba(0,0,0,0.3);">🎲 Random Vote</button>
+          <button class="tbtn abil-btn abil-btn-white" onclick="confirmRandomVote(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(90,90,90,0.8);color:#fff;">🎲 Random Vote</button>
         </div>
       </div>
       <span style="font-size:.5rem;color:rgba(0,0,0,0.4);font-family:'Kievit',sans-serif;">Ziehstapel</span>
@@ -829,10 +829,7 @@ body {
 <div class="modal-bg" id="card-popup">
   <div class="modal-box">
     <img id="popup-img" src="" alt="">
-    <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
-      <h2 id="popup-name"></h2>
-      <span id="popup-gender"></span>
-    </div>
+    <h2 id="popup-name"></h2>
     <p class="card-type-lbl" id="popup-type"></p>
     <div class="popup-btns">
       <button class="remove-btn" id="popup-remove-btn">🗑 Aus dem Spiel entfernen</button>
@@ -845,10 +842,7 @@ body {
 <div class="modal-bg" id="browser-card-popup" style="z-index:9500;">
   <div class="modal-box" style="width:650px;align-items:center;padding:24px;gap:12px;">
     <img id="bpopup-img" src="" alt="" style="width:420px;height:588px;border-radius:16px;object-fit:cover;display:block;box-shadow:0 10px 40px rgba(0,0,0,0.18);">
-    <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
-      <h2 id="bpopup-name"></h2>
-      <span id="bpopup-gender"></span>
-    </div>
+    <h2 id="bpopup-name"></h2>
     <p class="card-type-lbl" id="bpopup-type"></p>
     <div class="popup-btns">
       <button class="field-btn" id="bpopup-field-btn">🃏 Aufs Spielfeld</button>
@@ -1872,7 +1866,6 @@ function openPopup(el){
   document.getElementById('popup-img').src=imgFor(el.dataset.name,fd,el.dataset.file);
   document.getElementById('popup-img').alt=fd?'':el.dataset.name;
   document.getElementById('popup-name').textContent=fd?'':el.dataset.name;
-  document.getElementById('popup-gender').innerHTML=fd?'':genderSymbolHtml(el.dataset.name);
   const types={buw:'Buwemonkarte',spec:'Spezial-Buwemonkarte',eff:'Effektkarte',ereignis:'Ereigniskarte','ex-ereignis':'Ereignis-EX-Buwemonkarte','ex-auto':'Ereignis-EX-Buwemonkarte'};
   document.getElementById('popup-type').textContent=fd?'':(types[el.dataset.ctype]||'');
   document.getElementById('card-popup').classList.add('open');
@@ -3225,10 +3218,10 @@ setInterval(applyHandVisibility4, 300);
 // ── REMOVE CARD (synced) ──
 function removeCardSynced(el) {
   const uid = el.dataset.uid;
-  // Nur den Slot leeren, der WIRKLICH exakt diese Karte enthält (nach eindeutiger UID,
-  // nicht nach Name+Farbe - sonst trifft es fälschlich eine baugleiche zweite Karte)
+  // Clear any slot containing this card
   for (const sid of Object.keys(G.slots)) {
-    if (G.slots[sid] && String(G.slots[sid].uid) === String(uid)) {
+    if (G.slots[sid] && G.slots[sid].name === el.dataset.name &&
+        G.slots[sid].color === el.dataset.color) {
       G.slots[sid] = null;
       renderSlot(sid);
     }
@@ -3334,7 +3327,6 @@ function checkDropOnBanish(el){
 function openBPopup(cd, onField) {
   document.getElementById('bpopup-img').src = imgFor(cd.name, false, cd.file||'');
   document.getElementById('bpopup-name').textContent = cd.name;
-  document.getElementById('bpopup-gender').innerHTML = genderSymbolHtml(cd.name);
   const _btypes={buw:'Buwemonkarte',spec:'Spezial-Buwemonkarte',eff:'Effektkarte',ereignis:'Ereigniskarte','ex-ereignis':'Ereignis-EX-Buwemonkarte'};
   document.getElementById('bpopup-type').textContent = _btypes[cd.type||cd.ctype] || cd.type || '';
   document.getElementById('browser-card-popup').classList.add('open');
@@ -3576,14 +3568,6 @@ function checkLPWin(p) {
 
 // ── TOXISCHE MÄNNLICHKEIT ──
 const MAENNLICHE_BUWEMON = ["Gilip der Glibbrige", "Lord Phillipp of Glencoe", "Phülügülüm", "Baby Niko", "Marzo der Gott", "Marcopter", "Marco der Hund", "Kax Maufmann", "Maxodia der Verbotene", "Maxibu", "Hoffi der rasierte Karnevalsprinz", "Glorian", "Flosama", "Klorian", "Luis Münsters", "Cedzilla", "Griechischer ApoRed", "Fabio das Berlin-City-Girl", "Giraffael"];
-const GENDER_MAP = {'Gilip der Glibbrige':'m','Lord Phillipp of Glencoe':'m','Phülügülüm':'m','Baby Niko':'m','Grünika':'f','Schwammika':'f','Antika':'f','Marie die Königsgardistin':'f','Marzo der Gott':'m','Marcopter':'m','Marco der Hund':'m','Leonie Norris':'f','Kax Maufmann':'m','Maxodia der Verbotene':'m','Maxibu':'m','Hoffi der rasierte Karnevalsprinz':'m','Clarry Pather der Maincharacter':'f','Barista Clarista der Mister-Fister':'f','ClariSSIO':'f','Alicia die ehrenlose Fettsau':'f','Glorian':'m','Flosama':'m','Klorian':'m','Lisa aus Australien':'f','Suffia':'f','Luis Münsters':'m','Cedzilla':'m','Griechischer ApoRed':'m','Fabio das Berlin-City-Girl':'m','Giraffael':'m','Hannah im Bach':'f','Alexerus Snape':'f','Die Pogofanten':'n','L\'Enderdragon':'n','Golop der Grobe':'n','Der Zeitführer':'n','BOOM Clan':'n'};
-function genderSymbolHtml(name) {
-  const g = GENDER_MAP[name];
-  if (g === 'm') return '<span style="color:#4a90e2;font-size:1.1em;" title="Männlich">♂</span>';
-  if (g === 'f') return '<span style="color:#e84393;font-size:1.1em;" title="Weiblich">♀</span>';
-  if (g === 'n') return '<span style="color:#8e44ad;font-size:1.1em;" title="Nonbinär">⚧</span>';
-  return '';
-}
 
 function confirmToxMaennlichkeit(btnEl) {
   pressAbilityBtn(btnEl);
@@ -5055,7 +5039,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v37f
+    v37d
   </div>
 </div>
 
