@@ -458,7 +458,7 @@ body {
 .my-turn{border-color:#000000 !important;border-width:3px !important;box-shadow:0 0 4px rgba(0,0,0,0.5);}
 .abil-btn.pressed{outline:3px solid #000;outline-offset:-3px;}
 .abil-btn-white.pressed{outline:3px solid #fff;outline-offset:-3px;}
-.effekt-slot.verboten,.buw4-slot.verboten{border:6px solid #ff1744 !important;box-shadow:0 0 8px rgba(255,23,68,0.7);}
+.effekt-slot.verboten,.buw4-slot.verboten{border:6px solid #cc3333 !important;box-shadow:0 0 8px rgba(204,51,51,0.7);}
 </style>
 </head>
 <body>
@@ -528,18 +528,18 @@ body {
         <!-- Side buttons left: exakt zum Ziehstapel-Bild zentriert -->
         <div id="deck-side-outer-left" style="position:absolute;right:calc(100% + 20px);top:50%;transform:translateY(-50%);">
           <div id="deck-side-btns-left">
-            <button id="schicksal-btn" class="tbtn abil-btn" data-ability="schicksal" onclick="openOverview(this)" style="background:rgba(180,30,30,0.5);color:#fff;">Schicksal</button>
-            <button class="tbtn abil-btn" data-ability="toxmaennlichkeit" onclick="confirmToxMaennlichkeit(this)" style="background:rgba(220,100,0,0.6);color:#fff;">Toxische Männlichkeit</button>
-            <button class="tbtn abil-btn" data-ability="wuerdmirstinken" onclick="confirmWuerdMirStinken(this)" style="background:rgba(30,100,200,0.6);color:#fff;">Würd' mir stinken</button>
-            <button class="tbtn abil-btn" data-ability="liiinks" onclick="confirmLiiinks(this)" style="background:rgba(120,40,180,0.5);color:#fff;">Liiinks</button>
-            <button class="tbtn abil-btn" data-ability="gossip" onclick="openBrowser('deck','top4',this)" style="background:rgba(120,40,180,0.5);color:#fff;">Gossip</button>
+            <button id="schicksal-btn" class="tbtn abil-btn" data-ability="schicksal" onclick="openOverview(this)" style="background:rgba(229,36,33,0.5);color:#fff;">Schicksal</button>
+            <button class="tbtn abil-btn" data-ability="toxmaennlichkeit" onclick="confirmToxMaennlichkeit(this)" style="background:rgba(241,136,25,0.6);color:#fff;">Toxische Männlichkeit</button>
+            <button class="tbtn abil-btn" data-ability="wuerdmirstinken" onclick="confirmWuerdMirStinken(this)" style="background:rgba(46,81,159,0.6);color:#fff;">Würd' mir stinken</button>
+            <button class="tbtn abil-btn" data-ability="liiinks" onclick="confirmLiiinks(this)" style="background:rgba(108,67,148,0.5);color:#fff;">Liiinks</button>
+            <button class="tbtn abil-btn" data-ability="gossip" onclick="openBrowser('deck','top4',this)" style="background:rgba(108,67,148,0.5);color:#fff;">Gossip</button>
           </div>
         </div>
         <!-- Side buttons right: exakt zum Ziehstapel-Bild zentriert -->
         <div id="deck-side-outer" style="position:absolute;left:calc(100% + 20px);top:50%;transform:translateY(-50%);">
           <div id="deck-side-btns">
-            <button class="tbtn abil-btn" data-ability="pickyeating" onclick="confirmPickyEating(this)" style="background:rgba(120,120,120,0.6);color:#fff;">Picky Eating</button>
-            <button class="tbtn abil-btn" data-ability="recast" onclick="confirmRecast(this)" style="background:rgba(0,180,200,0.5);color:#fff;">Recast</button>
+            <button class="tbtn abil-btn" data-ability="pickyeating" onclick="confirmPickyEating(this)" style="background:rgba(167,166,166,0.6);color:#fff;">Picky Eating</button>
+            <button class="tbtn abil-btn" data-ability="recast" onclick="confirmRecast(this)" style="background:rgba(108,198,219,0.5);color:#fff;">Recast</button>
             <button class="tbtn abil-btn abil-btn-white" data-ability="raumzeitgenozid" onclick="openColorRemove(this)" style="background:rgba(20,20,20,0.85);color:#fff;">Raum-Zeit-Genozid</button>
             <button class="tbtn abil-btn" data-ability="randomvote" onclick="confirmRandomVote(this)" style="background:#fff;color:#111;border-color:rgba(0,0,0,0.3);">Random Vote</button>
           </div>
@@ -749,16 +749,16 @@ body {
         <div style="position:absolute;bottom:calc(100% + 14px);left:50%;transform:translateX(-50%);"><div id="dice-btn-4" onclick="rollDice4()" style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.7);border:2px solid rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:center;font-size:1.4rem;cursor:pointer;font-family:'AiSpec',sans-serif;">?</div></div>
         <!-- Buttons links vom Ziehstapel -->
         <div style="position:absolute;right:calc(100% + 28px);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;">
-          <button id="schicksal-btn-4" class="tbtn abil-btn" data-ability="schicksal" onclick="openOverview4(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(180,30,30,0.5);color:#fff;">Schicksal</button>
-          <button class="tbtn abil-btn" data-ability="toxmaennlichkeit" onclick="confirmToxMaennlichkeit(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(220,100,0,0.6);color:#fff;">Toxische Männlichkeit</button>
-          <button class="tbtn abil-btn" data-ability="wuerdmirstinken" onclick="confirmWuerdMirStinken(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(30,100,200,0.6);color:#fff;">Würd' mir stinken</button>
-          <button class="tbtn abil-btn" data-ability="liiinks" onclick="confirmLiiinks4(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(120,40,180,0.5);color:#fff;">Liiinks</button>
-          <button class="tbtn abil-btn" data-ability="gossip" onclick="openBrowser4('top4',this)" style="font-size:.75rem;padding:4px 10px;background:rgba(120,40,180,0.5);color:#fff;">Gossip</button>
+          <button id="schicksal-btn-4" class="tbtn abil-btn" data-ability="schicksal" onclick="openOverview4(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(229,36,33,0.5);color:#fff;">Schicksal</button>
+          <button class="tbtn abil-btn" data-ability="toxmaennlichkeit" onclick="confirmToxMaennlichkeit(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(241,136,25,0.6);color:#fff;">Toxische Männlichkeit</button>
+          <button class="tbtn abil-btn" data-ability="wuerdmirstinken" onclick="confirmWuerdMirStinken(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(46,81,159,0.6);color:#fff;">Würd' mir stinken</button>
+          <button class="tbtn abil-btn" data-ability="liiinks" onclick="confirmLiiinks4(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(108,67,148,0.5);color:#fff;">Liiinks</button>
+          <button class="tbtn abil-btn" data-ability="gossip" onclick="openBrowser4('top4',this)" style="font-size:.75rem;padding:4px 10px;background:rgba(108,67,148,0.5);color:#fff;">Gossip</button>
         </div>
         <!-- Buttons rechts vom Ziehstapel -->
         <div style="position:absolute;left:calc(100% + 28px);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;">
-          <button class="tbtn abil-btn" data-ability="pickyeating" onclick="confirmPickyEating(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(120,120,120,0.6);color:#fff;">Picky Eating</button>
-          <button class="tbtn abil-btn" data-ability="recast" onclick="confirmRecast4(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(0,180,200,0.5);color:#fff;">Recast</button>
+          <button class="tbtn abil-btn" data-ability="pickyeating" onclick="confirmPickyEating(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(167,166,166,0.6);color:#fff;">Picky Eating</button>
+          <button class="tbtn abil-btn" data-ability="recast" onclick="confirmRecast4(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(108,198,219,0.5);color:#fff;">Recast</button>
           <button class="tbtn abil-btn abil-btn-white" data-ability="raumzeitgenozid" onclick="openColorRemove4(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(20,20,20,0.85);color:#fff;">Raum-Zeit-Genozid</button>
           <button class="tbtn abil-btn" data-ability="randomvote" onclick="confirmRandomVote(this)" style="font-size:.75rem;padding:4px 10px;background:#fff;color:#111;border-color:rgba(0,0,0,0.3);">Random Vote</button>
         </div>
@@ -1221,8 +1221,8 @@ function findHandZonePlayer(cx, cy, is4) {
 
 // ── SPIELERFARBEN (Kontur) ──
 const PLAYER_COLOR_RGB = {
-  rot:[204,51,51], orange:[204,85,0], gelb:[170,153,0], gruen:[46,138,46],
-  blau:[26,68,187], violett:[102,34,170], grau:[102,102,102], cyan:[0,136,153], rosa:[217,84,138]
+  rot:[229,36,33], orange:[241,136,25], gelb:[247,232,33], gruen:[111,182,44],
+  blau:[46,81,159], violett:[108,67,148], grau:[167,166,166], cyan:[108,198,219], rosa:[217,84,138]
 };
 const PLAYER_COLOR_LABELS = [
   {key:'rot',label:'Rot'},{key:'orange',label:'Orange'},{key:'gelb',label:'Gelb'},
@@ -1374,6 +1374,13 @@ function startGame(mode) {
     const _default = 'Spieler ' + NET.myPlayer;
     playerLabel.textContent = (_pname && _pname !== _default) ? (_pname + ' | ' + _default) : _default;
     playerLabel.style.display = 'inline';
+    const myColorKey = fourPlayerMode ? getPlayerColorKey(NET.myPlayer, true) : getPlayerColorKey(NET.myPlayer, false);
+    if (myColorKey !== 'grau') {
+      const myRgb = PLAYER_COLOR_RGB[myColorKey];
+      playerLabel.style.color = `rgb(${myRgb[0]},${myRgb[1]},${myRgb[2]})`;
+    } else {
+      playerLabel.style.color = 'rgba(0,0,0,0.55)';
+    }
     const dot = document.getElementById('conn-dot');
     if (dot) dot.style.display = 'inline-block';
   }
@@ -1500,6 +1507,18 @@ const COLOR_GROUPS=[
   {label:"Grün",hex:"#2e8a2e"},{label:"Blau",hex:"#1a44bb"},{label:"Violett",hex:"#6622aa"},
   {label:"Grau",hex:"#666666"},{label:"Cyan",hex:"#008899"},{label:"Schwarz",hex:"#111111"},
 ];
+// Anzeige-Farbtöne für Buwemonfarben (Logik/Zuordnung bleibt bei den obigen Werten,
+// nur die tatsächlich angezeigte Farbe wird über diese Tabelle umgerechnet)
+const COLOR_DISPLAY_MAP = {
+  '#cc3333':'#e52421', '#cc5500':'#f18819', '#aa9900':'#f7e821', '#2e8a2e':'#6fb62c',
+  '#1a44bb':'#2e519f', '#6622aa':'#6c4394', '#666666':'#a7a6a6', '#008899':'#6cc6db',
+  '#111111':'#111111'
+};
+function dispColor(hex) { return COLOR_DISPLAY_MAP[hex] || hex; }
+function dispRgb(hex) {
+  const d = dispColor(hex);
+  return [parseInt(d.slice(1,3),16), parseInt(d.slice(3,5),16), parseInt(d.slice(5,7),16)];
+}
 
 const G={deck:[],nid:1,cards:[],reveal:{1:false,2:false},lp:{1:300,2:300},lpHistory:{1:[300],2:[300]},graves:{p1:[],p2:[]},banish:[],browserSource:null,browserMode:null,popupCardEl:null};
 let fourPlayerMode = false;
@@ -1885,7 +1904,7 @@ function openColorRemove4(btnEl){
   const sw=document.getElementById('color-swatches');sw.innerHTML='';
   COLOR_GROUPS.forEach(cg=>{
     const btn=document.createElement('div');btn.className='color-pick-btn';
-    btn.innerHTML=`<div class="color-dot" style="background:${cg.hex};"></div><span class="color-pick-lbl">${cg.label}</span>`;
+    btn.innerHTML=`<div class="color-dot" style="background:${dispColor(cg.hex)};"></div><span class="color-pick-lbl">${cg.label}</span>`;
     btn.onclick=()=>{
       document.getElementById('color-remove-modal').classList.remove('open');
       const ok = confirm(`Alle ${cg.label}-Karten komplett aus dem Spiel entfernen?`);
@@ -1937,7 +1956,7 @@ function openColorRemove(btnEl){
   const sw=document.getElementById('color-swatches');sw.innerHTML='';
   COLOR_GROUPS.forEach(cg=>{
     const btn=document.createElement('div');btn.className='color-pick-btn';
-    btn.innerHTML=`<div class="color-dot" style="background:${cg.hex};"></div><span class="color-pick-lbl">${cg.label}</span>`;
+    btn.innerHTML=`<div class="color-dot" style="background:${dispColor(cg.hex)};"></div><span class="color-pick-lbl">${cg.label}</span>`;
     btn.onclick=()=>{
       document.getElementById('color-remove-modal').classList.remove('open');
       const ok = confirm(`Alle ${cg.label}-Karten komplett aus dem Spiel entfernen?`);
@@ -3013,7 +3032,7 @@ function checkVerbote(player, suffix) {
     if (cd && bannedNames.has(cd.name)) {
       el.classList.add('verboten');
       // Inline mit !important setzen, damit es die Zug-Kontur (ebenfalls inline !important) sicher überdeckt
-      el.style.setProperty('border-color', '#ff1744', 'important');
+      el.style.setProperty('border-color', '#cc3333', 'important');
     } else {
       el.classList.remove('verboten');
       // Zustand korrekt wiederherstellen: Zug-Farbe falls gerade dran, sonst Basis-Farbe (NICHT pauschal Schwarz)
@@ -3064,9 +3083,7 @@ function checkZoneColor(player, suffix) {
     if (!z) return;
     if (color) {
       // Parse color as RGB and apply with transparency
-      const r = parseInt(color.slice(1,3),16);
-      const g = parseInt(color.slice(3,5),16);
-      const b = parseInt(color.slice(5,7),16);
+      const [r,g,b] = dispRgb(color);
       z.style.background = `rgba(${r},${g},${b},0.18)`;
       // Zug- und Verboten-Kontur haben Vorrang - Kontur-Farbe hier nicht anfassen
       if (!z.classList.contains('my-turn') && !z.classList.contains('verboten')) {
@@ -3081,9 +3098,7 @@ function checkZoneColor(player, suffix) {
   });
   if (lpBtn) {
     if (color) {
-      const r = parseInt(color.slice(1,3),16);
-      const g = parseInt(color.slice(3,5),16);
-      const b = parseInt(color.slice(5,7),16);
+      const [r,g,b] = dispRgb(color);
       lpBtn.style.background = `rgba(${r},${g},${b},0.7)`;
     } else {
       lpBtn.style.background = '';
@@ -3115,23 +3130,29 @@ function applyZoneColor(player, suffix, color) {
     document.getElementById(player+'-verbot3'+suffix),
   ].filter(Boolean);
   const lpBtn = document.getElementById(player+'-lp-ok'+suffix);
+  // Basis-Kontur-Farbe des Spielers als Rückfallwert (statt blindem Löschen)
+  const pNum = parseInt(player.replace('p',''));
+  const is4b = suffix === '-4';
+  const baseColorKey = getPlayerColorKey(pNum, is4b);
+  const baseRgb = PLAYER_COLOR_RGB[baseColorKey] || PLAYER_COLOR_RGB.grau;
+  const baseBorderColor = baseColorKey === 'grau' ? '' : `rgba(${baseRgb[0]},${baseRgb[1]},${baseRgb[2]},0.5)`;
   zones.forEach(z => {
     if (color) {
-      const r = parseInt(color.slice(1,3),16);
-      const g = parseInt(color.slice(3,5),16);
-      const b = parseInt(color.slice(5,7),16);
+      const [r,g,b] = dispRgb(color);
       z.style.background = `rgba(${r},${g},${b},0.18)`;
-      z.style.borderColor = `rgba(${r},${g},${b},0.5)`;
+      if (!z.classList.contains('my-turn') && !z.classList.contains('verboten')) {
+        z.style.borderColor = `rgba(${r},${g},${b},0.5)`;
+      }
     } else {
       z.style.background = '';
-      z.style.borderColor = '';
+      if (!z.classList.contains('my-turn') && !z.classList.contains('verboten')) {
+        z.style.borderColor = baseBorderColor;
+      }
     }
   });
   if (lpBtn) {
     if (color) {
-      const r = parseInt(color.slice(1,3),16);
-      const g = parseInt(color.slice(3,5),16);
-      const b = parseInt(color.slice(5,7),16);
+      const [r,g,b] = dispRgb(color);
       lpBtn.style.background = `rgba(${r},${g},${b},0.7)`;
     } else { lpBtn.style.background = ''; }
   }
@@ -3924,7 +3945,7 @@ function confirmPickyEating(btnEl) {
   const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
   COLOR_GROUPS.filter(cg => cg.hex !== '#111111').forEach(cg => {
     const btn = document.createElement('div'); btn.className = 'color-pick-btn';
-    btn.innerHTML = `<div class="color-dot" style="background:${cg.hex};"></div><span class="color-pick-lbl">${cg.label}</span>`;
+    btn.innerHTML = `<div class="color-dot" style="background:${dispColor(cg.hex)};"></div><span class="color-pick-lbl">${cg.label}</span>`;
     btn.onclick = () => {
       modal.classList.remove('open');
       // Titel zurücksetzen
@@ -5296,7 +5317,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v37m
+    v37q
   </div>
 </div>
 
