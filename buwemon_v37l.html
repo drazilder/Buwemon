@@ -458,7 +458,7 @@ body {
 .my-turn{border-color:#000000 !important;border-width:3px !important;box-shadow:0 0 4px rgba(0,0,0,0.5);}
 .abil-btn.pressed{outline:3px solid #000;outline-offset:-3px;}
 .abil-btn-white.pressed{outline:3px solid #fff;outline-offset:-3px;}
-.effekt-slot.verboten,.buw4-slot.verboten{border:3px solid #cc2222 !important;box-shadow:0 0 6px rgba(204,34,34,0.5);}
+.effekt-slot.verboten,.buw4-slot.verboten{border:4px solid #ff1744 !important;box-shadow:0 0 6px rgba(255,23,68,0.6);}
 </style>
 </head>
 <body>
@@ -502,7 +502,7 @@ body {
     </div>
   </div>
 
-  <div class="row-zones" style="position:relative;"><div class="grave-wrap" style="align-self:flex-start;"><div class="zone zone-grave" id="p2-grave" onclick="openGraveBrowser('p2')" title="Friedhof ansehen"><span class="zlbl" style="font-size:.62rem;">Friedhof</span><div class="grave-preview" id="p2-grave-preview"></div><div class="grave-count" id="p2-grave-count" style="display:none;"></div></div></div><div class="push" style="min-width:20px;"></div><div class="buw-group"><div class="buw-slot" id="p2-buw1"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p2-buw2"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p2-buw3"><span class="zlbl">Buwemon</span></div></div><div class="push" style="flex:2;"></div><div style="flex:1;min-width:0;"></div><div style="position:absolute;right:0;top:0;bottom:0;display:flex;align-items:stretch;gap:50px;margin-left:200px;"><div class="buw-group" id="p2-effekt-group"><div class="buw-slot effekt-slot" id="p2-eff1"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff2"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff3"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff4"><span class="zlbl">Effekt</span></div></div><div class="grave-wrap" style="gap:6px;align-self:flex-start;"><div class="zone zone-grave verbot-slot" id="p2-verbot1"></div><div class="zone zone-grave verbot-slot" id="p2-verbot2"></div><div class="zone zone-grave verbot-slot" id="p2-verbot3"></div></div><div class="grave-wrap" style="align-self:flex-start;"><div class="lp-box" style="position:relative;"><div class="lp-display" id="p2-lp" contenteditable="true" onblur="lpDirectEdit(2)" onkeydown="lpDirectKey(event,2)">300</div><div class="lp-calc"><input type="text" id="p2-lp-input" placeholder="" onkeydown="lpKey(event,2)"><button onclick="applyLP(2)" class="lp-ok" id="p2-lp-ok">OK</button></div><button class="turn-btn" id="turn-btn-p2" onclick="endTurn(2)" disabled style="position:absolute;left:0;right:0;top:100%;margin-top:4px;">Zug beenden</button></div></div></div></div>
+  <div class="row-zones" style="position:relative;"><div class="grave-wrap" style="align-self:flex-start;"><div class="zone zone-grave" id="p2-grave" onclick="openGraveBrowser('p2')" title="Friedhof ansehen"><span class="zlbl" style="font-size:.62rem;">Friedhof</span><div class="grave-preview" id="p2-grave-preview"></div><div class="grave-count" id="p2-grave-count" style="display:none;"></div></div></div><div class="push" style="min-width:20px;"></div><div class="buw-group"><div class="buw-slot" id="p2-buw1"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p2-buw2"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p2-buw3"><span class="zlbl">Buwemon</span></div></div><div class="push" style="flex:2;"></div><div style="flex:1;min-width:0;"></div><div style="position:absolute;right:0;top:0;bottom:0;display:flex;align-items:stretch;gap:50px;margin-left:200px;"><div class="buw-group" id="p2-effekt-group"><div class="buw-slot effekt-slot" id="p2-eff1"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff2"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff3"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff4"><span class="zlbl">Effekt</span></div></div><div class="grave-wrap" style="gap:6px;align-self:flex-start;"><div class="zone zone-grave verbot-slot" id="p2-verbot1"></div><div class="zone zone-grave verbot-slot" id="p2-verbot2"></div><div class="zone zone-grave verbot-slot" id="p2-verbot3"></div></div><div class="grave-wrap" style="align-self:flex-start;"><div class="lp-box" style="position:relative;"><div class="lp-display" id="p2-lp" contenteditable="true" onblur="lpDirectEdit(2)" onkeydown="lpDirectKey(event,2)">300</div><div class="lp-calc"><input type="text" id="p2-lp-input" placeholder="" onkeydown="lpKey(event,2)"><button onclick="openLpOptPopup(2,false)" class="lp-ok" id="p2-lp-ok" style="font-size:.55rem;">Opt</button></div><button class="turn-btn" id="turn-btn-p2" onclick="endTurn(2)" disabled style="position:absolute;left:0;right:0;top:100%;margin-top:4px;">Zug beenden</button></div></div></div></div>
 
   <div class="row-ex" id="p2-ex-row" style="display:flex;align-items:stretch;flex:11;min-height:0;">
     <div id="p2-ex-space" style="flex:none;width:0;"></div><!-- grave spacer -->
@@ -515,17 +515,6 @@ body {
   </div>
 
   <div class="row-center">
-    <!-- Side buttons left -->
-    <div id="deck-side-outer-left">
-      <div id="deck-side-btns-left">
-        <button id="schicksal-btn" class="tbtn abil-btn" onclick="openOverview(this)" style="background:rgba(180,30,30,0.5);color:#fff;">🎴 Schicksal</button>
-        <button class="tbtn abil-btn" onclick="confirmToxMaennlichkeit(this)" style="background:rgba(220,100,0,0.6);color:#fff;">💪 Toxische Männlichkeit</button>
-        <button class="tbtn abil-btn" onclick="confirmWuerdMirStinken(this)" style="background:rgba(30,100,200,0.6);color:#fff;">🤢 Würd' mir stinken</button>
-        <button class="tbtn abil-btn" onclick="confirmLiiinks(this)" style="background:rgba(120,40,180,0.5);color:#fff;">↔️ Liiinks</button>
-        <button class="tbtn abil-btn" onclick="openBrowser('deck','top4',this)" style="background:rgba(120,40,180,0.5);color:#fff;">👁 Gossip</button>
-      </div>
-    </div>
-
     <!-- Deck center -->
     <div id="center-wrap">
       <div class="deck-zone-bg">
@@ -536,19 +525,28 @@ body {
         <div id="dice-outer" style="position:absolute;bottom:calc(100% + 14px);left:50%;transform:translateX(-50%);">
           <div id="dice-btn" onclick="rollDice()" title="Würfeln (1–6)">?</div>
         </div>
+        <!-- Side buttons left: exakt zum Ziehstapel-Bild zentriert -->
+        <div id="deck-side-outer-left" style="position:absolute;right:calc(100% + 20px);top:50%;transform:translateY(-50%);">
+          <div id="deck-side-btns-left">
+            <button id="schicksal-btn" class="tbtn abil-btn" data-ability="schicksal" onclick="openOverview(this)" style="background:rgba(180,30,30,0.5);color:#fff;">Schicksal</button>
+            <button class="tbtn abil-btn" data-ability="toxmaennlichkeit" onclick="confirmToxMaennlichkeit(this)" style="background:rgba(220,100,0,0.6);color:#fff;">Toxische Männlichkeit</button>
+            <button class="tbtn abil-btn" data-ability="wuerdmirstinken" onclick="confirmWuerdMirStinken(this)" style="background:rgba(30,100,200,0.6);color:#fff;">Würd' mir stinken</button>
+            <button class="tbtn abil-btn" data-ability="liiinks" onclick="confirmLiiinks(this)" style="background:rgba(120,40,180,0.5);color:#fff;">Liiinks</button>
+            <button class="tbtn abil-btn" data-ability="gossip" onclick="openBrowser('deck','top4',this)" style="background:rgba(120,40,180,0.5);color:#fff;">Gossip</button>
+          </div>
+        </div>
+        <!-- Side buttons right: exakt zum Ziehstapel-Bild zentriert -->
+        <div id="deck-side-outer" style="position:absolute;left:calc(100% + 20px);top:50%;transform:translateY(-50%);">
+          <div id="deck-side-btns">
+            <button class="tbtn abil-btn" data-ability="pickyeating" onclick="confirmPickyEating(this)" style="background:rgba(120,120,120,0.6);color:#fff;">Picky Eating</button>
+            <button class="tbtn abil-btn" data-ability="recast" onclick="confirmRecast(this)" style="background:rgba(0,180,200,0.5);color:#fff;">Recast</button>
+            <button class="tbtn abil-btn abil-btn-white" data-ability="raumzeitgenozid" onclick="openColorRemove(this)" style="background:rgba(20,20,20,0.85);color:#fff;">Raum-Zeit-Genozid</button>
+            <button class="tbtn abil-btn" data-ability="randomvote" onclick="confirmRandomVote(this)" style="background:#fff;color:#111;border-color:rgba(0,0,0,0.3);">Random Vote</button>
+          </div>
+        </div>
       </div>
       <span class="pile-lbl">Ziehstapel</span>
       <span class="pile-cnt" id="deck-cnt">0 Karten</span>
-    </div>
-
-    <!-- Side buttons right -->
-    <div id="deck-side-outer">
-      <div id="deck-side-btns">
-        <button class="tbtn abil-btn" onclick="confirmPickyEating(this)" style="background:rgba(120,120,120,0.6);color:#fff;">🥗 Picky Eating</button>
-        <button class="tbtn abil-btn" onclick="confirmRecast(this)" style="background:rgba(0,180,200,0.5);color:#fff;">🎲 Recast</button>
-        <button class="tbtn abil-btn abil-btn-white" onclick="openColorRemove(this)" style="background:rgba(20,20,20,0.85);color:#fff;">☠️ Raum-Zeit-Genozid</button>
-        <button class="tbtn abil-btn" onclick="confirmRandomVote(this)" style="background:#fff;color:#111;border-color:rgba(0,0,0,0.3);">🎲 Random Vote</button>
-      </div>
     </div>
   </div>
 
@@ -562,7 +560,7 @@ body {
     <div style="width:calc(var(--cw) + 4px);flex-shrink:0;"></div><!-- grave spacer -->
   </div>
 
-  <div class="row-zones" style="position:relative;"><div style="flex:1;min-width:0;"></div><div class="push" style="flex:2;"></div><div class="buw-group"><div class="buw-slot" id="p1-buw1"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p1-buw2"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p1-buw3"><span class="zlbl">Buwemon</span></div></div><div class="push" style="min-width:20px;"></div><div class="grave-wrap" style="align-self:flex-end;"><div class="zone zone-grave" id="p1-grave" onclick="openGraveBrowser('p1')" title="Friedhof ansehen"><span class="zlbl" style="font-size:.62rem;">Friedhof</span><div class="grave-preview" id="p1-grave-preview"></div><div class="grave-count" id="p1-grave-count" style="display:none;"></div></div></div><div style="position:absolute;left:0;top:0;bottom:0;display:flex;align-items:stretch;gap:50px;margin-right:200px;"><div class="grave-wrap" style="align-self:flex-end;"><div class="lp-box" style="position:relative;"><button class="turn-btn" id="turn-btn-p1" onclick="endTurn(1)" disabled style="position:absolute;left:0;right:0;bottom:100%;margin-bottom:4px;">Zug beenden</button><div class="lp-display" id="p1-lp" contenteditable="true" onblur="lpDirectEdit(1)" onkeydown="lpDirectKey(event,1)">300</div><div class="lp-calc"><input type="text" id="p1-lp-input" placeholder="" onkeydown="lpKey(event,1)"><button onclick="applyLP(1)" class="lp-ok" id="p1-lp-ok">OK</button></div></div></div><div class="grave-wrap" style="gap:6px;align-self:flex-end;"><div class="zone zone-grave verbot-slot" id="p1-verbot1"></div><div class="zone zone-grave verbot-slot" id="p1-verbot2"></div><div class="zone zone-grave verbot-slot" id="p1-verbot3"></div></div><div class="buw-group" id="p1-effekt-group"><div class="buw-slot effekt-slot" id="p1-eff1"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff2"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff3"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff4"><span class="zlbl">Effekt</span></div></div></div></div>
+  <div class="row-zones" style="position:relative;"><div style="flex:1;min-width:0;"></div><div class="push" style="flex:2;"></div><div class="buw-group"><div class="buw-slot" id="p1-buw1"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p1-buw2"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p1-buw3"><span class="zlbl">Buwemon</span></div></div><div class="push" style="min-width:20px;"></div><div class="grave-wrap" style="align-self:flex-end;"><div class="zone zone-grave" id="p1-grave" onclick="openGraveBrowser('p1')" title="Friedhof ansehen"><span class="zlbl" style="font-size:.62rem;">Friedhof</span><div class="grave-preview" id="p1-grave-preview"></div><div class="grave-count" id="p1-grave-count" style="display:none;"></div></div></div><div style="position:absolute;left:0;top:0;bottom:0;display:flex;align-items:stretch;gap:50px;margin-right:200px;"><div class="grave-wrap" style="align-self:flex-end;"><div class="lp-box" style="position:relative;"><button class="turn-btn" id="turn-btn-p1" onclick="endTurn(1)" disabled style="position:absolute;left:0;right:0;bottom:100%;margin-bottom:4px;">Zug beenden</button><div class="lp-display" id="p1-lp" contenteditable="true" onblur="lpDirectEdit(1)" onkeydown="lpDirectKey(event,1)">300</div><div class="lp-calc"><input type="text" id="p1-lp-input" placeholder="" onkeydown="lpKey(event,1)"><button onclick="openLpOptPopup(1,false)" class="lp-ok" id="p1-lp-ok" style="font-size:.55rem;">Opt</button></div></div></div><div class="grave-wrap" style="gap:6px;align-self:flex-end;"><div class="zone zone-grave verbot-slot" id="p1-verbot1"></div><div class="zone zone-grave verbot-slot" id="p1-verbot2"></div><div class="zone zone-grave verbot-slot" id="p1-verbot3"></div></div><div class="buw-group" id="p1-effekt-group"><div class="buw-slot effekt-slot" id="p1-eff1"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff2"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff3"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff4"><span class="zlbl">Effekt</span></div></div></div></div>
 
   <div class="row-hand">
     <div class="zone zone-hand" id="p1-hand">
@@ -619,7 +617,7 @@ body {
   <div id="p1-lp-4" contenteditable="true" onblur="lpDirectEdit4(1)" onkeydown="lpDirectKey4(event,1)" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:text;outline:none;font-family:'AiSpec',sans-serif;font-style:italic;">300</div>
   <div style="display:flex;gap:2px;margin-top:5px;">
     <input id="p1-lp-inp-4" type="text" onkeydown="lpKey4(event,1)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
-    <button id="p1-lp-ok-4" onclick="applyLP4(1)" class="lp-ok-4">OK</button>
+    <button id="p1-lp-ok-4" onclick="openLpOptPopup(1,true)" class="lp-ok-4" style="font-size:.5rem;">Opt</button>
   </div>
   </div>
 </div>
@@ -628,7 +626,7 @@ body {
   <div id="p2-lp-4" contenteditable="true" onblur="lpDirectEdit4(2)" onkeydown="lpDirectKey4(event,2)" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:text;outline:none;font-family:'AiSpec',sans-serif;font-style:italic;">300</div>
   <div style="display:flex;gap:2px;margin-top:5px;">
     <input id="p2-lp-inp-4" type="text" onkeydown="lpKey4(event,2)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
-    <button id="p2-lp-ok-4" onclick="applyLP4(2)" class="lp-ok-4">OK</button>
+    <button id="p2-lp-ok-4" onclick="openLpOptPopup(2,true)" class="lp-ok-4" style="font-size:.5rem;">Opt</button>
   </div>
   <button class="turn-btn" id="turn-btn-p2-4" onclick="endTurn4(2)" disabled style="position:absolute;left:0;right:0;top:100%;margin-top:6px;">Zug beenden</button>
   </div>
@@ -639,7 +637,7 @@ body {
   <div id="p3-lp-4" contenteditable="true" onblur="lpDirectEdit4(3)" onkeydown="lpDirectKey4(event,3)" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:text;outline:none;font-family:'AiSpec',sans-serif;font-style:italic;">300</div>
   <div style="display:flex;gap:2px;margin-top:5px;">
     <input id="p3-lp-inp-4" type="text" onkeydown="lpKey4(event,3)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
-    <button id="p3-lp-ok-4" onclick="applyLP4(3)" class="lp-ok-4">OK</button>
+    <button id="p3-lp-ok-4" onclick="openLpOptPopup(3,true)" class="lp-ok-4" style="font-size:.5rem;">Opt</button>
   </div>
   </div>
 </div>
@@ -648,7 +646,7 @@ body {
   <div id="p4-lp-4" contenteditable="true" onblur="lpDirectEdit4(4)" onkeydown="lpDirectKey4(event,4)" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:text;outline:none;font-family:'AiSpec',sans-serif;font-style:italic;">300</div>
   <div style="display:flex;gap:2px;margin-top:5px;">
     <input id="p4-lp-inp-4" type="text" onkeydown="lpKey4(event,4)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
-    <button id="p4-lp-ok-4" onclick="applyLP4(4)" class="lp-ok-4">OK</button>
+    <button id="p4-lp-ok-4" onclick="openLpOptPopup(4,true)" class="lp-ok-4" style="font-size:.5rem;">Opt</button>
   </div>
   <button class="turn-btn" id="turn-btn-p4-4" onclick="endTurn4(4)" disabled style="position:absolute;left:0;right:0;top:100%;margin-top:6px;">Zug beenden</button>
   </div>
@@ -751,18 +749,18 @@ body {
         <div style="position:absolute;bottom:calc(100% + 14px);left:50%;transform:translateX(-50%);"><div id="dice-btn-4" onclick="rollDice4()" style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.7);border:2px solid rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:center;font-size:1.4rem;cursor:pointer;font-family:'AiSpec',sans-serif;">?</div></div>
         <!-- Buttons links vom Ziehstapel -->
         <div style="position:absolute;right:calc(100% + 28px);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;">
-          <button id="schicksal-btn-4" class="tbtn abil-btn" onclick="openOverview4(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(180,30,30,0.5);color:#fff;">🎴 Schicksal</button>
-          <button class="tbtn abil-btn" onclick="confirmToxMaennlichkeit(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(220,100,0,0.6);color:#fff;">💪 Toxische Männlichkeit</button>
-          <button class="tbtn abil-btn" onclick="confirmWuerdMirStinken(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(30,100,200,0.6);color:#fff;">🤢 Würd' mir stinken</button>
-          <button class="tbtn abil-btn" onclick="confirmLiiinks4(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(120,40,180,0.5);color:#fff;">↔️ Liiinks</button>
-          <button class="tbtn abil-btn" onclick="openBrowser4('top4',this)" style="font-size:.75rem;padding:4px 10px;background:rgba(120,40,180,0.5);color:#fff;">👁 Gossip</button>
+          <button id="schicksal-btn-4" class="tbtn abil-btn" data-ability="schicksal" onclick="openOverview4(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(180,30,30,0.5);color:#fff;">Schicksal</button>
+          <button class="tbtn abil-btn" data-ability="toxmaennlichkeit" onclick="confirmToxMaennlichkeit(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(220,100,0,0.6);color:#fff;">Toxische Männlichkeit</button>
+          <button class="tbtn abil-btn" data-ability="wuerdmirstinken" onclick="confirmWuerdMirStinken(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(30,100,200,0.6);color:#fff;">Würd' mir stinken</button>
+          <button class="tbtn abil-btn" data-ability="liiinks" onclick="confirmLiiinks4(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(120,40,180,0.5);color:#fff;">Liiinks</button>
+          <button class="tbtn abil-btn" data-ability="gossip" onclick="openBrowser4('top4',this)" style="font-size:.75rem;padding:4px 10px;background:rgba(120,40,180,0.5);color:#fff;">Gossip</button>
         </div>
         <!-- Buttons rechts vom Ziehstapel -->
         <div style="position:absolute;left:calc(100% + 28px);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;">
-          <button class="tbtn abil-btn" onclick="confirmPickyEating(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(120,120,120,0.6);color:#fff;">🥗 Picky Eating</button>
-          <button class="tbtn abil-btn" onclick="confirmRecast4(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(0,180,200,0.5);color:#fff;">🎲 Recast</button>
-          <button class="tbtn abil-btn abil-btn-white" onclick="openColorRemove4(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(20,20,20,0.85);color:#fff;">☠️ Raum-Zeit-Genozid</button>
-          <button class="tbtn abil-btn" onclick="confirmRandomVote(this)" style="font-size:.75rem;padding:4px 10px;background:#fff;color:#111;border-color:rgba(0,0,0,0.3);">🎲 Random Vote</button>
+          <button class="tbtn abil-btn" data-ability="pickyeating" onclick="confirmPickyEating(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(120,120,120,0.6);color:#fff;">Picky Eating</button>
+          <button class="tbtn abil-btn" data-ability="recast" onclick="confirmRecast4(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(0,180,200,0.5);color:#fff;">Recast</button>
+          <button class="tbtn abil-btn abil-btn-white" data-ability="raumzeitgenozid" onclick="openColorRemove4(this)" style="font-size:.75rem;padding:4px 10px;background:rgba(20,20,20,0.85);color:#fff;">Raum-Zeit-Genozid</button>
+          <button class="tbtn abil-btn" data-ability="randomvote" onclick="confirmRandomVote(this)" style="font-size:.75rem;padding:4px 10px;background:#fff;color:#111;border-color:rgba(0,0,0,0.3);">Random Vote</button>
         </div>
       </div>
       <span style="font-size:.5rem;color:rgba(0,0,0,0.4);font-family:'Kievit',sans-serif;">Ziehstapel</span>
@@ -814,6 +812,32 @@ body {
 </div>
 
 <!-- COLOR REMOVE -->
+<!-- LP OPTIONEN POPUP -->
+<div class="modal-bg" id="lp-opt-modal">
+  <div class="modal-box" style="width:320px;">
+    <h3 id="lp-opt-title" style="font-family:'AiSpec',sans-serif;font-style:italic;"></h3>
+    <p class="sub" style="margin-bottom:4px;">Lebenspunkte entfernen</p>
+    <div id="lp-opt-remove-btns" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
+    <p class="sub" style="margin-bottom:4px;">Lebenspunkte hinzufügen</p>
+    <div id="lp-opt-add-btns" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;"></div>
+    <button onclick="openLpHistoryPopup()" style="width:100%;margin-bottom:8px;">📜 Verlauf anzeigen</button>
+    <div class="modal-footer">
+      <button onclick="closeLpOptPopup()">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<!-- LP VERLAUF POPUP -->
+<div class="modal-bg" id="lp-history-modal" style="z-index:9600;">
+  <div class="modal-box" style="width:260px;">
+    <h3 id="lp-history-title" style="font-family:'AiSpec',sans-serif;font-style:italic;"></h3>
+    <div id="lp-history-list" style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;"></div>
+    <div class="modal-footer">
+      <button onclick="closeLpHistoryPopup()">Schließen</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="color-remove-modal">
   <div class="modal-box">
     <h3>Farbe aus dem Spiel entfernen</h3>
@@ -829,7 +853,10 @@ body {
 <div class="modal-bg" id="card-popup">
   <div class="modal-box">
     <img id="popup-img" src="" alt="">
-    <h2 id="popup-name"></h2>
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
+      <h2 id="popup-name"></h2>
+      <span id="popup-gender"></span>
+    </div>
     <p class="card-type-lbl" id="popup-type"></p>
     <div class="popup-btns">
       <button class="remove-btn" id="popup-remove-btn">🗑 Aus dem Spiel entfernen</button>
@@ -842,7 +869,10 @@ body {
 <div class="modal-bg" id="browser-card-popup" style="z-index:9500;">
   <div class="modal-box" style="width:650px;align-items:center;padding:24px;gap:12px;">
     <img id="bpopup-img" src="" alt="" style="width:420px;height:588px;border-radius:16px;object-fit:cover;display:block;box-shadow:0 10px 40px rgba(0,0,0,0.18);">
-    <h2 id="bpopup-name"></h2>
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
+      <h2 id="bpopup-name"></h2>
+      <span id="bpopup-gender"></span>
+    </div>
     <p class="card-type-lbl" id="bpopup-type"></p>
     <div class="popup-btns">
       <button class="field-btn" id="bpopup-field-btn">🃏 Aufs Spielfeld</button>
@@ -915,6 +945,15 @@ body {
 // ── CARD → IMAGE MAPPING ──
 const IMG = {
   "Gilip der Glibbrige": "karten/Gilip_der_Glibbrige.png",
+  "Drakkschah EX": "karten/Drakkschah_EX.png",
+  "Schahco EX": "karten/Schahco_EX.png",
+  "Drukkschah EX": "karten/Drukkschah_EX.png",
+  "Annischah EX": "karten/Annischah_EX.png",
+  "Drikkschah EX": "karten/Drikkschah_EX.png",
+  "Schahbio EX": "karten/Schahbio_EX.png",
+  "Drokkschah EX": "karten/Drokkschah_EX.png",
+  "Clarischah EX": "karten/Clarischah_EX.png",
+  "Darkschah EX": "karten/Darkschah_EX.png",
   "Lord Phillipp of Glencoe": "karten/Lord_Phillipp.png",
   "Phülügülüm": "karten/Phueluegueluem.png",
   "Baby Niko": "karten/Baby Niko.png",
@@ -1022,16 +1061,25 @@ function scoreNum(n) {
 function scoreSep() {
   return '<span style="margin:0 5px;">|</span>';
 }
+function playerColorCss(p, is4) {
+  const colorKey = getPlayerColorKey(p, is4);
+  if (colorKey === 'grau') return '';
+  const rgb = PLAYER_COLOR_RGB[colorKey];
+  return `color:rgb(${rgb[0]},${rgb[1]},${rgb[2]});`;
+}
 function updateTopbarScore() {
   const el = document.getElementById('topbar-score');
   if (!el) return;
   const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
   if (is4) {
-    el.innerHTML = '🏆 ' + [1,2,3,4].map(p => escHtml(getPlayerName4(p))+':'+scoreNum(SCORE4[p])).join(scoreSep());
+    el.innerHTML = [1,2,3,4].map(p =>
+      `<span style="${playerColorCss(p,true)}">${escHtml(getPlayerName4(p))}:${scoreNum(SCORE4[p])}</span>`
+    ).join(scoreSep());
   } else {
     const n1 = (NET.mode === 'multi') ? (NET.myPlayer === 1 ? (NET.myName||'Spieler 1') : (NET.enemyName||'Spieler 1')) : 'Spieler 1';
     const n2 = (NET.mode === 'multi') ? (NET.myPlayer === 2 ? (NET.myName||'Spieler 2') : (NET.enemyName||'Spieler 2')) : 'Spieler 2';
-    el.innerHTML = '🏆 ' + escHtml(n1) + ':' + scoreNum(SCORE2[1]) + scoreSep() + escHtml(n2) + ':' + scoreNum(SCORE2[2]);
+    el.innerHTML = `<span style="${playerColorCss(1,false)}">${escHtml(n1)}:${scoreNum(SCORE2[1])}</span>` + scoreSep() +
+                    `<span style="${playerColorCss(2,false)}">${escHtml(n2)}:${scoreNum(SCORE2[2])}</span>`;
   }
 }
 
@@ -1127,10 +1175,22 @@ function pressAbilityBtn(el) {
   if (_activeAbilityBtn && _activeAbilityBtn !== el) _activeAbilityBtn.classList.remove('pressed');
   _activeAbilityBtn = el;
   el.classList.add('pressed');
+  if (NET.mode === 'multi' && el.dataset.ability) {
+    netSend({t:'ability_press', ability: el.dataset.ability});
+  }
 }
 function releaseAbilityBtn(el) {
+  const ability = el ? el.dataset.ability : (_activeAbilityBtn ? _activeAbilityBtn.dataset.ability : null);
   if (el) el.classList.remove('pressed');
   if (_activeAbilityBtn === el || !el) { if (_activeAbilityBtn) _activeAbilityBtn.classList.remove('pressed'); _activeAbilityBtn = null; }
+  if (NET.mode === 'multi' && ability) {
+    netSend({t:'ability_release', ability});
+  }
+}
+function setRemoteAbilityPressed(ability, pressed) {
+  document.querySelectorAll('[data-ability="'+ability+'"]').forEach(el => {
+    el.classList.toggle('pressed', pressed);
+  });
 }
 
 // ── ZUG-SYSTEM (wer ist dran) ──
@@ -1159,17 +1219,66 @@ function findHandZonePlayer(cx, cy, is4) {
   return null;
 }
 
+// ── SPIELERFARBEN (Kontur) ──
+const PLAYER_COLOR_RGB = {
+  rot:[204,51,51], orange:[204,85,0], gelb:[170,153,0], gruen:[46,138,46],
+  blau:[26,68,187], violett:[102,34,170], grau:[102,102,102], cyan:[0,136,153], rosa:[217,84,138]
+};
+const PLAYER_COLOR_LABELS = [
+  {key:'rot',label:'Rot'},{key:'orange',label:'Orange'},{key:'gelb',label:'Gelb'},
+  {key:'gruen',label:'Grün'},{key:'blau',label:'Blau'},{key:'violett',label:'Violett'},
+  {key:'grau',label:'Grau'},{key:'cyan',label:'Cyan'},{key:'rosa',label:'Rosa'}
+];
+const SOLO_COLORS_2P = {1:'rot', 2:'gruen'};
+const SOLO_COLORS_4P = {1:'rot', 2:'orange', 3:'blau', 4:'gruen'};
+
+function getPlayerColorKey(p, is4) {
+  if (NET.mode !== 'multi') {
+    return (is4 ? SOLO_COLORS_4P[p] : SOLO_COLORS_2P[p]) || 'grau';
+  }
+  if (is4) return (G4.playerColors && G4.playerColors[p]) || 'grau';
+  return (p === NET.myPlayer) ? (NET.myColor || 'grau') : (NET.enemyColor || 'grau');
+}
+
+function applyPlayerBorderColor(p, is4) {
+  const colorKey = getPlayerColorKey(p, is4);
+  const suf = is4 ? '-4' : '';
+  const pfx = 'p'+p;
+  const zoneIds = ['buw1','buw2','buw3','ex','eff1','eff2','eff3','eff4','verbot1','verbot2','verbot3','hand','grave'];
+  const rgb = PLAYER_COLOR_RGB[colorKey] || PLAYER_COLOR_RGB.grau;
+  const borderCol = colorKey === 'grau' ? '' : `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.5)`;
+  zoneIds.forEach(z => {
+    const el = document.getElementById(pfx+'-'+z+suf);
+    if (el) el.style.borderColor = borderCol;
+  });
+}
+
+function applyAllPlayerBorderColors(is4) {
+  const players = is4 ? [1,2,3,4] : [1,2];
+  players.forEach(p => applyPlayerBorderColor(p, is4));
+}
+
 function setPlayerZoneBorder(p, on, is4) {
   const suf = is4 ? '-4' : '';
   const pfx = 'p'+p;
-  TURN_ZONE_SLOTS.forEach(s => {
-    const el = document.getElementById(pfx+'-'+s+suf);
-    if (el) el.classList.toggle('my-turn', on);
-  });
-  const hand = document.getElementById(pfx+'-hand'+suf);
-  if (hand) hand.classList.toggle('my-turn', on);
-  const grave = document.getElementById(pfx+'-grave'+suf);
-  if (grave) grave.classList.toggle('my-turn', on);
+  const colorKey = getPlayerColorKey(p, is4);
+  const rgb = PLAYER_COLOR_RGB[colorKey] || PLAYER_COLOR_RGB.grau;
+  const turnColor = (on && colorKey !== 'grau') ? `rgb(${rgb[0]},${rgb[1]},${rgb[2]})` : '';
+  const baseColor = colorKey === 'grau' ? '' : `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.5)`;
+  const applyTo = el => {
+    if (!el) return;
+    el.classList.toggle('my-turn', on);
+    if (el.classList.contains('verboten')) return; // Verboten-Kontur hat Vorrang, nicht überschreiben
+    if (turnColor) {
+      el.style.setProperty('border-color', turnColor, 'important');
+    } else {
+      el.style.removeProperty('border-color');
+      if (baseColor) el.style.borderColor = baseColor;
+    }
+  };
+  TURN_ZONE_SLOTS.forEach(s => applyTo(document.getElementById(pfx+'-'+s+suf)));
+  applyTo(document.getElementById(pfx+'-hand'+suf));
+  applyTo(document.getElementById(pfx+'-grave'+suf));
 }
 
 function updateTurnUI2p() {
@@ -1298,6 +1407,7 @@ function startGame(mode) {
       G4.everActive.add(p);
     });
   }
+  applyAllPlayerBorderColors(fourPlayerMode);
 }
 
 // ── CARD DB ──
@@ -1366,9 +1476,24 @@ const CARD_DB=[
 ];
 
 const COLOR_ORDER=["#cc3333","#cc5500","#aa9900","#2e8a2e","#1a44bb","#6622aa","#666666","#008899","#111111","#aaaaaa"];
+// EX-Buwemon: nicht mehr im Ereignisstapel, sondern hier in "Karte hinzufügen" einsortiert
+const EX_CARDS_LIST = [
+  {name:"Drakkschah EX", color:"#cc3333", type:"ex-ereignis"},
+  {name:"Schahco EX",    color:"#cc5500", type:"ex-ereignis"},
+  {name:"Drukkschah EX", color:"#aa9900", type:"ex-ereignis"},
+  {name:"Annischah EX",  color:"#2e8a2e", type:"ex-ereignis"},
+  {name:"Drikkschah EX", color:"#1a44bb", type:"ex-ereignis"},
+  {name:"Schahbio EX",   color:"#6622aa", type:"ex-ereignis"},
+  {name:"Drokkschah EX", color:"#666666", type:"ex-ereignis"},
+  {name:"Clarischah EX", color:"#008899", type:"ex-ereignis"},
+  {name:"Darkschah EX",  color:"#111111", type:"ex-ereignis"},
+];
 const seen=new Set();
 const UNIQUE_CARDS=[];
-COLOR_ORDER.forEach(col=>{CARD_DB.forEach(c=>{if(c.color===col&&!seen.has(c.name)){seen.add(c.name);UNIQUE_CARDS.push(c);}});});
+COLOR_ORDER.forEach(col=>{
+  CARD_DB.forEach(c=>{if(c.color===col&&!seen.has(c.name)){seen.add(c.name);UNIQUE_CARDS.push(c);}});
+  EX_CARDS_LIST.forEach(c=>{if(c.color===col&&!seen.has(c.name)){seen.add(c.name);UNIQUE_CARDS.push(c);}});
+});
 
 const COLOR_GROUPS=[
   {label:"Rot",hex:"#cc3333"},{label:"Orange",hex:"#cc5500"},{label:"Gelb",hex:"#aa9900"},
@@ -1376,7 +1501,7 @@ const COLOR_GROUPS=[
   {label:"Grau",hex:"#666666"},{label:"Cyan",hex:"#008899"},{label:"Schwarz",hex:"#111111"},
 ];
 
-const G={deck:[],nid:1,cards:[],reveal:{1:false,2:false},lp:{1:300,2:300},graves:{p1:[],p2:[]},banish:[],browserSource:null,browserMode:null,popupCardEl:null};
+const G={deck:[],nid:1,cards:[],reveal:{1:false,2:false},lp:{1:300,2:300},lpHistory:{1:[300],2:[300]},graves:{p1:[],p2:[]},banish:[],browserSource:null,browserMode:null,popupCardEl:null};
 let fourPlayerMode = false;
 
 let erweiterungAN = true;
@@ -1866,6 +1991,7 @@ function openPopup(el){
   document.getElementById('popup-img').src=imgFor(el.dataset.name,fd,el.dataset.file);
   document.getElementById('popup-img').alt=fd?'':el.dataset.name;
   document.getElementById('popup-name').textContent=fd?'':el.dataset.name;
+  document.getElementById('popup-gender').innerHTML=fd?'':genderSymbolHtml(el.dataset.name);
   const types={buw:'Buwemonkarte',spec:'Spezial-Buwemonkarte',eff:'Effektkarte',ereignis:'Ereigniskarte','ex-ereignis':'Ereignis-EX-Buwemonkarte','ex-auto':'Ereignis-EX-Buwemonkarte'};
   document.getElementById('popup-type').textContent=fd?'':(types[el.dataset.ctype]||'');
   document.getElementById('card-popup').classList.add('open');
@@ -2115,6 +2241,96 @@ function rollDice(){
 
 
 // ── LP DIRECT EDIT ──
+// ── LP-VERLAUF ──
+function logLpHistory(p, val, is4) {
+  const hist = is4 ? G4.lpHistory : G.lpHistory;
+  if (!hist[p]) hist[p] = [300];
+  if (hist[p][hist[p].length-1] !== val) hist[p].push(val);
+}
+
+// ── LP OPT / VERLAUF POPUPS ──
+let _lpOptCurrentPlayer = null;
+let _lpOptCurrentIs4 = false;
+
+function lpOptPlayerName(p, is4) {
+  if (is4) return getPlayerName4(p);
+  if (NET.mode === 'multi') {
+    return NET.myPlayer === p ? (NET.myName || ('Spieler '+p)) : (NET.enemyName || ('Spieler '+p));
+  }
+  return 'Spieler ' + p;
+}
+
+function openLpOptPopup(p, is4) {
+  _lpOptCurrentPlayer = p;
+  _lpOptCurrentIs4 = is4;
+  document.getElementById('lp-opt-title').textContent = lpOptPlayerName(p, is4) + ' – Lebenspunkte';
+  const removeVals = [-10,-20,-30,-40,-60,-80,-100];
+  const addVals = [20,50,100,150];
+  const rBtns = document.getElementById('lp-opt-remove-btns');
+  rBtns.innerHTML = '';
+  removeVals.forEach(v => {
+    const b = document.createElement('button');
+    b.textContent = v;
+    b.style.cssText = "flex:1;min-width:60px;padding:8px 4px;background:rgba(180,40,40,0.12);border-color:rgba(180,40,40,0.3);color:#a02020;font-family:'AiSpec',sans-serif;font-size:1rem;";
+    b.onclick = () => applyQuickLp(v);
+    rBtns.appendChild(b);
+  });
+  const aBtns = document.getElementById('lp-opt-add-btns');
+  aBtns.innerHTML = '';
+  addVals.forEach(v => {
+    const b = document.createElement('button');
+    b.textContent = '+' + v;
+    b.style.cssText = "flex:1;min-width:60px;padding:8px 4px;background:rgba(30,150,60,0.12);border-color:rgba(30,150,60,0.3);color:#188038;font-family:'AiSpec',sans-serif;font-size:1rem;";
+    b.onclick = () => applyQuickLp(v);
+    aBtns.appendChild(b);
+  });
+  document.getElementById('lp-opt-modal').classList.add('open');
+}
+
+// Wendet die Änderung GENAU wie eine manuelle Eingabe ins Rechnungsfeld an (inkl. Sync)
+function applyQuickLp(delta) {
+  const p = _lpOptCurrentPlayer, is4 = _lpOptCurrentIs4;
+  if (p == null) return;
+  if (is4) {
+    const inp = document.getElementById('p'+p+'-lp-inp-4');
+    if (inp) { inp.value = String(delta); applyLP4(p); }
+  } else {
+    const inp = document.getElementById('p'+p+'-lp-input');
+    if (inp) { inp.value = String(delta); applyLP(p); }
+  }
+}
+
+function closeLpOptPopup() {
+  document.getElementById('lp-opt-modal').classList.remove('open');
+  _lpOptCurrentPlayer = null;
+}
+
+function openLpHistoryPopup() {
+  const p = _lpOptCurrentPlayer, is4 = _lpOptCurrentIs4;
+  if (p == null) return;
+  document.getElementById('lp-history-title').textContent = lpOptPlayerName(p, is4) + ' – Verlauf';
+  const hist = (is4 ? G4.lpHistory[p] : G.lpHistory[p]) || [300];
+  const listEl = document.getElementById('lp-history-list');
+  listEl.innerHTML = '';
+  for (let i = hist.length - 1; i >= 0; i--) {
+    const row = document.createElement('div');
+    row.style.cssText = "padding:6px 10px;background:#f2f2f2;border-radius:6px;font-family:'AiSpec',sans-serif;font-size:1.1rem;text-align:center;";
+    row.textContent = hist[i];
+    listEl.appendChild(row);
+  }
+  document.getElementById('lp-history-modal').classList.add('open');
+}
+
+function closeLpHistoryPopup() {
+  document.getElementById('lp-history-modal').classList.remove('open');
+}
+document.getElementById('lp-opt-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('lp-opt-modal')) closeLpOptPopup();
+});
+document.getElementById('lp-history-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('lp-history-modal')) closeLpHistoryPopup();
+});
+
 function lpDirectEdit(p) {
   const el = document.getElementById('p'+p+'-lp');
   const oldVal = G.lp[p] || 0;
@@ -2122,6 +2338,7 @@ function lpDirectEdit(p) {
   if (isNaN(val) || val < 0) val = 0;
   G.lp[p] = val;
   el.textContent = val;
+  logLpHistory(p, val, false);
   triggerLPAnim(p, val > oldVal);
   if (NET.mode==='multi') netSend({t:'lp', p, val:G.lp[p], increased: val > oldVal});
   checkLPWin(p);
@@ -2151,6 +2368,7 @@ function applyLP(p){
   const n=parseFloat(val.replace(',','.'));if(isNaN(n)){inp.value='';return;}
   G.lp[p]=Math.max(0,G.lp[p]+n);
   document.getElementById('p'+p+'-lp').textContent=G.lp[p];
+  logLpHistory(p, G.lp[p], false);
   triggerLPAnim(p, n > 0);
   inp.value='';
   if (NET.mode==='multi') netSend({t:'lp', p, val:G.lp[p], increased: n > 0});
@@ -2205,6 +2423,8 @@ function resetLocalState(){
   G.nid=1;G.deck=buildDeck();updDeck();
   G.graves={p1:[],p2:[]};updGrave('p1');updGrave('p2');G.banish=[];updBanish();
   G.lp={1:300,2:300};
+  G.lpHistory={1:[300],2:[300]};
+  G4.lpHistory={1:[300],2:[300],3:[300],4:[300]};
   document.getElementById('p2-lp').textContent='300';
   document.getElementById('p1-lp').textContent='300';
   document.getElementById('p2-lp-input').value='';
@@ -2570,15 +2790,6 @@ const EREIGNIS_CARDS = [
   {name:"100",                   file:"100.png",                   color:"#888888", type:"ereignis"},
   {name:"Minus 20",              file:"Minus_20.png",              color:"#888888", type:"ereignis"},
   {name:"Plus 10",               file:"Plus_10.png",               color:"#888888", type:"ereignis"},
-  {name:"Drakkschah EX",         file:"Drakkschah_EX.png",         color:"#cc3333", type:"ex-ereignis"},
-  {name:"Schahco EX",            file:"Schahco_EX.png",            color:"#cc5500", type:"ex-ereignis"},
-  {name:"Drukkschah EX",         file:"Drukkschah_EX.png",         color:"#aa9900", type:"ex-ereignis"},
-  {name:"Annischah EX",          file:"Annischah_EX.png",          color:"#2e8a2e", type:"ex-ereignis"},
-  {name:"Drikkschah EX",         file:"Drikkschah_EX.png",         color:"#1a44bb", type:"ex-ereignis"},
-  {name:"Schahbio EX",           file:"Schahbio_EX.png",           color:"#6622aa", type:"ex-ereignis"},
-  {name:"Drokkschah EX",         file:"Drokkschah_EX.png",         color:"#666666", type:"ex-ereignis"},
-  {name:"Clarischah EX",         file:"Clarischah_EX.png",         color:"#008899", type:"ex-ereignis"},
-  {name:"Darkschah EX",          file:"Darkschah_EX.png",          color:"#111111", type:"ex-ereignis"},
 ];
 
 // EX color → ereignis card mapping
@@ -2780,6 +2991,13 @@ function onCardDockedToEffSlot(player, slotId, cd) {
 
 function checkVerbote(player, suffix) {
   suffix = suffix || '';
+  const is4 = suffix === '-4';
+  const pNum = parseInt(player.replace('p',''));
+  const isMyTurn = is4 ? (TURN_4P === pNum) : (TURN_2P === pNum);
+  const colorKey = getPlayerColorKey(pNum, is4);
+  const rgb = PLAYER_COLOR_RGB[colorKey] || PLAYER_COLOR_RGB.grau;
+  const turnColor = (isMyTurn && colorKey !== 'grau') ? `rgb(${rgb[0]},${rgb[1]},${rgb[2]})` : (isMyTurn ? '#000000' : '');
+  const baseColor = colorKey === 'grau' ? '' : `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.5)`;
   // Collect which effect names are banned by this player's verbot slots
   const bannedNames = new Set();
   ['verbot1','verbot2','verbot3'].forEach(vs => {
@@ -2794,8 +3012,17 @@ function checkVerbote(player, suffix) {
     const cd = G.slots[slotId];
     if (cd && bannedNames.has(cd.name)) {
       el.classList.add('verboten');
+      // Inline mit !important setzen, damit es die Zug-Kontur (ebenfalls inline !important) sicher überdeckt
+      el.style.setProperty('border-color', '#ff1744', 'important');
     } else {
       el.classList.remove('verboten');
+      // Zustand korrekt wiederherstellen: Zug-Farbe falls gerade dran, sonst Basis-Farbe (NICHT pauschal Schwarz)
+      if (turnColor) {
+        el.style.setProperty('border-color', turnColor, 'important');
+      } else {
+        el.style.removeProperty('border-color');
+        if (baseColor) el.style.borderColor = baseColor;
+      }
     }
   });
 }
@@ -3327,6 +3554,7 @@ function checkDropOnBanish(el){
 function openBPopup(cd, onField) {
   document.getElementById('bpopup-img').src = imgFor(cd.name, false, cd.file||'');
   document.getElementById('bpopup-name').textContent = cd.name;
+  document.getElementById('bpopup-gender').innerHTML = genderSymbolHtml(cd.name);
   const _btypes={buw:'Buwemonkarte',spec:'Spezial-Buwemonkarte',eff:'Effektkarte',ereignis:'Ereigniskarte','ex-ereignis':'Ereignis-EX-Buwemonkarte'};
   document.getElementById('bpopup-type').textContent = _btypes[cd.type||cd.ctype] || cd.type || '';
   document.getElementById('browser-card-popup').classList.add('open');
@@ -3423,6 +3651,7 @@ function showDarkschahWinLose4(isWinner, winnerP, applyLP) {
     });
     losers.forEach(p => {
       G4.lp[p] = (G4.lp[p] || 0) - 1000;
+      logLpHistory(p, G4.lp[p], true);
       const lpEl = document.getElementById('p'+p+'-lp-4');
       if (lpEl) lpEl.textContent = G4.lp[p];
       triggerLPAnim4(p, false);
@@ -3465,6 +3694,7 @@ function showDarkschahWinLose(isWinner, applyLP) {
       ? (NET.mode === 'multi' ? (NET.myPlayer === 1 ? 2 : 1) : 2)
       : (NET.mode === 'multi' ? NET.myPlayer : 2);
     G.lp[loserP] = (G.lp[loserP] || 0) - 1000;
+    logLpHistory(loserP, G.lp[loserP], false);
     const _lpEl = document.getElementById('p'+loserP+'-lp');
     if (_lpEl) _lpEl.textContent = G.lp[loserP];
     triggerLPAnim(loserP, false);
@@ -3568,6 +3798,14 @@ function checkLPWin(p) {
 
 // ── TOXISCHE MÄNNLICHKEIT ──
 const MAENNLICHE_BUWEMON = ["Gilip der Glibbrige", "Lord Phillipp of Glencoe", "Phülügülüm", "Baby Niko", "Marzo der Gott", "Marcopter", "Marco der Hund", "Kax Maufmann", "Maxodia der Verbotene", "Maxibu", "Hoffi der rasierte Karnevalsprinz", "Glorian", "Flosama", "Klorian", "Luis Münsters", "Cedzilla", "Griechischer ApoRed", "Fabio das Berlin-City-Girl", "Giraffael"];
+const GENDER_MAP = {'Gilip der Glibbrige':'m','Lord Phillipp of Glencoe':'m','Phülügülüm':'m','Baby Niko':'m','Grünika':'f','Schwammika':'f','Antika':'f','Marie die Königsgardistin':'f','Marzo der Gott':'m','Marcopter':'m','Marco der Hund':'m','Leonie Norris':'f','Kax Maufmann':'m','Maxodia der Verbotene':'m','Maxibu':'m','Hoffi der rasierte Karnevalsprinz':'m','Clarry Pather der Maincharacter':'f','Barista Clarista der Mister-Fister':'f','ClariSSIO':'f','Alicia die ehrenlose Fettsau':'f','Glorian':'m','Flosama':'m','Klorian':'m','Lisa aus Australien':'f','Suffia':'f','Luis Münsters':'m','Cedzilla':'m','Griechischer ApoRed':'m','Fabio das Berlin-City-Girl':'m','Giraffael':'m','Hannah im Bach':'f','Alexerus Snape':'f','Die Pogofanten':'n','L\'Enderdragon':'n','Golop der Grobe':'n','Der Zeitführer':'n','BOOM Clan':'n'};
+function genderSymbolHtml(name) {
+  const g = GENDER_MAP[name];
+  if (g === 'm') return '<span style="color:#4a90e2;font-size:1.1em;" title="Männlich">♂</span>';
+  if (g === 'f') return '<span style="color:#e84393;font-size:1.1em;" title="Weiblich">♀</span>';
+  if (g === 'n') return '<span style="color:#8e44ad;font-size:1.1em;" title="Nonbinär">⚧</span>';
+  return '';
+}
 
 function confirmToxMaennlichkeit(btnEl) {
   pressAbilityBtn(btnEl);
@@ -4184,10 +4422,12 @@ const G4 = {
   deck: [], graves: {p1:[],p2:[],p3:[],p4:[]},
   banish: [], slots: {},
   lp: {1:300,2:300,3:300,4:300},
+  lpHistory: {1:[300],2:[300],3:[300],4:[300]},
   reveal: {1:new Set(),2:new Set(),3:new Set(),4:new Set()},
   active: {1:false,2:false,3:false,4:false},
   everActive: new Set(), // Spieler die je an der Runde teilgenommen haben
   names: {1:'Spieler 1', 2:'Spieler 2', 3:'Spieler 3', 4:'Spieler 4'}, // Spielernamen
+  playerColors: {1:null,2:null,3:null,4:null}, // gewählte Kontur-Farben (Mehrspieler)
   deathTimers: {1:null,2:null,3:null,4:null}
 };
 
@@ -4708,6 +4948,7 @@ function initPlayerStates4() {
 function applyLP4withDeathCheck(p, newVal, increased) {
   const oldVal = G4.lp[p];
   G4.lp[p] = Math.max(0, newVal);
+  logLpHistory(p, G4.lp[p], true);
   const el = document.getElementById('p'+p+'-lp-4');
   if (el) { el.textContent = G4.lp[p]; triggerLPAnim4(p, increased !== undefined ? increased : newVal > oldVal); }
   // Immer prüfen - auch wenn inaktiv (für Wiederbelebung)
@@ -4895,6 +5136,7 @@ function resetToLobby() {
   G4.active = {1:false, 2:false, 3:false, 4:false};
   G4.everActive = new Set();
   G4.names = {1:'Spieler 1', 2:'Spieler 2', 3:'Spieler 3', 4:'Spieler 4'};
+  G4.playerColors = {1:null,2:null,3:null,4:null};
   // Visuelles Ausblassen (falls ein Spieler beim Verlassen inaktiv/tot war) zurücksetzen
   [1,2,3,4].forEach(p => setPlayerActive4(p, true));
   G4.active = {1:false, 2:false, 3:false, 4:false};
@@ -4907,8 +5149,13 @@ function resetToLobby() {
   NET.isHost = false;
   NET.myPlayer = null;
   NET.enemyName = null;
+  NET.myColor = null;
+  NET.enemyColor = null;
   NET._started = false;
   NET.roomCode = null;
+  _selectedLobbyColor = null;
+  const _cpWrap = document.getElementById('lobby-color-picker');
+  if (_cpWrap) _cpWrap.querySelectorAll('button').forEach(b => b.style.boxShadow = 'none');
 }
 
 document.getElementById('btn-lobby').onclick = () => {
@@ -4953,23 +5200,22 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   ">
 
 
-  <!-- Name field always visible -->
-  <div style="display:flex;flex-direction:column;gap:6px;width:280px;">
+  <!-- Seitliche Box rechts: Name + Lieblingsfarbe + Modus-Toggles -->
+  <div style="position:absolute;right:28px;top:100px;background:rgba(20,20,30,0.4);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.25);border-radius:14px;padding:18px 24px;display:flex;flex-direction:column;align-items:center;gap:16px;width:250px;box-shadow:0 8px 24px rgba(0,0,0,0.25);">
     <input id="lobby-name" type="text" placeholder="Dein Name …" maxlength="20" style="
       background:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.7);
       border-radius:8px;padding:10px 14px;font-size:.95rem;font-family:'Kievit',sans-serif;
-      color:#2a2e3a;outline:none;text-align:center;width:100%;
+      color:#2a2e3a;outline:none;text-align:center;width:100%;box-sizing:border-box;
     ">
-  </div>
-
-  <!-- 4-Player toggle -->
-  <div id="lobby-4p-toggle-wrap" style="display:flex;align-items:center;gap:10px;font-family:'Kievit',sans-serif;font-size:.9rem;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.5);">
-    <button id="lobby-4p-toggle" onclick="toggle4PMode()" style="background:rgba(180,185,195,0.75);border:1px solid rgba(255,255,255,0.7);border-radius:20px;padding:4px 16px;font-family:'AiSpec',sans-serif;font-size:.85rem;cursor:pointer;color:#2a2e3a;transition:background .2s;">4-Spieler: AUS</button>
-    <button id="erweiterung-btn" onclick="toggleErweiterung()" style="background:rgba(0,150,80,0.7);border:1px solid rgba(255,255,255,0.7);border-radius:20px;padding:4px 16px;font-family:'AiSpec',sans-serif;font-size:.85rem;cursor:pointer;color:#fff;">Erweiterung: AN</button>
+    <div id="lobby-color-picker" style="display:flex;flex-wrap:wrap;justify-content:center;gap:5px;"></div>
+    <div style="display:flex;flex-direction:column;gap:8px;width:100%;">
+      <button id="lobby-4p-toggle" onclick="toggle4PMode()" style="background:rgba(180,185,195,0.75);border:1px solid rgba(255,255,255,0.7);border-radius:20px;padding:6px 16px;font-family:'AiSpec',sans-serif;font-size:.85rem;cursor:pointer;color:#2a2e3a;transition:background .2s;width:100%;">4-Spieler: AUS</button>
+      <button id="erweiterung-btn" onclick="toggleErweiterung()" style="background:rgba(0,150,80,0.7);border:1px solid rgba(255,255,255,0.7);border-radius:20px;padding:6px 16px;font-family:'AiSpec',sans-serif;font-size:.85rem;cursor:pointer;color:#fff;width:100%;">Erweiterung: AN</button>
+    </div>
   </div>
 
   <!-- Mode selector -->
-  <div id="lobby-mode-select" style="display:flex;flex-direction:column;gap:12px;width:280px;">
+  <div id="lobby-mode-select" style="display:flex;flex-direction:column;gap:12px;width:280px;margin-top:40px;">
     <button onclick="showLobbyMode('solo')" style="background:linear-gradient(160deg,#c8ccd4 0%,#e8ecf2 40%,#d0d4dc 70%,#f0f2f6 100%);
       border:1px solid rgba(255,255,255,0.7);border-radius:10px;padding:12px 24px;
       font-size:1rem;font-weight:700;font-family:'AiSpec',sans-serif;font-style:italic;
@@ -5039,7 +5285,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v37e
+    v37l
   </div>
 </div>
 
@@ -5143,9 +5389,33 @@ function wsConnect(onOpen) {
   }
 }
 
+// ── LOBBY FARBWAHL ──
+let _selectedLobbyColor = null; // null = keine Wahl = Grau
+function buildLobbyColorPicker() {
+  const wrap = document.getElementById('lobby-color-picker');
+  if (!wrap || wrap.children.length) return;
+  PLAYER_COLOR_LABELS.forEach(({key,label}) => {
+    const rgb = PLAYER_COLOR_RGB[key];
+    const sw = document.createElement('button');
+    sw.type = 'button';
+    sw.title = label;
+    sw.dataset.colorKey = key;
+    sw.style.cssText = `width:26px;height:26px;border-radius:50%;cursor:pointer;background:rgb(${rgb[0]},${rgb[1]},${rgb[2]});border:2px solid rgba(255,255,255,0.6);`;
+    sw.onclick = () => {
+      _selectedLobbyColor = (_selectedLobbyColor === key) ? null : key;
+      wrap.querySelectorAll('button').forEach(b => {
+        b.style.boxShadow = (b.dataset.colorKey === _selectedLobbyColor) ? '0 0 0 3px #fff, 0 0 0 5px rgba(0,0,0,0.4)' : 'none';
+      });
+    };
+    wrap.appendChild(sw);
+  });
+}
+document.addEventListener('DOMContentLoaded', buildLobbyColorPicker);
+
 function multiCreate() {
   NET.myPlayer = NET.myPlayer || 1;
   NET.myName = getLobbyName() || ('Spieler ' + NET.myPlayer);
+  NET.myColor = _selectedLobbyColor;
   NET.isHost = true; NET.mode = 'multi';
   setMultiStatus('Verbinde …');
   wsConnect(() => {
@@ -5165,6 +5435,7 @@ function multiJoin() {
   if (!code) { setMultiStatus('Bitte Code eingeben.'); return; }
   if (!NET.myPlayer) NET.myPlayer = 2;
   NET.myName = getLobbyName() || ('Spieler ' + NET.myPlayer);
+  NET.myColor = _selectedLobbyColor;
   NET.isHost = false; NET.mode = 'multi'; NET.roomCode = code;
   setMultiStatus('Verbinde …');
   wsConnect(() => {
@@ -5317,7 +5588,9 @@ function onNetData(d) {
       }
       const _myName4 = getLobbyName() || ('Spieler ' + NET.myPlayer);
       G4.names[NET.myPlayer] = _myName4;
-      netSend({t:'hello4', p: NET.myPlayer, name: _myName4});
+      G4.playerColors[NET.myPlayer] = _selectedLobbyColor;
+      netSend({t:'hello4', p: NET.myPlayer, name: _myName4, color: _selectedLobbyColor});
+      applyAllPlayerBorderColors(true);
       // Eigene Handzone auch korrekt beschriften
       const _myHandEl = document.getElementById('p'+NET.myPlayer+'-hand-4');
       if (_myHandEl) { const _sp = _myHandEl.querySelector('span'); if (_sp) _sp.textContent = 'Hand – ' + _myName4; }
@@ -5338,25 +5611,27 @@ function onNetData(d) {
         if (NET.isHost) {
           G.deck = buildDeck(); updDeck();
           netSend({t:'init', deck:G.deck, nid:G.nid});
-          netSend({t:'hello', name:NET.myName});
+          netSend({t:'hello', name:NET.myName, color:NET.myColor});
           startGame('multi');
         } else {
-          netSend({t:'hello', name:NET.myName});
+          netSend({t:'hello', name:NET.myName, color:NET.myColor});
           startGame('multi');
         }
       } else {
         // Bereits gestartet - nur erneut den eigenen Namen bekanntgeben
         // (z.B. wenn ein späteres 'joined' nochmal ankommt)
-        netSend({t:'hello', name:NET.myName});
+        netSend({t:'hello', name:NET.myName, color:NET.myColor});
       }
     }
   }
   if (d.t === 'hello') {
     NET.enemyName = d.name;
+    NET.enemyColor = d.color || null;
     updateHandLabels();
     updateTopbarScore();
+    applyAllPlayerBorderColors(false);
     if (false) { // no hello loop
-      netSend({t:'hello', name:NET.myName});
+      netSend({t:'hello', name:NET.myName, color:NET.myColor});
       startGame('multi');
     }
     updateConnDot(true);
@@ -5378,6 +5653,7 @@ function onNetData(d) {
   if (d.t === 'hello4') {
     const _n4 = d.name || ('Spieler '+d.p);
     G4.names[d.p] = _n4;
+    G4.playerColors[d.p] = d.color || null;
     const lbl = document.getElementById('p'+d.p+'-hand-4');
     if (lbl) {
       const span = lbl.querySelector('span');
@@ -5387,6 +5663,7 @@ function onNetData(d) {
     G4.active[d.p] = false;
     setPlayerActive4(d.p, true);
     updateTopbarScore();
+    applyPlayerBorderColor(d.p, true);
   }
   if (d.t === 'player_active4') {
     if (d.active) {
@@ -5452,12 +5729,6 @@ function onNetData(d) {
       checkVerbote('p1');
       checkVerbote('p2');
     }
-    if (d.verbotenFlags) {
-      Object.keys(d.verbotenFlags).forEach(slotId => {
-        const el = document.getElementById(slotId);
-        if (el) el.classList.toggle('verboten', d.verbotenFlags[slotId]);
-      });
-    }
 
     // Field cards: same position, update or create
 
@@ -5516,12 +5787,6 @@ if (d.t === 'state4') {
       checkZoneColor(senderPfx, '-4');
       checkVerbote(senderPfx, '-4');
     }
-    if (d.verbotenFlags) {
-      Object.keys(d.verbotenFlags).forEach(sid => {
-        const el = document.getElementById(sid);
-        if (el) el.classList.toggle('verboten', d.verbotenFlags[sid]);
-      });
-    }
 
     // Reveal state
     if (d.reveal !== undefined) G4.reveal[senderP] = new Set(Array.isArray(d.reveal) ? d.reveal : (d.reveal ? [1,2,3,4].filter(x=>x!==senderP) : []));
@@ -5559,6 +5824,7 @@ if (d.t === 'state4') {
     if (d.val < 0) {
       // Darkschah-Ausnahme: negative LP erlaubt, kein Death-Check
       G4.lp[d.p] = d.val;
+      logLpHistory(d.p, d.val, true);
       const _lpEl = document.getElementById('p'+d.p+'-lp-4');
       if (_lpEl) _lpEl.textContent = d.val;
       triggerLPAnim4(d.p, false);
@@ -5631,6 +5897,12 @@ if (d.t === 'state4') {
     const remoteEl = document.getElementById('remote-carry-card');
     if (remoteEl) remoteEl.style.display = 'none';
   }
+  if (d.t === 'ability_press') {
+    setRemoteAbilityPressed(d.ability, true);
+  }
+  if (d.t === 'ability_release') {
+    setRemoteAbilityPressed(d.ability, false);
+  }
   if (d.t === 'card_drag_start') {
     if (d.originSlot) {
       // renderSlot() liest IMMER aus G.slots (auch im 4p-Modus) - das muss geleert werden,
@@ -5659,6 +5931,7 @@ if (d.t === 'state4') {
   }
   if (d.t === 'lp') {
     G.lp[d.p] = d.val;
+    logLpHistory(d.p, d.val, false);
     const lpEl = document.getElementById('p'+d.p+'-lp');
     if (lpEl) lpEl.textContent = d.val;
     triggerLPAnim(d.p, d.increased);
