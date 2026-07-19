@@ -884,6 +884,18 @@ body {
   </div>
 </div>
 
+<!-- ZIELAUSWAHL FÜR VERBOTS-FÄHIGKEITEN (Lord Phillipp, Flosama, Maxibu) -->
+<div class="modal-bg" id="verbot-target-modal">
+  <div class="modal-box" style="width:min(360px,92vw);align-items:center;">
+    <h3 id="verbot-target-title">Ziel wählen</h3>
+    <p class="sub">Gegen welchen Spieler soll die Fähigkeit eingesetzt werden?</p>
+    <div id="verbot-target-btns" style="display:flex;flex-direction:column;gap:8px;width:100%;"></div>
+    <div class="modal-footer">
+      <button onclick="document.getElementById('verbot-target-modal').classList.remove('open');">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
 <!-- CARD POPUP -->
 <div class="modal-bg" id="card-popup">
   <div class="modal-box">
@@ -1375,13 +1387,16 @@ function layoutMyHand() {
 }
 
 // Bei Zugbeginn: automatisch die oberste Stapelkarte in die Handzone des ziehenden Spielers legen
-let _lastAutoDrawTurn2p = null;
-function autoDrawIfMyTurn2p(p) {
+let _turnSeq2p = 0;
+let _lastAutoDrawSeq2p = -1;
+let startCardsDealt2p = false;
+let startCardsDealt4p = false;
+function autoDrawIfMyTurn2p(p, seq) {
   if (sandboxMode) return;
   if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) return;
   if (NET.mode === 'multi' && p !== myLogicalPlayer2p()) return; // Mehrspieler: nur meine eigenen Karten wirklich erzeugen
-  if (_lastAutoDrawTurn2p === p) return; // für diesen Zug wurde schon gezogen
-  _lastAutoDrawTurn2p = p;
+  if (_lastAutoDrawSeq2p === seq) return; // für DIESEN konkreten Zug wurde schon gezogen (nicht nur "für diesen Spieler")
+  _lastAutoDrawSeq2p = seq;
   if (!G.deck.length) return;
   const cd = G.deck.shift();
   updDeck();
@@ -1441,7 +1456,7 @@ function removeFromMyHand(el) {
   layoutMyHand();
 }
 
-function setTurn2p(p) { TURN_2P = p; updateTurnUI2p(); autoDrawIfMyTurn2p(p); }
+function setTurn2p(p) { TURN_2P = p; _turnSeq2p++; updateTurnUI2p(); autoDrawIfMyTurn2p(p, _turnSeq2p); }
 // ── EIGENE HANDZONE 4p: sortierte Reihe + automatisches Ziehen (nur Automatik-Modus) ──
 // Die eigene Handzone ist immer physisch unten (p1-hand-4), da man selbst ja immer unten sitzt.
 // Jeder Spieler hat eine EIGENE Handliste (wichtig fürs Testen im Debug-Modus mit Perspektivenwechsel)
@@ -1464,12 +1479,13 @@ function layoutMyHand4() {
   });
 }
 
-let _lastAutoDrawTurn4p = null;
-function autoDrawIfMyTurn4p(p) {
+let _turnSeq4p = 0;
+let _lastAutoDrawSeq4p = -1;
+function autoDrawIfMyTurn4p(p, seq) {
   if (sandboxMode) return;
   if (NET.mode === 'multi' && p !== myLogicalPlayer4p()) return;
-  if (_lastAutoDrawTurn4p === p) return; // für diesen Zug wurde schon gezogen
-  _lastAutoDrawTurn4p = p;
+  if (_lastAutoDrawSeq4p === seq) return; // für DIESEN konkreten Zug wurde schon gezogen
+  _lastAutoDrawSeq4p = seq;
   if (!G4.deck.length) return;
   const cd = G4.deck.shift();
   updDeck4();
@@ -1523,7 +1539,7 @@ function removeFromMyHand4(el) {
   layoutMyHand4();
 }
 
-function setTurn4p(p) { TURN_4P = p; updateTurnUI4p(); autoDrawIfMyTurn4p(p); }
+function setTurn4p(p) { TURN_4P = p; _turnSeq4p++; updateTurnUI4p(); autoDrawIfMyTurn4p(p, _turnSeq4p); }
 
 function resetTurnState() {
   TURN_2P = null;
@@ -1782,6 +1798,7 @@ function drawCard(e){
   if (!sandboxMode) {
     if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) return; // 4p-Variante folgt in einem späteren Schritt
     if(e){ e.preventDefault(); e.stopPropagation(); }
+    if (!startCardsDealt2p) return; // erst Startkarten ausgeben, bevor irgendjemand anfangen kann
     if (TURN_2P === null) maybeStartTurn2p(myLogicalPlayer2p());
     return; // im Automatik-Modus wird nie manuell gezogen - das Ziehen passiert automatisch bei Zugbeginn
   }
@@ -2555,9 +2572,76 @@ function finalizeAbilityChain(killsBuwemon) {
 // Reaktionsfenster-System angebunden sind (Sonderfälle mit eigener Vorauswahl)
 // Raum-Zeit-Genozid (Der Zeitführer, Spezial-Buwemon) bleibt bewusst unverändert -
 // öffnet sein Popup weiterhin sofort, ohne Reaktionsfenster
+// ── VERBOTS-ZIELFÄHIGKEITEN (Lord Phillipp/Mecces Pakt, Flosama/Bett abbauen, Maxibu/Ein Problem mit Alkohol) ──
+// Alle drei funktionieren identisch: Gegner auswählen (bei >2 Spielern per Popup, bei 2 Spielern automatisch
+// der einzige Gegner) -> Reaktionsfenster -> bei Erfolg landet die jeweilige Verbotskarte in einem freien
+// Verbotsfeld des Ziels. Ein Spieler, der die Verbotskarte bereits hat, kann nicht nochmal gewählt werden.
+function hasVerbotCard(target, verbotCardName, is4) {
+  const suf = is4 ? '-4' : '';
+  return ['verbot1','verbot2','verbot3'].some(vs => {
+    const cd = G.slots['p'+target+'-'+vs+suf];
+    return cd && cd.name === verbotCardName;
+  });
+}
+
+function beginVerbotAbility(btn, cardEl, verbotCardName, abilityName) {
+  closePopup();
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const activatorP = parseInt((cardEl.dataset.slotId.match(/^p(\d)/)||[])[1] || '1');
+  const allPlayers = is4 ? [1,2,3,4].filter(p => G4.active[p]) : [1,2];
+  const opponents = allPlayers.filter(p => p !== activatorP);
+  if (!opponents.length) return;
+  if (opponents.length > 1) {
+    openVerbotTargetPopup(cardEl, verbotCardName, abilityName, opponents, is4);
+  } else {
+    tryStartVerbotAbility(cardEl, verbotCardName, abilityName, opponents[0], is4);
+  }
+}
+
+function openVerbotTargetPopup(cardEl, verbotCardName, abilityName, opponents, is4) {
+  const wrap = document.getElementById('verbot-target-btns');
+  wrap.innerHTML = '';
+  document.getElementById('verbot-target-title').textContent = abilityName;
+  opponents.forEach(p => {
+    const already = hasVerbotCard(p, verbotCardName, is4);
+    const btn = document.createElement('button');
+    btn.textContent = 'Spieler ' + p + (already ? ' (bereits belegt)' : '');
+    btn.disabled = already;
+    btn.style.cssText = `padding:10px 16px;border-radius:8px;border:1px solid rgba(0,0,0,0.15);font-family:'Kievit',sans-serif;font-size:.95rem;cursor:${already?'default':'pointer'};background:${already?'rgba(0,0,0,0.05)':'#f2f2f2'};color:${already?'#999':'#2a2e3a'};width:100%;opacity:${already?'0.5':'1'};`;
+    btn.onclick = () => {
+      document.getElementById('verbot-target-modal').classList.remove('open');
+      tryStartVerbotAbility(cardEl, verbotCardName, abilityName, p, is4);
+    };
+    wrap.appendChild(btn);
+  });
+  document.getElementById('verbot-target-modal').classList.add('open');
+}
+
+function tryStartVerbotAbility(cardEl, verbotCardName, abilityName, target, is4) {
+  if (hasVerbotCard(target, verbotCardName, is4)) {
+    alert('Spieler ' + target + ' ist bereits von dieser Fähigkeit belegt.');
+    return;
+  }
+  beginAbilityActivation(cardEl, abilityName, abilityName + ' (gegen Spieler ' + target + ')', () => applyVerbotCard(target, verbotCardName, is4));
+}
+
+function applyVerbotCard(target, verbotCardName, is4) {
+  const suf = is4 ? '-4' : '';
+  const freeSlot = ['verbot1','verbot2','verbot3'].find(vs => !G.slots['p'+target+'-'+vs+suf]);
+  if (!freeSlot) return; // alle Verbotsfelder belegt
+  const sid = 'p'+target+'-'+freeSlot+suf;
+  G.slots[sid] = { name: verbotCardName, color: '#888888', type: 'ereignis', file: imgFileFor(verbotCardName), uid: 0 };
+  renderSlot(sid);
+  checkVerbote('p'+target, suf);
+  if (NET.mode === 'multi') { if (is4) netSendState4(); else netSendState(); }
+}
+
 const SPECIAL_ABILITY_HANDLERS = {
   'Raum-Zeit-Genozid': (btn) => { closePopup(); if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) openColorRemove4(btn); else openColorRemove(btn); },
   'Picky Eating': (btn, el) => { closePopup(); confirmPickyEating(btn, el); },
+  'Mecces Pakt': (btn, el) => beginVerbotAbility(btn, el, 'Mecces Verbot', 'Mecces Pakt'),
+  'Bett abbauen': (btn, el) => beginVerbotAbility(btn, el, 'Eine Runde noch Verbot', 'Bett abbauen'),
+  'Ein Problem mit Alkohol': (btn, el) => beginVerbotAbility(btn, el, 'Nachschlag Verbot', 'Ein Problem mit Alkohol'),
 };
 
 // Rohe Effekt-Funktion je Fähigkeit. Jede hier eingetragene Fähigkeit läuft automatisch
@@ -5454,6 +5538,7 @@ function dealStartCards() {
 
 // ── 2-SPIELER AUSTEILEN ──
 function dealStartCards2() {
+  if (!sandboxMode) { dealStartCards2Automatik(); return; }
   // Karten 1-5 für P1, 6-10 für P2
   // Handzone p1-hand: untere Zone, p2-hand: obere Zone
   // Buwemon-Abstand: --slot = 80px (center-to-center)
@@ -5512,8 +5597,45 @@ function dealStartCards2() {
   }
 }
 
+// Automatik-Modus: Startkarten direkt in die sortierte Handreihe jedes Spielers einsortieren
+function dealStartCards2Automatik() {
+  const CARDS = 5;
+  const dealt = {1: [], 2: []};
+  [1,2].forEach(p => {
+    for (let i = 0; i < CARDS; i++) {
+      if (!G.deck.length) break;
+      const cd = G.deck.shift();
+      dealt[p].push({name:cd.name, color:cd.color, type:cd.type, file:cd.file||''});
+    }
+  });
+  applyDealResult2p(dealt);
+  updDeck();
+  startGameTimer();
+  if (NET.mode === 'multi') netSend({t:'deal2_cards', dealt, deck: G.deck});
+}
+
+// Baut aus einer Karten-Liste (Name/Farbe/Typ, ohne UID) je Spieler seine echten bzw.
+// simulierten Handkarten lokal auf - wird sowohl beim Austeilen selbst als auch beim
+// Empfang der Netzwerk-Nachricht auf der anderen Seite verwendet.
+function applyDealResult2p(dealt) {
+  startCardsDealt2p = true;
+  [1,2].forEach(p => {
+    if (!handOrderByPlayer2p[p]) handOrderByPlayer2p[p] = [];
+    (dealt[p] || []).forEach(cd => {
+      const uid = G.nid++;
+      const el = spawnCard({name:cd.name, color:cd.color, type:cd.type, uid, file:cd.file||''}, 0, 0, false);
+      handOrderByPlayer2p[p].push(uid);
+      if (p !== myLogicalPlayer2p()) el.style.display = 'none';
+    });
+  });
+  layoutMyHand();
+  const other = myLogicalPlayer2p() === 1 ? 2 : 1;
+  renderSimulatedHand('p'+other, (handOrderByPlayer2p[other]||[]).length, false);
+}
+
 // ── 4-SPIELER AUSTEILEN ──
 function dealStartCards4() {
+  if (!sandboxMode) { dealStartCards4Automatik(); return; }
   const CARDS = 5;
   const GAP4 = 68;
   const CW4 = 47, CH4 = 66;
@@ -5575,6 +5697,45 @@ function dealStartCards4() {
     // Solo: alle spawnen
     activePlayers.forEach(p => allDealt[p].forEach(({cd,x,y}) => spawnCard(cd, x, y, false)));
   }
+}
+
+// Automatik-Modus: Startkarten direkt in die sortierten Handreihen einsortieren
+function dealStartCards4Automatik() {
+  const CARDS = 5;
+  const activePlayers = [1,2,3,4].filter(p => G4.active[p]);
+  const dealt = {};
+  activePlayers.forEach(p => {
+    dealt[p] = [];
+    for (let i = 0; i < CARDS; i++) {
+      if (!G4.deck.length) break;
+      const cd = G4.deck.shift();
+      dealt[p].push({name:cd.name, color:cd.color, type:cd.type, file:cd.file||''});
+    }
+  });
+  applyDealResult4p(dealt);
+  updDeck4();
+  startGameTimer();
+  if (NET.mode === 'multi' && fourPlayerMode) netSend({t:'deal4_cards_auto', dealt, deck: G4.deck});
+}
+
+function applyDealResult4p(dealt) {
+  startCardsDealt4p = true;
+  const myP = myLogicalPlayer4p();
+  Object.keys(dealt).forEach(pStr => {
+    const p = parseInt(pStr);
+    if (!handOrderByPlayer4p[p]) handOrderByPlayer4p[p] = [];
+    (dealt[p] || []).forEach(cd => {
+      const uid = G.nid++;
+      const el = spawnCard({name:cd.name, color:cd.color, type:cd.type, uid, file:cd.file||''}, 0, 0, false);
+      handOrderByPlayer4p[p].push(uid);
+      if (p !== myP) el.style.display = 'none';
+    });
+  });
+  layoutMyHand4();
+  Object.keys(dealt).forEach(pStr => {
+    const p = parseInt(pStr);
+    if (p !== myP) renderSimulatedHand('p'+p, (handOrderByPlayer4p[p]||[]).length, true);
+  });
 }
 
 
@@ -5983,6 +6144,7 @@ function drawCard4(e) {
   if (!G4.deck.length) return;
   if (!sandboxMode) {
     if (e) { e.preventDefault(); e.stopPropagation(); }
+    if (!startCardsDealt4p) return; // erst Startkarten ausgeben, bevor irgendjemand anfangen kann
     if (TURN_4P === null) maybeStartTurn4p(myLogicalPlayer4p());
     return; // im Automatik-Modus wird nie manuell gezogen
   }
@@ -6016,8 +6178,10 @@ function resetToLobby() {
   debugMenuConfirmed = false;
   handOrderByPlayer2p = {1: [], 2: []};
   handOrderByPlayer4p = {1: [], 2: [], 3: [], 4: []};
-  _lastAutoDrawTurn2p = null;
-  _lastAutoDrawTurn4p = null;
+  _turnSeq2p = 0; _lastAutoDrawSeq2p = -1;
+  _turnSeq4p = 0; _lastAutoDrawSeq4p = -1;
+  startCardsDealt2p = false;
+  startCardsDealt4p = false;
   myPerspective = 1;
   myPerspective4 = 1;
   // Alle Death-Timer abbrechen
@@ -6116,7 +6280,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
       font-size:1rem;font-weight:700;font-family:'AiSpec',sans-serif;font-style:italic;
       letter-spacing:1px;color:#2a2e3a;cursor:pointer;width:100%;
       box-shadow:0 2px 12px rgba(0,0,0,0.13),inset 0 1px 0 rgba(255,255,255,0.8);
-      transition:transform .12s,box-shadow .12s;text-shadow:0 1px 2px rgba(255,255,255,0.7);">Debug</button>
+      transition:transform .12s,box-shadow .12s;text-shadow:0 1px 2px rgba(255,255,255,0.7);">Tests</button>
     <button onclick="showLobbyMode('einzelspieler')" style="background:linear-gradient(160deg,#c8ccd4 0%,#e8ecf2 40%,#d0d4dc 70%,#f0f2f6 100%);
       border:1px solid rgba(255,255,255,0.7);border-radius:10px;padding:12px 24px;
       font-size:1rem;font-weight:700;font-family:'AiSpec',sans-serif;font-style:italic;
@@ -6202,7 +6366,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v38z
+    v39c
   </div>
 </div>
 
@@ -6649,36 +6813,38 @@ function onNetData(d) {
       checkVerbote('p2');
     }
 
-    // Field cards: same position, update or create
+    // Field cards: same position, update or create (nur Sandbox-Modus - im Automatik-Modus
+    // übernimmt die simulierte Handanzeige die Darstellung der Gegner-Handkarten komplett,
+    // die echten Positionen/Karten des Gegners werden dort bewusst NICHT übertragen)
+    if (sandboxMode) {
+      (d.fieldCards||[]).forEach(fc => {
+        let el = G.cards.find(c => c.dataset.uid === String(fc.uid));
+        if (el) {
+          // Just update position - applyP1HandVisibility handles masking
+          el.style.left = clampX(fc.x) + 'px';
+          el.style.top  = clampY(fc.y) + 'px';
+          el.dataset.realFd = fc.fd;
+          delete el.dataset.drawnFromDeck; // Drag ist vorbei, normale Sichtbarkeitsregeln gelten wieder
+        } else {
+          // New card - spawn at same absolute position
+          el = spawnCard(
+            {name:fc.name, color:fc.color, type:fc.ctype, uid:fc.uid, file:fc.file||''},
+            clampX(fc.x), clampY(fc.y), fc.fd==='1'
+          );
+          el.dataset.netEnemy = '1';
+        }
+      });
 
-    // Update or create
-    (d.fieldCards||[]).forEach(fc => {
-      let el = G.cards.find(c => c.dataset.uid === String(fc.uid));
-      if (el) {
-        // Just update position - applyP1HandVisibility handles masking
-        el.style.left = clampX(fc.x) + 'px';
-        el.style.top  = clampY(fc.y) + 'px';
-        el.dataset.realFd = fc.fd;
-        delete el.dataset.drawnFromDeck; // Drag ist vorbei, normale Sichtbarkeitsregeln gelten wieder
-      } else {
-        // New card - spawn at same absolute position
-        el = spawnCard(
-          {name:fc.name, color:fc.color, type:fc.ctype, uid:fc.uid, file:fc.file||''},
-          clampX(fc.x), clampY(fc.y), fc.fd==='1'
-        );
-        el.dataset.netEnemy = '1';
-      }
-    });
+      // Remove any free cards (netEnemy) that are now tracked in slots
+      const slottedUids = new Set(
+        Object.values(G.slots).filter(Boolean).map(s => String(s.uid))
+      );
+      G.cards.filter(c => c.dataset.netEnemy === '1' && slottedUids.has(c.dataset.uid))
+        .forEach(c => { c.remove(); G.cards = G.cards.filter(x => x !== c); });
 
-    // Remove any free cards (netEnemy) that are now tracked in slots
-    const slottedUids = new Set(
-      Object.values(G.slots).filter(Boolean).map(s => String(s.uid))
-    );
-    G.cards.filter(c => c.dataset.netEnemy === '1' && slottedUids.has(c.dataset.uid))
-      .forEach(c => { c.remove(); G.cards = G.cards.filter(x => x !== c); });
-
-    // Re-apply visibility after state update
-    applyP1HandVisibility();
+      // Re-apply visibility after state update
+      applyP1HandVisibility();
+    }
 
     // Hand count label (echte Zählung statt gesendeter Zahl)
     updateHandLabels();
@@ -6711,34 +6877,36 @@ if (d.t === 'state4') {
     // Reveal state
     if (d.reveal !== undefined) G4.reveal[senderP] = new Set(Array.isArray(d.reveal) ? d.reveal : (d.reveal ? [1,2,3,4].filter(x=>x!==senderP) : []));
 
-    // Field cards belonging to sender: update or create
-    (d.fieldCards || []).forEach(fc => {
-      let el = G.cards.find(c => c.dataset.uid === String(fc.uid));
-      if (el) {
-        // Nur Position updaten - applyHandVisibility4 übernimmt Masking (wie 2-Spieler)
-        el.style.left = clampX(fc.x) + 'px';
-        el.style.top  = clampY(fc.y) + 'px';
-        el.dataset.realFd = fc.fd;
-        delete el.dataset.drawnFromDeck; // Drag ist vorbei, normale Sichtbarkeitsregeln gelten wieder
-      } else {
-        el = spawnCard(
-          {name:fc.name, color:fc.color, type:fc.ctype, uid:fc.uid, file:fc.file||''},
-          clampX(fc.x), clampY(fc.y), fc.fd==='1'
-        );
-        el.dataset.netEnemy = '1';
-        el.dataset.netOwner = senderPfx;
-        el.dataset.realFd = fc.fd;
-      }
-    });
+    // Field cards belonging to sender: update or create (nur Sandbox-Modus, siehe 2p-Kommentar)
+    if (sandboxMode) {
+      (d.fieldCards || []).forEach(fc => {
+        let el = G.cards.find(c => c.dataset.uid === String(fc.uid));
+        if (el) {
+          // Nur Position updaten - applyHandVisibility4 übernimmt Masking (wie 2-Spieler)
+          el.style.left = clampX(fc.x) + 'px';
+          el.style.top  = clampY(fc.y) + 'px';
+          el.dataset.realFd = fc.fd;
+          delete el.dataset.drawnFromDeck; // Drag ist vorbei, normale Sichtbarkeitsregeln gelten wieder
+        } else {
+          el = spawnCard(
+            {name:fc.name, color:fc.color, type:fc.ctype, uid:fc.uid, file:fc.file||''},
+            clampX(fc.x), clampY(fc.y), fc.fd==='1'
+          );
+          el.dataset.netEnemy = '1';
+          el.dataset.netOwner = senderPfx;
+          el.dataset.realFd = fc.fd;
+        }
+      });
 
-    // Remove sender's cards that are now slotted (nur Slots des Senders prüfen!)
-    const senderSlotKeys = Object.keys(G.slots).filter(k => k.startsWith(senderPfx));
-    const slottedUids4 = new Set(
-      senderSlotKeys.map(k => G.slots[k]).filter(Boolean).map(s => String(s.uid))
-    );
-    G.cards.filter(c => c.dataset.netEnemy === '1' && c.dataset.netOwner === senderPfx && slottedUids4.has(c.dataset.uid))
-      .forEach(c => { c.remove(); G.cards = G.cards.filter(x => x !== c); });
-    applyHandVisibility4();
+      // Remove sender's cards that are now slotted (nur Slots des Senders prüfen!)
+      const senderSlotKeys = Object.keys(G.slots).filter(k => k.startsWith(senderPfx));
+      const slottedUids4 = new Set(
+        senderSlotKeys.map(k => G.slots[k]).filter(Boolean).map(s => String(s.uid))
+      );
+      G.cards.filter(c => c.dataset.netEnemy === '1' && c.dataset.netOwner === senderPfx && slottedUids4.has(c.dataset.uid))
+        .forEach(c => { c.remove(); G.cards = G.cards.filter(x => x !== c); });
+      applyHandVisibility4();
+    }
   }
   if (d.t === 'lp4') {
     if (d.val < 0) {
@@ -6783,6 +6951,14 @@ if (d.t === 'state4') {
     G4.deck = d.deck;
     G4.nid = Math.max(G4.nid, d.nid || 0);
     updDeck4();
+  }
+  if (d.t === 'deal2_cards') {
+    G.deck = d.deck; updDeck();
+    applyDealResult2p(d.dealt);
+  }
+  if (d.t === 'deal4_cards_auto') {
+    G4.deck = d.deck; updDeck4();
+    applyDealResult4p(d.dealt);
   }
   if (d.t === 'deal4_cards') {
     // Nur eigene Karten spawnen
