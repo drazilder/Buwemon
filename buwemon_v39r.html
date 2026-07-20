@@ -458,11 +458,21 @@ body {
 .my-turn{border-color:#000000 !important;border-width:3px !important;box-shadow:0 0 4px rgba(0,0,0,0.5);}
 .automatik-mode .sandbox-only{display:none !important;}
 .automatik-only{display:none !important;}
+@keyframes abilGlowPulse {
+  0%,100% { box-shadow: 0 0 10px 4px rgba(255,255,255,0.95), 0 0 22px 10px rgba(255,255,255,0.7), 0 0 36px 16px rgba(255,255,255,0.4); }
+  50% { box-shadow: 0 0 14px 6px rgba(255,255,255,1), 0 0 28px 14px rgba(255,255,255,0.85), 0 0 44px 20px rgba(255,255,255,0.55); }
+}
+@keyframes abilGlowPulseBlack {
+  0%,100% { box-shadow: 0 0 10px 4px rgba(0,0,0,0.95), 0 0 22px 10px rgba(0,0,0,0.7), 0 0 36px 16px rgba(0,0,0,0.4); }
+  50% { box-shadow: 0 0 14px 6px rgba(0,0,0,1), 0 0 28px 14px rgba(0,0,0,0.85), 0 0 44px 20px rgba(0,0,0,0.55); }
+}
+.abil-glow-fx { animation: abilGlowPulse 1.1s ease-in-out infinite; border-radius:8px; position:relative; z-index:6; }
+.abil-glow-fx-black { animation: abilGlowPulseBlack 1.1s ease-in-out infinite; border-radius:8px; position:relative; z-index:6; }
 .automatik-mode .automatik-only{display:flex !important;}
 .abil-toast { background:rgba(20,20,26,0.88); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,0.15); border-radius:12px; padding:14px 16px; display:none; flex-direction:column; gap:8px; z-index:850; box-shadow:0 8px 24px rgba(0,0,0,0.35); }
 .abil-toast.open { display:flex; }
 .abil-toast-title { color:#f2f2f2; font-family:'AiSpec',sans-serif; font-size:.85rem; line-height:1.4; }
-.abil-toast-title b { font-weight:700; color:#f0c419; }
+.abil-toast-title b { font-weight:700; }
 .abil-toast-sub { color:#b8bcc4; font-family:'Kievit',sans-serif; font-size:.72rem; line-height:1.3; }
 .abil-toast-bar-wrap { display:flex; align-items:center; gap:8px; }
 .abil-toast-bar-track { flex:1; height:5px; background:rgba(255,255,255,0.12); border-radius:3px; overflow:hidden; }
@@ -1038,7 +1048,7 @@ const IMG = {
   "Marzo der Gott": "karten/Marzo_Der_Gott.png",
   "Marcopter": "karten/Marcopter.png",
   "Marco der Hund": "karten/Marco_der_Hund.png",
-  "Leonie Norris": "karten/Leonie_Norris.png",
+  "Leonie Norris": "karten/Leo_Norris.png",
   "Kax Maufmann": "karten/Kax_Maufmann.png",
   "Maxodia der Verbotene": "karten/Maxodia.png",
   "Maxibu": "karten/Maxibu.png",
@@ -1587,7 +1597,7 @@ function endTurn(p) {
   if (TURN_2P !== p) return;
   const next = p === 1 ? 2 : 1;
   setTurn2p(next);
-  if (NET.mode === 'multi') netSend({t:'turn2', p: next});
+  if (NET.mode === 'multi') netSend({t:'turn2', p: next, myColor: NET.myColor, myName: NET.myName});
 }
 
 function nextTurnPlayer4(current) {
@@ -1609,7 +1619,7 @@ function endTurn4(p) {
   if (TURN_4P !== p) return;
   const next = nextTurnPlayer4(p);
   setTurn4p(next);
-  if (NET.mode === 'multi' && fourPlayerMode) netSend({t:'turn4', p: next});
+  if (NET.mode === 'multi' && fourPlayerMode) netSend({t:'turn4', p: next, myPlayer: NET.myPlayer, myColor: G4.playerColors[NET.myPlayer], myName: G4.names[NET.myPlayer]});
 }
 
 function startGame(mode) {
@@ -2355,7 +2365,16 @@ function abilityGlowEl(slotId) {
   return card.querySelector('img') || card;
 }
 
-function beginAbilityActivation(el, abilityKey, abilityName, resolveFn) {
+// Färbt einen Namen (Buwemon/Fähigkeit/Angriff) in der Farbe seines Buwemons ein.
+// Bei Spezial-Buwemon (schwarz) bekommt der Text eine dünne weiße Kontur, damit er lesbar bleibt.
+function coloredAbilName(text, colorHex) {
+  if (!text) return '';
+  const disp = dispColor(colorHex || '#666666');
+  const outline = (disp === '#111111') ? 'text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff;' : '';
+  return `<span style="color:${disp};${outline}font-weight:700;">${escHtml(text)}</span>`;
+}
+
+function beginAbilityActivation(el, abilityKey, abilityName, resolveFn, defenderSlotId, extra) {
   if (pendingAbility) { alert("Es läuft gerade schon eine Fähigkeit - bitte warten, bis sie abgeschlossen ist."); return; }
   const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
   const slotId = el.dataset.slotId;
@@ -2367,7 +2386,10 @@ function beginAbilityActivation(el, abilityKey, abilityName, resolveFn) {
   const data = {
     is4, activatorP, activatorName,
     cardName: el.dataset.name, cardColor: el.dataset.color,
-    slotId, abilityKey, abilityName
+    slotId, abilityKey, abilityName, defenderSlotId: defenderSlotId || null,
+    defenderName: (extra && extra.defenderName) || null,
+    defenderColor: (extra && extra.defenderColor) || null,
+    extraText: (extra && extra.extraText) || '',
   };
   if (NET.mode === 'multi') netSend({t:'ability_pending', ...data});
   startAbilityReactionWindow(data, true, resolveFn);
@@ -2379,10 +2401,10 @@ function startAbilityReactionWindow(data, isMine, resolveFn) {
     chainBlocked: false, chainStep: 0, lastActor: data.activatorP, playedCards: []
   };
   const glowEl = abilityGlowEl(data.slotId);
-  if (glowEl) {
-    glowEl.style.setProperty('outline', '2px solid #000', 'important');
-    glowEl.style.setProperty('outline-offset', '-3px', 'important');
-    glowEl.style.borderRadius = '8px';
+  if (glowEl) glowEl.classList.add('abil-glow-fx');
+  if (data.defenderSlotId) {
+    const defGlowEl = abilityGlowEl(data.defenderSlotId);
+    if (defGlowEl) defGlowEl.classList.add('abil-glow-fx-black');
   }
   openAbilityRound('start');
 }
@@ -2404,30 +2426,40 @@ function openAbilityRound(phase) {
   const iAmLastActor = inMulti && (NET.myPlayer === pendingAbility.lastActor);
   const iAmActivator = inMulti && (NET.myPlayer === data.activatorP);
 
+  const abilitySpan = coloredAbilName(data.abilityName, data.cardColor);
+  const cardSpan = coloredAbilName(data.cardName, data.cardColor);
+  const defenderSpan = data.defenderName ? coloredAbilName(data.defenderName, data.defenderColor) : '';
+  const extraTxt = escHtml(data.extraText || '');
+
   if (phase === 'start') {
     if (iAmActivator) {
-      titleEl.innerHTML = 'Du setzt <b>' + escHtml(data.abilityName) + '</b> ein';
+      titleEl.innerHTML = 'Du setzt ' + abilitySpan + ' ein' + (defenderSpan ? ' gegen ' + defenderSpan : '') + extraTxt;
       subEl.textContent = 'Warte, ob die Gegner abwehren …';
       skipBtn.style.display = 'none';
     } else {
-      titleEl.innerHTML = '<b>' + escHtml(data.activatorName) + '</b> setzt ' + escHtml(data.abilityName) + ' ein (' + escHtml(data.cardName) + ')';
+      titleEl.innerHTML = escHtml(data.activatorName) + ' setzt ' + abilitySpan + ' ein (' + cardSpan + ')' + (defenderSpan ? ' gegen ' + defenderSpan : '') + extraTxt;
       subEl.textContent = "Lege Dinkelmehl oder FourAceFour ins Effektfeld, um abzuwehren";
       skipBtn.style.display = 'inline-block';
     }
   } else {
     const standTxt = pendingAbility.chainBlocked ? 'wird aktuell abgewehrt' : 'wird aktuell NICHT abgewehrt';
     if (iAmLastActor) {
-      titleEl.innerHTML = '<b>' + escHtml(data.abilityName) + '</b> ' + standTxt;
+      titleEl.innerHTML = abilitySpan + ' ' + standTxt;
       subEl.textContent = 'Warte, ob jemand reagiert …';
       skipBtn.style.display = 'none';
     } else {
-      titleEl.innerHTML = '<b>' + escHtml(data.abilityName) + '</b> ' + standTxt;
+      titleEl.innerHTML = abilitySpan + ' ' + standTxt;
       subEl.textContent = "Lege Ablehnt oder FourAceFour, um das Ergebnis umzudrehen";
       skipBtn.style.display = 'inline-block';
     }
   }
+  // Balken sofort auf 100% springen lassen (ohne die 1s-Übergangsanimation), erst danach die
+  // Übergangsanimation wieder aktivieren, damit nur das SEKÜNDLICHE Runterzählen sanft animiert
+  bar.style.transition = 'none';
   bar.style.width = '100%';
-  timeEl.textContent = '20s';
+  void bar.offsetWidth; // Reflow erzwingen, damit der Sprung sofort übernommen wird
+  bar.style.transition = 'width 1s linear';
+  timeEl.textContent = '30s';
   toast.classList.add('open');
   pendingAbility.declinedBy = new Set();
   skipBtn.onclick = () => {
@@ -2446,11 +2478,11 @@ function openAbilityRound(phase) {
   if (pendingAbility.timerId) clearInterval(pendingAbility.timerId);
   if (pendingAbility.resolveTimeoutId) clearTimeout(pendingAbility.resolveTimeoutId);
 
-  let sec = 20;
+  let sec = 30;
   pendingAbility.timerId = setInterval(() => {
     if (!pendingAbility) return;
     sec--;
-    bar.style.width = Math.max(0, (sec/20*100)) + '%';
+    bar.style.width = Math.max(0, (sec/30*100)) + '%';
     timeEl.textContent = Math.max(0,sec) + 's';
     if (sec <= 0) clearInterval(pendingAbility.timerId);
   }, 1000);
@@ -2458,7 +2490,7 @@ function openAbilityRound(phase) {
   // Der Aktivator ist immer verantwortlich für die endgültige Abwicklung (Fähigkeit ausführen oder nicht) -
   // im Solo-Modus gibt es nur einen gemeinsamen Bildschirm, der übernimmt das immer selbst
   if (!inMulti || data.activatorP === NET.myPlayer) {
-    pendingAbility.resolveTimeoutId = setTimeout(finalizeAbilityChain, 20000);
+    pendingAbility.resolveTimeoutId = setTimeout(finalizeAbilityChain, 30000);
   }
 }
 
@@ -2488,9 +2520,10 @@ function checkAllDeclined() {
 function clearAbilityUI() {
   if (!pendingAbility) return;
   const glowEl = abilityGlowEl(pendingAbility.slotId);
-  if (glowEl) {
-    glowEl.style.removeProperty('outline');
-    glowEl.style.removeProperty('outline-offset');
+  if (glowEl) glowEl.classList.remove('abil-glow-fx');
+  if (pendingAbility.defenderSlotId) {
+    const defGlowEl = abilityGlowEl(pendingAbility.defenderSlotId);
+    if (defGlowEl) defGlowEl.classList.remove('abil-glow-fx-black');
   }
   if (pendingAbility.timerId) clearInterval(pendingAbility.timerId);
   if (pendingAbility.resolveTimeoutId) clearTimeout(pendingAbility.resolveTimeoutId);
@@ -2629,7 +2662,7 @@ function confirmAttackTarget(lsid, targetCd) {
   document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
   const defenderP = parseInt((lsid.match(/^p(\d)/)||[])[1] || '0');
   pendingAttackSelection = null;
-  beginAbilityActivation(sel.cardEl, 'angriff', sel.attackName + ' gegen ' + targetCd.name + ' (Spieler ' + defenderP + ')', () => resolveAttack(sel, lsid, defenderP, false));
+  beginAbilityActivation(sel.cardEl, 'angriff', sel.attackName, () => resolveAttack(sel, lsid, defenderP, false), lsid, { defenderName: targetCd.name, defenderColor: targetCd.color });
 }
 
 function confirmAttackTargetLP(defenderP, is4) {
@@ -2639,7 +2672,7 @@ function confirmAttackTargetLP(defenderP, is4) {
   document.getElementById('abil-toast'+suf).classList.remove('open');
   document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
   pendingAttackSelection = null;
-  beginAbilityActivation(sel.cardEl, 'angriff', sel.attackName + ' (Direktangriff auf Spieler ' + defenderP + ')', () => resolveAttack(sel, null, defenderP, true));
+  beginAbilityActivation(sel.cardEl, 'angriff', sel.attackName, () => resolveAttack(sel, null, defenderP, true), null, { extraText: ' (Direktangriff auf Spieler ' + defenderP + ')' });
 }
 
 // Klick auf eine gegnerische LP-Anzeige während der Zielauswahl (nur wenn dieser Spieler kein Buwemon hat)
@@ -4342,6 +4375,22 @@ function releaseSlot(slotId, x, y) {
         e.stopPropagation();
         confirmAttackTarget(lsid, cdNow);
         return;
+      }
+    }
+    // Automatik-Modus: Klick auf ein LEERES gegnerisches Buwemonfeld während der Zielauswahl -
+    // nur gültig, wenn dieser Spieler wirklich kein einziges Buwemon im Feld hat (Direktangriff auf LP)
+    if (!sandboxMode && pendingAttackSelection && !cdNow) {
+      const is4x = lsid.endsWith('-4');
+      const targetPlayer = parseInt((lsid.match(/^p(\d)/)||[])[1]||'0');
+      const isBuwSlotEmpty = /-buw\d(-4)?$/.test(lsid);
+      if (isBuwSlotEmpty && targetPlayer !== pendingAttackSelection.attackerP) {
+        const suf2 = is4x ? '-4' : '';
+        const hasAnyBuw = ['buw1','buw2','buw3'].some(s => G.slots['p'+targetPlayer+'-'+s+suf2]);
+        if (!hasAnyBuw) {
+          e.stopPropagation();
+          confirmAttackTargetLP(targetPlayer, is4x);
+          return;
+        }
       }
     }
 
@@ -6332,6 +6381,8 @@ function netSendState4() {
   netSend({
     t: 'state4',
     senderPlayer: myP,
+    senderColor: G4.playerColors[myP],
+    senderName: G4.names[myP],
     deck: G4.deck,
     banish: G4.banish,
     grave: G4.graves[myPfx],
@@ -6575,7 +6626,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v39l
+    v39r
   </div>
 </div>
 
@@ -6629,7 +6680,13 @@ function wsConnect(onOpen) {
       try { onOpen(); } catch(e) { console.error('onOpen error:', e); }
     };
     ws.onmessage = e => {
-      try { onNetData(JSON.parse(e.data)); } catch(err) { console.error(err); }
+      try { onNetData(JSON.parse(e.data)); } catch(err) {
+        console.error(err);
+        if (!window._netErrorShown) {
+          window._netErrorShown = true;
+          alert('Fehler bei der Netzwerk-Synchronisation: ' + (err && err.message ? err.message : err) + '\n\nBitte diese Meldung an Claude weitergeben (nur einmal pro Sitzung angezeigt).');
+        }
+      }
     };
     ws.onclose = () => {
       try { updateConnDot(false); } catch(e) {}
@@ -6886,6 +6943,8 @@ function netSendState() {
     banish: G.banish,
     slots: mySlots,
     senderPrefix: myPfx,
+    senderColor: NET.myColor,
+    senderName: NET.myName,
     fieldCards,
     handCount,
     handCards,
@@ -7043,6 +7102,8 @@ function onNetData(d) {
     // LP handled only via {t:'lp'} events
 
     const sPfx = d.senderPrefix || 'p1';
+    if (d.senderColor && NET.enemyColor !== d.senderColor) { NET.enemyColor = d.senderColor; applyAllPlayerBorderColors(false); }
+    if (d.senderName && NET.enemyName !== d.senderName) { NET.enemyName = d.senderName; updateHandLabels(); updateTopbarScore(); }
     if (!sandboxMode && d.handCards !== undefined) renderSimulatedHand(sPfx, d.handCards, false);
     if (d.graves) {
       G.graves['p1'] = d.graves.p1 || G.graves['p1'];
@@ -7113,6 +7174,8 @@ function onNetData(d) {
 if (d.t === 'state4') {
     const senderP = d.senderPlayer;
     const senderPfx = 'p' + senderP;
+    if (d.senderColor && G4.playerColors[senderP] !== d.senderColor) { G4.playerColors[senderP] = d.senderColor; applyPlayerBorderColor(senderP, true); }
+    if (d.senderName && G4.names[senderP] !== d.senderName) { G4.names[senderP] = d.senderName; updateTopbarScore(); }
     if (!sandboxMode && d.handCards !== undefined) renderSimulatedHand(senderPfx, d.handCards, true);
 
     // Shared resources: deck, banish (last-write-wins)
@@ -7256,7 +7319,8 @@ if (d.t === 'state4') {
     startAbilityReactionWindow({
       is4: d.is4, activatorP: d.activatorP, activatorName: d.activatorName,
       cardName: d.cardName, cardColor: d.cardColor, slotId: d.slotId,
-      abilityKey: d.abilityKey, abilityName: d.abilityName
+      abilityKey: d.abilityKey, abilityName: d.abilityName, defenderSlotId: d.defenderSlotId || null,
+      defenderName: d.defenderName || null, defenderColor: d.defenderColor || null, extraText: d.extraText || ''
     }, false, null);
   }
   if (d.t === 'ability_decline') {
@@ -7338,9 +7402,13 @@ if (d.t === 'state4') {
     }
   }
   if (d.t === 'turn2') {
+    if (d.myColor && NET.enemyColor !== d.myColor) { NET.enemyColor = d.myColor; applyAllPlayerBorderColors(false); }
+    if (d.myName && NET.enemyName !== d.myName) { NET.enemyName = d.myName; updateHandLabels(); updateTopbarScore(); }
     setTurn2p(d.p);
   }
   if (d.t === 'turn4') {
+    if (d.myPlayer && d.myColor && G4.playerColors[d.myPlayer] !== d.myColor) { G4.playerColors[d.myPlayer] = d.myColor; applyPlayerBorderColor(d.myPlayer, true); }
+    if (d.myPlayer && d.myName && G4.names[d.myPlayer] !== d.myName) { G4.names[d.myPlayer] = d.myName; updateTopbarScore(); }
     setTurn4p(d.p);
   }
   if (d.t === 'timerStart') {
