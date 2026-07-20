@@ -457,6 +457,8 @@ body {
 .turn-btn:disabled{opacity:0.32;cursor:default;}
 .my-turn{border-color:#000000 !important;border-width:3px !important;box-shadow:0 0 4px rgba(0,0,0,0.5);}
 .automatik-mode .sandbox-only{display:none !important;}
+.automatik-only{display:none !important;}
+.automatik-mode .automatik-only{display:flex !important;}
 .abil-toast { background:rgba(20,20,26,0.88); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,0.15); border-radius:12px; padding:14px 16px; display:none; flex-direction:column; gap:8px; z-index:850; box-shadow:0 8px 24px rgba(0,0,0,0.35); }
 .abil-toast.open { display:flex; }
 .abil-toast-title { color:#f2f2f2; font-family:'AiSpec',sans-serif; font-size:.85rem; line-height:1.4; }
@@ -515,7 +517,7 @@ body {
     </div>
   </div>
 
-  <div class="row-zones" style="position:relative;"><div class="grave-wrap" style="align-self:flex-start;"><div class="zone zone-grave" id="p2-grave" onclick="openGraveBrowser('p2')" title="Friedhof ansehen"><span class="zlbl" style="font-size:.62rem;">Friedhof</span><div class="grave-preview" id="p2-grave-preview"></div><div class="grave-count" id="p2-grave-count" style="display:none;"></div></div></div><div class="push" style="min-width:20px;"></div><div class="buw-group"><div class="buw-slot" id="p2-buw1"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p2-buw2"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p2-buw3"><span class="zlbl">Buwemon</span></div></div><div class="push" style="flex:2;"></div><div style="flex:1;min-width:0;"></div><div style="position:absolute;right:0;top:0;bottom:0;display:flex;align-items:stretch;gap:50px;margin-left:200px;"><div class="buw-group" id="p2-effekt-group"><div class="buw-slot effekt-slot" id="p2-eff1"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff2"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff3"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff4"><span class="zlbl">Effekt</span></div></div><div class="grave-wrap" style="gap:6px;align-self:flex-start;"><div class="zone zone-grave verbot-slot" id="p2-verbot1"></div><div class="zone zone-grave verbot-slot" id="p2-verbot2"></div><div class="zone zone-grave verbot-slot" id="p2-verbot3"></div></div><div class="grave-wrap" style="align-self:flex-start;"><div class="lp-box" style="position:relative;"><div class="lp-display" id="p2-lp" contenteditable="true" onblur="lpDirectEdit(2)" onkeydown="lpDirectKey(event,2)">300</div><div class="lp-calc"><button onclick="openLpHistoryDirect(2,false)" class="lp-ok" id="p2-lp-ok" style="font-size:.6rem;width:100%;">Verlauf</button></div><button class="turn-btn" id="turn-btn-p2" onclick="endTurnPhysical(2)" disabled style="position:absolute;left:0;right:0;top:100%;margin-top:4px;">Zug beenden</button></div></div></div></div>
+  <div class="row-zones" style="position:relative;"><div class="grave-wrap" style="align-self:flex-start;"><div class="zone zone-grave" id="p2-grave" onclick="openGraveBrowser('p2')" title="Friedhof ansehen"><span class="zlbl" style="font-size:.62rem;">Friedhof</span><div class="grave-preview" id="p2-grave-preview"></div><div class="grave-count" id="p2-grave-count" style="display:none;"></div></div></div><div class="push" style="min-width:20px;"></div><div class="buw-group"><div class="buw-slot" id="p2-buw1"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p2-buw2"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p2-buw3"><span class="zlbl">Buwemon</span></div></div><div class="push" style="flex:2;"></div><div style="flex:1;min-width:0;"></div><div style="position:absolute;right:0;top:0;bottom:0;display:flex;align-items:stretch;gap:50px;margin-left:200px;"><div class="buw-group" id="p2-effekt-group"><div class="buw-slot effekt-slot" id="p2-eff1"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff2"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff3"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff4"><span class="zlbl">Effekt</span></div></div><div class="grave-wrap" style="gap:6px;align-self:flex-start;"><div class="zone zone-grave verbot-slot" id="p2-verbot1"></div><div class="zone zone-grave verbot-slot" id="p2-verbot2"></div><div class="zone zone-grave verbot-slot" id="p2-verbot3"></div></div><div class="grave-wrap" style="align-self:flex-start;"><div class="lp-box" style="position:relative;"><div class="lp-display" id="p2-lp" contenteditable="true" onblur="lpDirectEdit(2)" onkeydown="lpDirectKey(event,2)">300</div><div class="lp-calc sandbox-only" style="display:flex;"><input type="text" id="p2-lp-input" placeholder="" onkeydown="lpKey(event,2)"><button onclick="openLpOptPopup(2,false)" class="lp-ok" id="p2-lp-ok" style="font-size:.55rem;">Opt</button></div><div class="lp-calc automatik-only"><button onclick="openLpHistoryDirect(2,false)" class="lp-ok" id="p2-lp-ok-auto" style="font-size:.6rem;width:100%;">Verlauf</button></div><button class="turn-btn" id="turn-btn-p2" onclick="endTurnPhysical(2)" disabled style="position:absolute;left:0;right:0;top:100%;margin-top:4px;">Zug beenden</button></div></div></div></div>
 
   <div class="row-ex" id="p2-ex-row" style="display:flex;align-items:stretch;flex:11;min-height:0;">
     <div id="p2-ex-space" style="flex:none;width:0;"></div><!-- grave spacer -->
@@ -573,7 +575,7 @@ body {
     <div style="width:calc(var(--cw) + 4px);flex-shrink:0;"></div><!-- grave spacer -->
   </div>
 
-  <div class="row-zones" style="position:relative;"><div style="flex:1;min-width:0;"></div><div class="push" style="flex:2;"></div><div class="buw-group"><div class="buw-slot" id="p1-buw1"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p1-buw2"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p1-buw3"><span class="zlbl">Buwemon</span></div></div><div class="push" style="min-width:20px;"></div><div class="grave-wrap" style="align-self:flex-end;"><div class="zone zone-grave" id="p1-grave" onclick="openGraveBrowser('p1')" title="Friedhof ansehen"><span class="zlbl" style="font-size:.62rem;">Friedhof</span><div class="grave-preview" id="p1-grave-preview"></div><div class="grave-count" id="p1-grave-count" style="display:none;"></div></div></div><div style="position:absolute;left:0;top:0;bottom:0;display:flex;align-items:stretch;gap:50px;margin-right:200px;"><div class="grave-wrap" style="align-self:flex-end;"><div class="lp-box" style="position:relative;"><button class="turn-btn" id="turn-btn-p1" onclick="endTurnPhysical(1)" disabled style="position:absolute;left:0;right:0;bottom:100%;margin-bottom:4px;">Zug beenden</button><div class="lp-display" id="p1-lp" contenteditable="true" onblur="lpDirectEdit(1)" onkeydown="lpDirectKey(event,1)">300</div><div class="lp-calc"><button onclick="openLpHistoryDirect(1,false)" class="lp-ok" id="p1-lp-ok" style="font-size:.6rem;width:100%;">Verlauf</button></div></div></div><div class="grave-wrap" style="gap:6px;align-self:flex-end;"><div class="zone zone-grave verbot-slot" id="p1-verbot1"></div><div class="zone zone-grave verbot-slot" id="p1-verbot2"></div><div class="zone zone-grave verbot-slot" id="p1-verbot3"></div></div><div class="buw-group" id="p1-effekt-group"><div class="buw-slot effekt-slot" id="p1-eff1"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff2"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff3"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff4"><span class="zlbl">Effekt</span></div></div></div></div>
+  <div class="row-zones" style="position:relative;"><div style="flex:1;min-width:0;"></div><div class="push" style="flex:2;"></div><div class="buw-group"><div class="buw-slot" id="p1-buw1"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p1-buw2"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p1-buw3"><span class="zlbl">Buwemon</span></div></div><div class="push" style="min-width:20px;"></div><div class="grave-wrap" style="align-self:flex-end;"><div class="zone zone-grave" id="p1-grave" onclick="openGraveBrowser('p1')" title="Friedhof ansehen"><span class="zlbl" style="font-size:.62rem;">Friedhof</span><div class="grave-preview" id="p1-grave-preview"></div><div class="grave-count" id="p1-grave-count" style="display:none;"></div></div></div><div style="position:absolute;left:0;top:0;bottom:0;display:flex;align-items:stretch;gap:50px;margin-right:200px;"><div class="grave-wrap" style="align-self:flex-end;"><div class="lp-box" style="position:relative;"><button class="turn-btn" id="turn-btn-p1" onclick="endTurnPhysical(1)" disabled style="position:absolute;left:0;right:0;bottom:100%;margin-bottom:4px;">Zug beenden</button><div class="lp-display" id="p1-lp" contenteditable="true" onblur="lpDirectEdit(1)" onkeydown="lpDirectKey(event,1)">300</div><div class="lp-calc sandbox-only" style="display:flex;"><input type="text" id="p1-lp-input" placeholder="" onkeydown="lpKey(event,1)"><button onclick="openLpOptPopup(1,false)" class="lp-ok" id="p1-lp-ok" style="font-size:.55rem;">Opt</button></div><div class="lp-calc automatik-only"><button onclick="openLpHistoryDirect(1,false)" class="lp-ok" id="p1-lp-ok-auto" style="font-size:.6rem;width:100%;">Verlauf</button></div></div></div><div class="grave-wrap" style="gap:6px;align-self:flex-end;"><div class="zone zone-grave verbot-slot" id="p1-verbot1"></div><div class="zone zone-grave verbot-slot" id="p1-verbot2"></div><div class="zone zone-grave verbot-slot" id="p1-verbot3"></div></div><div class="buw-group" id="p1-effekt-group"><div class="buw-slot effekt-slot" id="p1-eff1"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff2"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff3"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff4"><span class="zlbl">Effekt</span></div></div></div></div>
 
   <div class="row-hand">
     <div class="zone zone-hand" id="p1-hand">
@@ -628,16 +630,24 @@ body {
   <div style="position:relative;">
   <button class="turn-btn" id="turn-btn-p1-4" onclick="endTurnPhysical4(1)" disabled style="position:absolute;left:0;right:0;bottom:100%;margin-bottom:6px;">Zug beenden</button>
   <div id="p1-lp-4" contenteditable="true" onblur="lpDirectEdit4(1)" onkeydown="lpDirectKey4(event,1)" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:text;outline:none;font-family:'AiSpec',sans-serif;font-style:italic;">300</div>
-  <div style="display:flex;gap:2px;margin-top:5px;">
-    <button id="p1-lp-ok-4" onclick="openLpHistoryDirect(1,true)" class="lp-ok-4" style="font-size:.55rem;width:100%;">Verlauf</button>
+  <div class="sandbox-only" style="display:flex;gap:2px;margin-top:5px;">
+    <input id="p1-lp-inp-4" type="text" onkeydown="lpKey4(event,1)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
+    <button id="p1-lp-ok-4" onclick="openLpOptPopup(1,true)" class="lp-ok-4" style="font-size:.5rem;">Opt</button>
+  </div>
+  <div class="automatik-only" style="gap:2px;margin-top:5px;">
+    <button id="p1-lp-ok-4-auto" onclick="openLpHistoryDirect(1,true)" class="lp-ok-4" style="font-size:.55rem;width:100%;">Verlauf</button>
   </div>
   </div>
 </div>
   <div style="position:absolute;left:1540px;top:107px;width:60px;height:100px;display:flex;flex-direction:column;justify-content:center;gap:5px;align-items:stretch;">
   <div style="position:relative;">
   <div id="p2-lp-4" contenteditable="true" onblur="lpDirectEdit4(2)" onkeydown="lpDirectKey4(event,2)" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:text;outline:none;font-family:'AiSpec',sans-serif;font-style:italic;">300</div>
-  <div style="display:flex;gap:2px;margin-top:5px;">
-    <button id="p2-lp-ok-4" onclick="openLpHistoryDirect(2,true)" class="lp-ok-4" style="font-size:.55rem;width:100%;">Verlauf</button>
+  <div class="sandbox-only" style="display:flex;gap:2px;margin-top:5px;">
+    <input id="p2-lp-inp-4" type="text" onkeydown="lpKey4(event,2)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
+    <button id="p2-lp-ok-4" onclick="openLpOptPopup(2,true)" class="lp-ok-4" style="font-size:.5rem;">Opt</button>
+  </div>
+  <div class="automatik-only" style="gap:2px;margin-top:5px;">
+    <button id="p2-lp-ok-4-auto" onclick="openLpHistoryDirect(2,true)" class="lp-ok-4" style="font-size:.55rem;width:100%;">Verlauf</button>
   </div>
   <button class="turn-btn" id="turn-btn-p2-4" onclick="endTurnPhysical4(2)" disabled style="position:absolute;left:0;right:0;top:100%;margin-top:6px;">Zug beenden</button>
   </div>
@@ -646,16 +656,24 @@ body {
   <div style="position:relative;">
   <button class="turn-btn" id="turn-btn-p3-4" onclick="endTurnPhysical4(3)" disabled style="position:absolute;left:0;right:0;bottom:100%;margin-bottom:6px;">Zug beenden</button>
   <div id="p3-lp-4" contenteditable="true" onblur="lpDirectEdit4(3)" onkeydown="lpDirectKey4(event,3)" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:text;outline:none;font-family:'AiSpec',sans-serif;font-style:italic;">300</div>
-  <div style="display:flex;gap:2px;margin-top:5px;">
-    <button id="p3-lp-ok-4" onclick="openLpHistoryDirect(3,true)" class="lp-ok-4" style="font-size:.55rem;width:100%;">Verlauf</button>
+  <div class="sandbox-only" style="display:flex;gap:2px;margin-top:5px;">
+    <input id="p3-lp-inp-4" type="text" onkeydown="lpKey4(event,3)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
+    <button id="p3-lp-ok-4" onclick="openLpOptPopup(3,true)" class="lp-ok-4" style="font-size:.5rem;">Opt</button>
+  </div>
+  <div class="automatik-only" style="gap:2px;margin-top:5px;">
+    <button id="p3-lp-ok-4-auto" onclick="openLpHistoryDirect(3,true)" class="lp-ok-4" style="font-size:.55rem;width:100%;">Verlauf</button>
   </div>
   </div>
 </div>
   <div style="position:absolute;left:1693px;top:780px;width:60px;height:100px;display:flex;flex-direction:column;justify-content:center;gap:5px;align-items:stretch;">
   <div style="position:relative;">
   <div id="p4-lp-4" contenteditable="true" onblur="lpDirectEdit4(4)" onkeydown="lpDirectKey4(event,4)" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:text;outline:none;font-family:'AiSpec',sans-serif;font-style:italic;">300</div>
-  <div style="display:flex;gap:2px;margin-top:5px;">
-    <button id="p4-lp-ok-4" onclick="openLpHistoryDirect(4,true)" class="lp-ok-4" style="font-size:.55rem;width:100%;">Verlauf</button>
+  <div class="sandbox-only" style="display:flex;gap:2px;margin-top:5px;">
+    <input id="p4-lp-inp-4" type="text" onkeydown="lpKey4(event,4)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
+    <button id="p4-lp-ok-4" onclick="openLpOptPopup(4,true)" class="lp-ok-4" style="font-size:.5rem;">Opt</button>
+  </div>
+  <div class="automatik-only" style="gap:2px;margin-top:5px;">
+    <button id="p4-lp-ok-4-auto" onclick="openLpHistoryDirect(4,true)" class="lp-ok-4" style="font-size:.55rem;width:100%;">Verlauf</button>
   </div>
   <button class="turn-btn" id="turn-btn-p4-4" onclick="endTurnPhysical4(4)" disabled style="position:absolute;left:0;right:0;top:100%;margin-top:6px;">Zug beenden</button>
   </div>
@@ -1561,7 +1579,7 @@ function maybeStartTurn4p(p) {
 // Der Zug-beenden-Button ist physisch fest positioniert (immer derselbe Button-Slot),
 // aber WELCHEM logischen Spieler er gerade gehört hängt von der Perspektive ab.
 function endTurnPhysical(physP) {
-  const logical = physId('p'+physP);
+  const logical = toLogicalId('p'+physP);
   endTurn(parseInt(logical.replace('p','')));
 }
 
@@ -1583,7 +1601,7 @@ function nextTurnPlayer4(current) {
 }
 
 function endTurnPhysical4(physP) {
-  const logical = physId('p'+physP);
+  const logical = toLogicalId('p'+physP);
   endTurn4(parseInt(logical.replace('p','')));
 }
 
@@ -1986,13 +2004,13 @@ function checkDropOnGrave(el){
       const gzEl=document.getElementById(p+'-grave-4');
       if(!gzEl) continue;
       const gz=gzEl.getBoundingClientRect();
-      if(cx>=gz.left&&cx<=gz.right&&cy>=gz.top&&cy<=gz.bottom){sendToGrave(el,physId(p));return true;}
+      if(cx>=gz.left&&cx<=gz.right&&cy>=gz.top&&cy<=gz.bottom){sendToGrave(el,toLogicalId(p));return true;}
     }
     return false;
   }
   for(const p of['p1','p2']){
     const gz=document.getElementById(p+'-grave').getBoundingClientRect();
-    if(cx>=gz.left&&cx<=gz.right&&cy>=gz.top&&cy<=gz.bottom){sendToGrave(el,physId(p));return true;}
+    if(cx>=gz.left&&cx<=gz.right&&cy>=gz.top&&cy<=gz.bottom){sendToGrave(el,toLogicalId(p));return true;}
   }
   return false;
 }
@@ -2570,6 +2588,141 @@ function finalizeAbilityChain(killsBuwemon) {
 // Reaktionsfenster-System angebunden sind (Sonderfälle mit eigener Vorauswahl)
 // Raum-Zeit-Genozid (Der Zeitführer, Spezial-Buwemon) bleibt bewusst unverändert -
 // öffnet sein Popup weiterhin sofort, ohne Reaktionsfenster
+// ── KAMPFSYSTEM ──
+let pendingAttackSelection = null; // {cardEl, slotId, attackerP, is4, attackName, attackPower}
+
+function beginAttackSelection(btn, cardEl) {
+  closePopup();
+  if (pendingAbility) { alert('Es läuft gerade schon eine Fähigkeit/ein Angriff - bitte warten.'); return; }
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const slotId = cardEl.dataset.slotId;
+  if (!slotId) return;
+  const attackerP = parseInt((slotId.match(/^p(\d)/)||[])[1] || '1');
+  const attackName = CARD_ATTACKS[cardEl.dataset.name] || 'Angriff';
+  const slotData = G.slots[slotId];
+  const attackPower = (CARD_ATTACK_POWER[cardEl.dataset.name] || 0) + computeEquipBonus(cardEl.dataset.color, slotData ? slotData.equipped : null);
+  pendingAttackSelection = { cardEl, slotId, attackerP, is4, attackName, attackPower };
+  showTargetSelectToast(is4);
+}
+
+function showTargetSelectToast(is4) {
+  const suf = is4 ? '-4' : '';
+  const toast = document.getElementById('abil-toast'+suf);
+  const titleEl = document.getElementById('abil-toast-title'+suf);
+  const subEl = document.getElementById('abil-toast-sub'+suf);
+  const barWrap = document.getElementById('abil-toast-bar-wrap'+suf);
+  const skipBtn = document.getElementById('abil-toast-skip'+suf);
+  titleEl.innerHTML = '<b>Ziel auswählen</b>';
+  subEl.textContent = 'Klicke ein gegnerisches Buwemon an (oder dessen LP, falls kein Buwemon vorhanden)';
+  barWrap.style.display = 'none';
+  skipBtn.textContent = 'Abbrechen';
+  skipBtn.style.display = 'inline-block';
+  skipBtn.onclick = () => { toast.classList.remove('open'); barWrap.style.display = ''; pendingAttackSelection = null; };
+  toast.classList.add('open');
+}
+
+function confirmAttackTarget(lsid, targetCd) {
+  if (!pendingAttackSelection) return;
+  const sel = pendingAttackSelection;
+  const suf = sel.is4 ? '-4' : '';
+  document.getElementById('abil-toast'+suf).classList.remove('open');
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
+  const defenderP = parseInt((lsid.match(/^p(\d)/)||[])[1] || '0');
+  pendingAttackSelection = null;
+  beginAbilityActivation(sel.cardEl, 'angriff', sel.attackName + ' gegen ' + targetCd.name + ' (Spieler ' + defenderP + ')', () => resolveAttack(sel, lsid, defenderP, false));
+}
+
+function confirmAttackTargetLP(defenderP, is4) {
+  if (!pendingAttackSelection) return;
+  const sel = pendingAttackSelection;
+  const suf = is4 ? '-4' : '';
+  document.getElementById('abil-toast'+suf).classList.remove('open');
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
+  pendingAttackSelection = null;
+  beginAbilityActivation(sel.cardEl, 'angriff', sel.attackName + ' (Direktangriff auf Spieler ' + defenderP + ')', () => resolveAttack(sel, null, defenderP, true));
+}
+
+// Klick auf eine gegnerische LP-Anzeige während der Zielauswahl (nur wenn dieser Spieler kein Buwemon hat)
+document.addEventListener('pointerdown', (e) => {
+  if (!pendingAttackSelection || sandboxMode) return;
+  const lpEl = e.target.closest('[id^="p"][id*="-lp"]');
+  if (!lpEl) return;
+  const m = lpEl.id.match(/^p(\d)-lp(-4)?$/);
+  if (!m) return;
+  const is4 = !!m[2];
+  if (is4 !== pendingAttackSelection.is4) return;
+  const physP = m[1];
+  const logical = toLogicalId('p'+physP);
+  const targetP = parseInt(logical.replace('p',''));
+  if (targetP === pendingAttackSelection.attackerP) return;
+  const suf = is4 ? '-4' : '';
+  const hasBuw = ['buw1','buw2','buw3'].some(s => G.slots['p'+targetP+'-'+s+suf]);
+  if (hasBuw) return; // LP ist nicht direkt angreifbar, solange noch Buwemon im Feld stehen
+  e.preventDefault(); e.stopPropagation();
+  confirmAttackTargetLP(targetP, is4);
+}, true);
+
+function applyLpDamage(p, amount, is4) {
+  if (is4) {
+    G4.lp[p] = Math.max(0, G4.lp[p] - amount);
+    const lpEl = document.getElementById(physId('p'+p)+'-lp-4');
+    if (lpEl) lpEl.textContent = G4.lp[p];
+    checkDeathCondition4(p);
+    if (NET.mode === 'multi') netSend({t:'lp4', p, val: G4.lp[p], increased: false});
+  } else {
+    G.lp[p] = Math.max(0, G.lp[p] - amount);
+    const lpEl = document.getElementById(physId('p'+p)+'-lp');
+    if (lpEl) lpEl.textContent = G.lp[p];
+    checkLPWin(p);
+    if (NET.mode === 'multi') netSend({t:'lp', p, val: G.lp[p], increased: false});
+  }
+}
+
+function moveToGraveLogical(slotId, cd, is4) {
+  if (!cd) return;
+  const p = parseInt((slotId.match(/^p(\d)/)||[])[1] || '0');
+  const pfx = 'p'+p;
+  G.slots[slotId] = null;
+  renderSlot(slotId);
+  const bcd = { name: cd.name, color: cd.color, type: cd.type || cd.ctype, file: cd.file || '' };
+  if (is4) {
+    G4.graves[pfx].push(bcd);
+    if (cd.equipped) cd.equipped.forEach(eq => { if (eq.ctype !== 'ereignis') G4.graves[pfx].push({name:eq.name,color:eq.color,type:eq.ctype||'eff',file:eq.file||''}); });
+    updGrave4(pfx);
+  } else {
+    G.graves[pfx].push(bcd);
+    if (cd.equipped) cd.equipped.forEach(eq => { if (eq.ctype !== 'ereignis') G.graves[pfx].push({name:eq.name,color:eq.color,type:eq.ctype||'eff',file:eq.file||''}); });
+    updGrave(pfx);
+  }
+}
+
+// Wird nur auf dem Client des Angreifers ausgeführt, sobald die Kampfsituation ungeblockt ausgeht
+function resolveAttack(sel, defenderSlotId, defenderP, isDirect) {
+  const is4 = sel.is4;
+  if (isDirect) {
+    applyLpDamage(defenderP, sel.attackPower, is4);
+    if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
+    return;
+  }
+  const defCd = G.slots[defenderSlotId];
+  if (!defCd) return; // Ziel existiert nicht mehr (z.B. schon anderweitig entfernt)
+  const defPower = (CARD_ATTACK_POWER[defCd.name] || 0) + computeEquipBonus(defCd.color, defCd.equipped);
+  const atkPower = sel.attackPower;
+  const diff = atkPower - defPower;
+
+  if (diff > 0) {
+    moveToGraveLogical(defenderSlotId, defCd, is4);
+    applyLpDamage(defenderP, diff, is4);
+  } else if (diff < 0) {
+    moveToGraveLogical(sel.slotId, G.slots[sel.slotId], is4);
+    applyLpDamage(sel.attackerP, -diff, is4);
+  } else {
+    moveToGraveLogical(defenderSlotId, defCd, is4);
+    moveToGraveLogical(sel.slotId, G.slots[sel.slotId], is4);
+  }
+  if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
+}
+
 // ── VERBOTS-ZIELFÄHIGKEITEN (Lord Phillipp/Mecces Pakt, Flosama/Bett abbauen, Maxibu/Ein Problem mit Alkohol) ──
 // Alle drei funktionieren identisch: Gegner auswählen (bei >2 Spielern per Popup, bei 2 Spielern automatisch
 // der einzige Gegner) -> Reaktionsfenster -> bei Erfolg landet die jeweilige Verbotskarte in einem freien
@@ -2733,7 +2886,7 @@ function renderPopupActionButtons(el, fd) {
     const equipBonus = slotData ? computeEquipBonus(el.dataset.color, slotData.equipped) : 0;
     const totalPower = basePower + equipBonus;
     const powerEl = document.createElement('div');
-    powerEl.style.cssText = "font-family:'AiSpec',sans-serif;font-style:italic;font-size:2.1rem;font-weight:700;color:#222;text-align:center;width:280px;line-height:1;margin-bottom:2px;";
+    powerEl.style.cssText = `font-family:'AiSpec',sans-serif;font-style:italic;font-size:2.1rem;font-weight:700;color:${textColor};text-align:center;width:280px;line-height:1;margin-bottom:2px;background:${colorHex};border-radius:8px;padding:8px 0;`;
     powerEl.textContent = totalPower;
     wrap.appendChild(powerEl);
   }
@@ -2756,7 +2909,7 @@ function renderPopupActionButtons(el, fd) {
 
   const atkName = CARD_ATTACKS[name];
   if (atkName) {
-    wrap.appendChild(makeBtn('Angriff_Icon.png', atkName, null)); // noch keine Funktion
+    wrap.appendChild(makeBtn('Angriff_Icon.png', atkName, (btn, cardEl) => beginAttackSelection(btn, cardEl)));
   }
   if (!isEx) {
     const abName = CARD_ABILITIES[name];
@@ -2892,7 +3045,7 @@ function onCarryDrop(e) {
     if (!gzEl || !gzEl.offsetParent) continue;
     const gz = gzEl.getBoundingClientRect();
     if (e.clientX >= gz.left && e.clientX <= gz.right && e.clientY >= gz.top && e.clientY <= gz.bottom) {
-      const lp = physId(p);
+      const lp = toLogicalId(p);
       if (cd.type==='ex'||cd.type==='ex-ereignis'||cd.type==='ex-auto'||cd.type==='ereignis') {
         if (NET.mode==='multi') netSendState();
         return;
@@ -2908,7 +3061,7 @@ function onCarryDrop(e) {
     if (!gzEl4) continue;
     const gz4 = gzEl4.getBoundingClientRect();
     if (e.clientX >= gz4.left && e.clientX <= gz4.right && e.clientY >= gz4.top && e.clientY <= gz4.bottom) {
-      const lp = physId(p);
+      const lp = toLogicalId(p);
       if (cd.type==='ex'||cd.type==='ex-ereignis'||cd.type==='ex-auto'||cd.type==='ereignis') return;
       G4.graves[lp].push(cd); updGrave4(lp);
       if (NET.mode==='multi') { netSend({t:'grave4_update', player:lp, graves:G4.graves[lp]}); netSendState4(); }
@@ -2926,7 +3079,7 @@ function onCarryDrop(e) {
     if (!slot) continue;
     const sr = slot.getBoundingClientRect();
     if (e.clientX >= sr.left && e.clientX <= sr.right && e.clientY >= sr.top && e.clientY <= sr.bottom) {
-      const lsid = physId(sid);
+      const lsid = toLogicalId(sid);
       const isExSlot = sid.endsWith('-ex') || sid.endsWith('-ex-4');
       const isEffSlot = /-eff\d(-4)?$/.test(sid);
       const isVerbotSlot = /-verbot\d(-4)?$/.test(sid);
@@ -4077,7 +4230,7 @@ function tryDockCard(el) {
     if (cx >= sr.left && cx <= sr.right && cy >= sr.top && cy <= sr.bottom) {
       // sid = physische Bildschirmposition, lsid = logischer Slot (welchem Spieler er wirklich gehört).
       // Im Sandbox-Modus und bei 4p (noch) identisch; im 2p-Automatik-Modus ggf. vertauscht (physId ist selbstinvers).
-      const lsid = physId(sid);
+      const lsid = toLogicalId(sid);
       // check type compatibility
       const ctype = el.dataset.ctype;
       const cname = el.dataset.name;
@@ -4177,7 +4330,21 @@ function releaseSlot(slotId, x, y) {
 
   slotEl.addEventListener('pointerdown', (e) => {
     if (e.target.closest && e.target.closest('.equip-wrap')) return; // Klick gehört der Ausrüstungs-Miniatur, nicht dem Slot
-    const lsid = physId(sid);
+    const lsid = toLogicalId(sid);
+    const cdNow = G.slots[lsid];
+
+    // Automatik-Modus: Klick auf eine gegnerische Buwemon-/EX-Karte während der Zielauswahl eines Angriffs
+    if (!sandboxMode && pendingAttackSelection && cdNow) {
+      const is4x = lsid.endsWith('-4');
+      const targetPlayer = parseInt((lsid.match(/^p(\d)/)||[])[1]||'0');
+      const isBuwOrEx = /-(buw\d|ex)(-4)?$/.test(lsid);
+      if (isBuwOrEx && targetPlayer !== pendingAttackSelection.attackerP) {
+        e.stopPropagation();
+        confirmAttackTarget(lsid, cdNow);
+        return;
+      }
+    }
+
     if (!G.slots[lsid]) return;
     if (G.slots[lsid].type === 'ex-auto') {
       // Allow dblclick popup for ex-auto
@@ -4197,6 +4364,32 @@ function releaseSlot(slotId, x, y) {
       return;
     }
     e.stopPropagation();
+
+    // Automatik-Modus: gegnerische Buwemon/Karten können nicht herausgezogen werden - nur Doppelklick (Popup) erlaubt
+    if (!sandboxMode) {
+      const ownerP = parseInt((lsid.match(/^p(\d)/)||[])[1]||'0');
+      const is4x = lsid.endsWith('-4');
+      const myLogical = is4x ? myLogicalPlayer4p() : myLogicalPlayer2p();
+      if (ownerP !== myLogical) {
+        clickCount++;
+        if (clickCount === 1) {
+          clickTimer = setTimeout(() => { clickCount = 0; clickTimer = null; }, 300);
+        } else if (clickCount === 2) {
+          clearTimeout(clickTimer); clickCount = 0; clickTimer = null;
+          const cd = G.slots[lsid];
+          if (!cd) return;
+          const fake = document.createElement('div');
+          fake.dataset.name = cd.name; fake.dataset.color = cd.color;
+          fake.dataset.ctype = cd.type || cd.ctype; fake.dataset.uid = cd.uid || 0;
+          fake.dataset.fd = '0';
+          fake.dataset.slotId = lsid;
+          if (cd.file) fake.dataset.file = cd.file;
+          openPopup(fake);
+        }
+        return;
+      }
+    }
+
     clickCount++;
 
     if (clickCount === 2) {
@@ -5623,6 +5816,7 @@ function dealStartCards2Automatik() {
 // simulierten Handkarten lokal auf - wird sowohl beim Austeilen selbst als auch beim
 // Empfang der Netzwerk-Nachricht auf der anderen Seite verwendet.
 function applyDealResult2p(dealt) {
+  if (startCardsDealt2p) return; // schon ausgeteilt - verhindert doppelte Anwendung (z.B. Echo der eigenen Nachricht)
   startCardsDealt2p = true;
   [1,2].forEach(p => {
     if (!handOrderByPlayer2p[p]) handOrderByPlayer2p[p] = [];
@@ -5724,6 +5918,7 @@ function dealStartCards4Automatik() {
 }
 
 function applyDealResult4p(dealt) {
+  if (startCardsDealt4p) return; // schon ausgeteilt - verhindert doppelte Anwendung
   startCardsDealt4p = true;
   const myP = myLogicalPlayer4p();
   Object.keys(dealt).forEach(pStr => {
@@ -6379,7 +6574,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v39f
+    v39k
   </div>
 </div>
 
@@ -6935,7 +7130,7 @@ if (d.t === 'state4') {
       // Darkschah-Ausnahme: negative LP erlaubt, kein Death-Check
       G4.lp[d.p] = d.val;
       logLpHistory(d.p, d.val, true);
-      const _lpEl = document.getElementById('p'+d.p+'-lp-4');
+      const _lpEl = document.getElementById(physId('p'+d.p)+'-lp-4');
       if (_lpEl) _lpEl.textContent = d.val;
       triggerLPAnim4(d.p, false);
     } else {
@@ -7083,7 +7278,7 @@ if (d.t === 'state4') {
   if (d.t === 'lp') {
     G.lp[d.p] = d.val;
     logLpHistory(d.p, d.val, false);
-    const lpEl = document.getElementById('p'+d.p+'-lp');
+    const lpEl = document.getElementById(physId('p'+d.p)+'-lp');
     if (lpEl) lpEl.textContent = d.val;
     triggerLPAnim(d.p, d.increased);
   }
@@ -7297,6 +7492,29 @@ function physIdFor4p(logicalId) {
   const posInRot = rot.indexOf(L);
   const physOwner = PHYS_SEQ_4P[posInRot];
   return 'p' + physOwner + rest;
+}
+// ECHTE Umkehrung von physIdFor4p: Bildschirmposition (wo geklickt/abgelegt wurde) -> logischer Spieler.
+// Die Drehung beim 4-Spieler-Board ist KEINE Selbstumkehrung (anders als der einfache 2-Spieler-Tausch) -
+// physIdFor4p darf daher NIEMALS für die Rückrichtung (Bildschirm -> Daten) verwendet werden.
+function logicalIdFor4p(physicalId) {
+  const m = physicalId.match(/^p(\d)(.*)$/);
+  if (!m) return physicalId;
+  const P = parseInt(m[1]);
+  if (P < 1 || P > 4) return physicalId;
+  const rest = m[2];
+  const viewer = (NET.mode === 'multi') ? NET.myPlayer : myPerspective4;
+  const idx = PHYS_SEQ_4P.indexOf(viewer);
+  if (idx === -1) return physicalId;
+  const j = PHYS_SEQ_4P.indexOf(P);
+  const L = PHYS_SEQ_4P[(idx + j) % 4];
+  return 'p' + L + rest;
+}
+// Dispatcher für die Rückrichtung (Bildschirmposition -> logischer Spieler). Für 2p ist physId()
+// selbstinvers (einfacher Tausch) und kann wiederverwendet werden, für 4p NICHT.
+function toLogicalId(physicalId) {
+  if (sandboxMode) return physicalId;
+  if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) return logicalIdFor4p(physicalId);
+  return physId(physicalId);
 }
 function physId(logicalId) {
   if (sandboxMode) return logicalId;
