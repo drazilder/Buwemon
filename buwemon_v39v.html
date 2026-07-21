@@ -2474,13 +2474,21 @@ function openAbilityRound(phase) {
       skipBtn.style.display = 'inline-block';
     }
   } else {
-    const standTxt = pendingAbility.chainBlocked ? 'wird aktuell abgewehrt' : 'wird aktuell NICHT abgewehrt';
+    const equipInfo = pendingAbility.lastCombatEquip;
+    let mainTxt;
+    if (equipInfo) {
+      const eqCardColor = (function(){ const dc = G.slots[pendingAbility.defenderSlotId]; return dc ? dc.color : '#888888'; })();
+      mainTxt = 'Spieler ' + equipInfo.ownerP + ' rüstet ' + coloredAbilName(equipInfo.name, eqCardColor) + ' aus';
+    } else {
+      const standTxt = pendingAbility.chainBlocked ? 'wird aktuell abgewehrt' : 'wird aktuell NICHT abgewehrt';
+      mainTxt = abilitySpan + ' ' + standTxt;
+    }
     if (iAmLastActor) {
-      titleEl.innerHTML = abilitySpan + ' ' + standTxt;
+      titleEl.innerHTML = mainTxt;
       subEl.textContent = 'Warte, ob jemand reagiert …';
       skipBtn.style.display = 'none';
     } else {
-      titleEl.innerHTML = abilitySpan + ' ' + standTxt;
+      titleEl.innerHTML = mainTxt;
       subEl.textContent = "Lege Ablehnt oder FourAceFour, um das Ergebnis umzudrehen";
       skipBtn.style.display = 'inline-block';
     }
@@ -2595,7 +2603,21 @@ function cleanUpOwnAbilityCards(playedCards, killSlotId, killOwnerP, is4) {
 // Wird lokal aufgerufen, sobald ICH eine gültige Antwortkarte (Dinkelmehl/Ablehnt/FourAceFour) andocke
 // Effektkarten, die während eines ANGRIFFS als Verteidigung eingesetzt werden können
 // (ersetzen dort Dinkelmehl - das ist nur für sonstige Fähigkeiten gedacht)
-const ATTACK_DEFENSE_NAMES = ['Calgon','Stein','UwU','Glaskuppel'];
+const ATTACK_DEFENSE_NAMES = ['Calgon','Stein','UwU ','Glaskuppel'];
+
+// Macht die zuletzt während eines Kampfes ausgerüstete Clubmate/13er Bogen rückgängig
+// (durch Ablehnt oder FourAceFour) - Karte wandert zum Besitzer auf den Friedhof.
+function undoCombatEquip(pa) {
+  if (!pa.lastCombatEquip) return;
+  const defCd = G.slots[pa.defenderSlotId];
+  if (!defCd || !defCd.equipped || !defCd.equipped.length) return;
+  const eq = defCd.equipped.pop();
+  const ownerPfx = 'p' + pa.lastCombatEquip.ownerP;
+  const bcd = { name: eq.name, color: eq.color, type: eq.ctype || 'eff', file: eq.file || '' };
+  if (pa.is4) { G4.graves[ownerPfx].push(bcd); updGrave4(ownerPfx); }
+  else { G.graves[ownerPfx].push(bcd); updGrave(ownerPfx); }
+  renderSlot(pa.defenderSlotId);
+}
 
 function checkAbilityBlock(cd, slotId) {
   if (!pendingAbility || !cd) return;
@@ -2615,7 +2637,7 @@ function checkAbilityBlock(cd, slotId) {
   if (player === pendingAbility.lastActor) return; // nicht zweimal hintereinander derselbe Spieler
 
   // UwU ist nicht einsetzbar, wenn das angegriffene Buwemon Cyan ist
-  if (isAttack && cd.name === 'UwU') {
+  if (isAttack && cd.name === 'UwU ') {
     const defCd = G.slots[pendingAbility.defenderSlotId];
     if (defCd && defCd.color === '#008899') return;
   }
@@ -2628,13 +2650,23 @@ function checkAbilityBlock(cd, slotId) {
     // ERSETZT die aktuell aktive Verteidigung. FourAceFour hat bei Angriffen eine eigene,
     // feste Bedeutung (siehe resolveAttack) statt der generischen "tötet Erstantwort"-Regel.
     if (cd.name === 'Ablehnt') {
-      pendingAbility.chainBlocked = !pendingAbility.chainBlocked;
-      pendingAbility.combatDefense = null;
+      if (pendingAbility.lastCombatEquip) {
+        undoCombatEquip(pendingAbility);
+        pendingAbility.lastCombatEquip = null;
+      } else {
+        pendingAbility.chainBlocked = !pendingAbility.chainBlocked;
+        pendingAbility.combatDefense = null;
+      }
     } else if (isFourAceFour) {
       pendingAbility.fourAceFourPlayed = true;
+      if (pendingAbility.lastCombatEquip) {
+        undoCombatEquip(pendingAbility);
+        pendingAbility.lastCombatEquip = null;
+      }
     } else {
       pendingAbility.combatDefense = { name: cd.name, ownerP: player, colorHex: cd.color };
       pendingAbility.chainBlocked = true;
+      pendingAbility.lastCombatEquip = null;
     }
   } else {
     killsBuwemon = isFirstStep && isFourAceFour; // Regel: nur bei DIREKTEM FourAceFour als Erstantwort (nur für Fähigkeiten, nicht Angriffe)
@@ -2698,15 +2730,18 @@ function finalizeAbilityChain(killsBuwemon) {
     if (data.isAttack) {
       // Bei Angriffen hat FourAceFour eine feste, unbedingte Wirkung (Angreifer stirbt, Angriff
       // schlägt fehl) - unabhängig vom sonstigen "blockiert/nicht blockiert"-Stand.
+      // Ansonsten wird IMMER aufgelöst - ob und wie stark sich das auswirkt, entscheidet die
+      // ggf. aktive Verteidigungskarte (combatDefense) selbst innerhalb von resolveAttack.
+      // "wasBlocked" ist bei Angriffen KEIN Signal mehr für "nichts passiert".
       if (fourAceFourPlayed) {
         if (resolveFn) resolveFn({ fourAceFour: true });
-      } else if (!wasBlocked) {
+      } else {
         if (resolveFn) resolveFn({ combatDefense });
       }
     } else {
       if (!wasBlocked && resolveFn) resolveFn();
     }
-    if (NET.mode === 'multi') netSend({t:'ability_resolved', wasBlocked, playedCards, killSlotId, killOwnerP, is4: data.is4});
+    if (NET.mode === 'multi') netSend({t:'ability_resolved', wasBlocked, playedCards: playedCardsToClean, killSlotId, killOwnerP, is4: data.is4});
   }
 }
 
@@ -2754,8 +2789,9 @@ function confirmAttackTarget(lsid, targetCd) {
   document.getElementById('abil-toast'+suf).classList.remove('open');
   document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
   const defenderP = parseInt((lsid.match(/^p(\d)/)||[])[1] || '0');
+  const preEquipCount = (targetCd.equipped || []).length;
   pendingAttackSelection = null;
-  beginAbilityActivation(sel.cardEl, 'angriff', sel.attackName, () => resolveAttack(sel, lsid, defenderP, false), lsid, { defenderName: targetCd.name, defenderColor: targetCd.color });
+  beginAbilityActivation(sel.cardEl, 'angriff', sel.attackName, (resolveInfo) => resolveAttack(sel, lsid, defenderP, false, resolveInfo, preEquipCount), lsid, { defenderName: targetCd.name, defenderColor: targetCd.color });
 }
 
 function confirmAttackTargetLP(defenderP, is4) {
@@ -2765,7 +2801,7 @@ function confirmAttackTargetLP(defenderP, is4) {
   document.getElementById('abil-toast'+suf).classList.remove('open');
   document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
   pendingAttackSelection = null;
-  beginAbilityActivation(sel.cardEl, 'angriff', sel.attackName, () => resolveAttack(sel, null, defenderP, true), null, { extraText: ' (Direktangriff auf Spieler ' + defenderP + ')' });
+  beginAbilityActivation(sel.cardEl, 'angriff', sel.attackName, (resolveInfo) => resolveAttack(sel, null, defenderP, true, resolveInfo), null, { extraText: ' (Direktangriff auf Spieler ' + defenderP + ')' });
 }
 
 // Klick auf eine gegnerische LP-Anzeige während der Zielauswahl (nur wenn dieser Spieler kein Buwemon hat)
@@ -2847,7 +2883,28 @@ function showOutcomeToast(text, is4) {
   }, 3000);
 }
 
-function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo) {
+// Verschiebt während des Kampfes NEU ausgerüstete Clubmate/13er Bogen auf den Friedhof des
+// Besitzers - passiert immer nach einem Kampf, unabhängig vom Ausgang (nur falls das
+// verteidigende Buwemon den Kampf überlebt hat - stirbt es, wird die komplette Ausrüstung
+// bereits über den normalen Friedhof-Umzug mit erledigt).
+function moveCombatEquipToGrave(defenderSlotId, preEquipCount, is4) {
+  if (preEquipCount === undefined || preEquipCount === null) return;
+  const cd = G.slots[defenderSlotId];
+  if (!cd || !cd.equipped) return;
+  const p = parseInt((defenderSlotId.match(/^p(\d)/)||[])[1] || '0');
+  const pfx = 'p'+p;
+  const newlyEquipped = cd.equipped.slice(preEquipCount);
+  if (!newlyEquipped.length) return;
+  cd.equipped = cd.equipped.slice(0, preEquipCount);
+  newlyEquipped.forEach(eq => {
+    const bcd = { name: eq.name, color: eq.color, type: eq.ctype || 'eff', file: eq.file || '' };
+    if (is4) G4.graves[pfx].push(bcd); else G.graves[pfx].push(bcd);
+  });
+  renderSlot(defenderSlotId);
+  if (is4) updGrave4(pfx); else updGrave(pfx);
+}
+
+function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, preEquipCount) {
   const is4 = sel.is4;
   resolveInfo = resolveInfo || {};
 
@@ -2886,7 +2943,7 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo) {
       const roll = (defCd.color === '#cc5500') ? true : (Math.random() < 4/6);
       if (roll) { attackFails = true; attackerDiesInstead = true; }
       showOutcomeToast(roll ? '<b>Stein</b> hat gewirkt - der Angreifer stirbt!' : '<b>Stein</b> hat NICHT gewirkt - Angriff wird durchgeführt.', is4);
-    } else if (defense.name === 'UwU') {
+    } else if (defense.name === 'UwU ') {
       atkPowerOverride = sel.attackPower - 30;
       if (atkColor === '#008899') attackerDiesAfterwards = true; // Angreifer ist Cyan
     } else if (defense.name === 'Glaskuppel') {
@@ -2898,6 +2955,7 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo) {
 
   if (attackFails) {
     if (attackerDiesInstead) moveToGraveLogical(sel.slotId, G.slots[sel.slotId], is4);
+    moveCombatEquipToGrave(defenderSlotId, preEquipCount, is4);
     if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
     return;
   }
@@ -2912,6 +2970,7 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo) {
   } else if (diff < 0) {
     moveToGraveLogical(sel.slotId, G.slots[sel.slotId], is4);
     applyLpDamage(sel.attackerP, -diff, is4);
+    moveCombatEquipToGrave(defenderSlotId, preEquipCount, is4); // Verteidiger hat überlebt
   } else {
     moveToGraveLogical(defenderSlotId, defCd, is4);
     moveToGraveLogical(sel.slotId, G.slots[sel.slotId], is4);
@@ -4177,6 +4236,19 @@ function renderSlot(slotId) {
       }
     });
   }
+  // Schein-Effekt wiederherstellen, falls dieses Feld gerade Teil einer laufenden
+  // Fähigkeit/Kampfsituation ist (renderSlot baut die Karte komplett neu auf, z.B.
+  // beim Ausrüsten - dabei geht eine zuvor gesetzte CSS-Klasse sonst verloren)
+  if (pendingAbility) {
+    if (pendingAbility.slotId === slotId) {
+      const g = abilityGlowEl(slotId);
+      if (g) g.classList.add('abil-glow-fx');
+    }
+    if (pendingAbility.defenderSlotId === slotId) {
+      const g = abilityGlowEl(slotId);
+      if (g) g.classList.add('abil-glow-fx-black');
+    }
+  }
 }
 
 function imgFileFor(name) {
@@ -4448,6 +4520,25 @@ function tryDockCard(el) {
         if (!G.slots[lsid].equipped) G.slots[lsid].equipped = [];
         if (G.slots[lsid].equipped.length >= 8) continue;
         G.slots[lsid].equipped.push({ name: cname, color: el.dataset.color, uid: parseInt(el.dataset.uid), file: imgFileFor(cname), ctype: ctype });
+        // Während eines laufenden Angriffs auf GENAU dieses Buwemon zählt das Ausrüsten als
+        // eigener Zug in der Reaktions-Kette (kann per Ablehnt/FourAceFour gekontert werden) -
+        // wird komplett getrennt von playedCards/cleanUpOwnAbilityCards verfolgt, da hier kein
+        // Effektfeld-Slot geräumt werden muss (die Karte steckt ja jetzt in der Ausrüstung).
+        if (pendingAbility && pendingAbility.isAttack && pendingAbility.defenderSlotId === lsid) {
+          const eqPlayer = parseInt((lsid.match(/^p(\d)/)||[])[1] || '0');
+          if (eqPlayer !== pendingAbility.lastActor) {
+            pendingAbility.lastActor = eqPlayer;
+            pendingAbility.chainStep++;
+            pendingAbility.lastCombatEquip = { name: cname, ownerP: eqPlayer };
+            if (NET.mode === 'multi') {
+              netSend({t:'ability_chain_play', chainBlocked: pendingAbility.chainBlocked, chainStep: pendingAbility.chainStep,
+                lastActor: pendingAbility.lastActor, playedCards: pendingAbility.playedCards,
+                combatDefense: pendingAbility.combatDefense, fourAceFourPlayed: pendingAbility.fourAceFourPlayed,
+                lastCombatEquip: pendingAbility.lastCombatEquip, locked:false, killsBuwemon:false});
+            }
+            openAbilityRound('chain');
+          }
+        }
         if (NET.mode === 'multi') netSend({t:'card_remove', uid: el.dataset.uid});
         el.remove();
         G.cards = G.cards.filter(c => c !== el);
@@ -6795,7 +6886,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v39t
+    v39v
   </div>
 </div>
 
@@ -7514,6 +7605,7 @@ if (d.t === 'state4') {
       pendingAbility.playedCards = d.playedCards;
       if (d.combatDefense !== undefined) pendingAbility.combatDefense = d.combatDefense;
       if (d.fourAceFourPlayed) pendingAbility.fourAceFourPlayed = true;
+      if (d.lastCombatEquip !== undefined) pendingAbility.lastCombatEquip = d.lastCombatEquip;
       if (d.locked) {
         // FourAceFour gelegt: Aktivator schließt die Kette ab, alle anderen warten auf 'ability_resolved'
         if (NET.myPlayer === pendingAbility.activatorP) finalizeAbilityChain(d.killsBuwemon);
