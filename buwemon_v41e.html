@@ -1013,6 +1013,7 @@ body {
   <div id="banish-count-text" style="font-size:.6rem;color:rgba(0,0,0,0.4);text-align:center;">0 Karten</div>
 </div>
 
+<div id="outcome-toast" style="position:fixed;right:8px;top:50%;transform:translateY(-50%);width:220px;background:rgba(20,20,26,0.88);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:14px 16px;display:none;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.35);color:#f2f2f2;font-family:'AiSpec',sans-serif;font-size:.85rem;line-height:1.4;pointer-events:none;"></div>
 <div id="abil-toast" class="abil-toast" style="position:fixed;right:8px;top:50%;transform:translateY(-50%);width:220px;">
   <div class="abil-toast-title" id="abil-toast-title"></div>
   <div class="abil-toast-sub" id="abil-toast-sub"></div>
@@ -2407,6 +2408,7 @@ document.getElementById('color-remove-modal').addEventListener('click',e=>{if(e.
 // ── POPUP ──
 // ── FÄHIGKEITS-REAKTIONSFENSTER (Automatik-Modus) ──
 let pendingAbility = null;
+let _pendingOutcomeText = null; // sammelt Toast-Texte während resolveFn läuft
 const FOURACEFOUR_NAME = 'FourAceFour-Feuer-Reverse-Blöff';
 const ABILITY_FIRST_RESPONSE_NAMES = ['Dinkelmehl', FOURACEFOUR_NAME];
 const ABILITY_CHAIN_RESPONSE_NAMES = ['Ablehnt', FOURACEFOUR_NAME];
@@ -2811,7 +2813,9 @@ function finalizeAbilityChain(killsBuwemon) {
   const fourAceFourPlayed = !!data.fourAceFourPlayed;
 
   clearAbilityUI();
+  const savedOutcomeText = data._outcomeText || null;
   pendingAbility = null;
+  _pendingOutcomeText = null; // reset vor resolveFn
 
   // Glaskuppel bleibt liegen (bis zum nächsten Zug ihres Besitzers), wenn sie am Ende die
   // aktive/gewinnende Verteidigung ist - sie darf NICHT wie die anderen gespielten Karten
@@ -2859,7 +2863,7 @@ function finalizeAbilityChain(killsBuwemon) {
     } else {
       if (!wasBlocked && resolveFn) resolveFn();
     }
-    if (NET.mode === 'multi') netSend({t:'ability_resolved', wasBlocked, playedCards: playedCardsToClean, killSlotId, killOwnerP, is4: data.is4, returnToHand, tutMirLeidSlotId, combatSlotIds});
+    if (NET.mode === 'multi') netSend({t:'ability_resolved', wasBlocked, playedCards: playedCardsToClean, killSlotId, killOwnerP, is4: data.is4, returnToHand, tutMirLeidSlotId, combatSlotIds, outcomeText: _pendingOutcomeText});
   }
 }
 
@@ -2961,7 +2965,10 @@ function applyLpDamage(p, amount, is4) {
 function moveToGraveLogical(slotId, cd, is4) {
   if (!cd) return;
   // Dauerfähigkeit beenden wenn Buwemon stirbt
-  if (activePermanentAbilities.has(slotId)) setAbilityShimmer(slotId, false);
+  if (activePermanentAbilities.has(slotId)) {
+    setAbilityShimmer(slotId, false);
+    if (NET.mode === 'multi') netSend({t:'ability_shimmer', slotId, active: false});
+  }
   dinkelmehlSuppressed.delete(slotId);
   const p = parseInt((slotId.match(/^p(\d)/)||[])[1] || '0');
   const pfx = 'p'+p;
@@ -2985,23 +2992,17 @@ let activeGlaskuppel2p = {}; // {1: slotId, 2: slotId}
 let activeGlaskuppel4p = {}; // {1: slotId, ...}
 
 // Zeigt kurz (3s) an, wie eine Zufalls-Verteidigungskarte ausgegangen ist
-function showOutcomeToast(text, is4) {
-  const suf = is4 ? '-4' : '';
-  const toast = document.getElementById('abil-toast'+suf);
-  const titleEl = document.getElementById('abil-toast-title'+suf);
-  const subEl = document.getElementById('abil-toast-sub'+suf);
-  const barWrap = document.getElementById('abil-toast-bar-wrap'+suf);
-  const skipBtn = document.getElementById('abil-toast-skip'+suf);
-  if (!toast) return;
-  titleEl.innerHTML = text;
-  subEl.textContent = '';
-  barWrap.style.display = 'none';
-  skipBtn.style.display = 'none';
-  toast.classList.add('open');
-  setTimeout(() => {
-    toast.classList.remove('open');
-    barWrap.style.display = '';
-  }, 3000);
+function showOutcomeToast(text, is4, noSync) {
+  const el = document.getElementById('outcome-toast');
+  if (el) {
+    el.innerHTML = text;
+    el.style.display = 'block';
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => { el.style.display = 'none'; }, 5000);
+  }
+  // Text für ability_resolved Versand sammeln (wird von finalizeAbilityChain mitgeschickt)
+  if (!noSync) _pendingOutcomeText = (_pendingOutcomeText ? _pendingOutcomeText + ' | ' : '') + text;
+  if (!noSync && NET.mode === 'multi') netSend({t:'outcome_toast', text, is4});
 }
 
 // Verschiebt während des Kampfes NEU ausgerüstete Clubmate/13er Bogen auf den Friedhof des
@@ -3047,7 +3048,9 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
   // Luis Münsters Dauerfähigkeit: 4/6 Schutz (wie Calgon), wenn Schimmer aktiv
   if (defCd.name === 'Luis Münsters' && activePermanentAbilities.has(defenderSlotId) && !dinkelmehlSuppressed.has(defenderSlotId)) {
     const luisBlocks = Math.random() < 4/6;
-    showOutcomeToast(luisBlocks ? 'Münster-Effekt: Angriff abgewehrt!' : 'Münster-Effekt hat NICHT gewirkt – Angriff wird durchgeführt.', is4);
+    const luisTxt = luisBlocks ? 'Münster-Effekt: Angriff abgewehrt!' : 'Münster-Effekt hat NICHT gewirkt – Angriff wird durchgeführt.';
+    showOutcomeToast(luisTxt, is4);
+
     if (luisBlocks) {
       if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
       return;
@@ -3122,7 +3125,6 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
   else if (diff < 0) summary = coloredAbilName(sel.cardEl.dataset.name, sel.cardEl.dataset.color) + ' stirbt - Spieler ' + sel.attackerP + ' verliert ' + (-diff) + ' LP';
   else summary = 'Beide Buwemon sterben - niemand verliert LP';
   showOutcomeToast('Kampf: ' + summary, is4);
-  if (NET.mode === 'multi') netSend({t:'attack_summary', text: 'Kampf: ' + summary, is4});
 
   if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
 }
@@ -3134,10 +3136,29 @@ const activePermanentAbilities = new Set();
 const dinkelmehlSuppressed = new Set();
 
 function setAbilityShimmer(slotId, active) {
-  const el = abilityGlowEl(slotId);
-  if (!el) return;
-  if (active) { el.classList.add('ability-shimmer'); activePermanentAbilities.add(slotId); }
-  else { el.classList.remove('ability-shimmer'); activePermanentAbilities.delete(slotId); }
+  const slotEl = document.getElementById(physId(slotId));
+  if (!slotEl) return;
+  // Alten Shimmer entfernen
+  const oldOv = slotEl.querySelector('.shimmer-wrapper');
+  if (oldOv) oldOv.remove();
+  const oldWrap = slotEl.querySelector('.shimmer-img-wrap');
+  if (oldWrap) { const imgEl = oldWrap.querySelector('img'); if(imgEl) oldWrap.parentNode.insertBefore(imgEl, oldWrap); oldWrap.remove(); }
+  if (!active) { activePermanentAbilities.delete(slotId); return; }
+  // img holen und in relativen Wrapper einbetten (OHNE Größe/Position zu ändern)
+  const card = slotEl.querySelector('.docked-card');
+  if (!card) return;
+  const img = card.querySelector('img');
+  if (!img) return;
+  const wrap = document.createElement('span');
+  wrap.className = 'shimmer-img-wrap';
+  wrap.style.cssText = 'display:inline-block;position:relative;line-height:0;';
+  img.parentNode.insertBefore(wrap, img);
+  wrap.appendChild(img);
+  const shimDiv = document.createElement('div');
+  shimDiv.className = 'shimmer-wrapper';
+  shimDiv.style.cssText = 'position:absolute;inset:0;border-radius:6px;pointer-events:none;z-index:9;background:linear-gradient(105deg,transparent 25%,rgba(255,255,255,0.6) 50%,transparent 75%);background-size:200% 100%;animation:abilityShimmer 1.6s linear infinite;mix-blend-mode:screen;';
+  wrap.appendChild(shimDiv);
+  activePermanentAbilities.add(slotId);
 }
 
 function clearDinkelmehlSuppression() {
@@ -3192,6 +3213,47 @@ document.addEventListener('pointerdown', (e) => {
   if (!pendingOwnTurnTarget && !pendingFourAceFourOwnTurn) return;
 
   const slotEl = e.target.closest('[id$="-buw1"],[id$="-buw2"],[id$="-buw3"],[id$="-eff1"],[id$="-eff2"],[id$="-eff3"],[id$="-eff4"]');
+
+  // Klick auf ausgerüstete Karte (equip-wrap Miniatur)?
+  const equipEl = e.target.closest('.equip-item');
+  if (equipEl && pendingOwnTurnTarget && pendingOwnTurnTarget.targetType === 'eff') {
+    const { ownerP, is4, effSlotId } = pendingOwnTurnTarget;
+    const equipIdx = parseInt(equipEl.dataset.equipIdx);
+    const buwSlotEl = equipEl.closest('[id$="-buw1"],[id$="-buw2"],[id$="-buw3"]');
+    if (!buwSlotEl) return;
+    const buwLsid = toLogicalId(buwSlotEl.id);
+    const buwCd = G.slots[buwLsid];
+    if (!buwCd || !buwCd.equipped || !buwCd.equipped[equipIdx]) return;
+    const eq = buwCd.equipped[equipIdx];
+    e.stopPropagation();
+    const suf = is4 ? '-4' : '';
+    document.getElementById('abil-toast'+suf).classList.remove('open');
+    document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
+    const saved = pendingOwnTurnTarget;
+    pendingOwnTurnTarget = null;
+    const fakeSaved = saved.fake;
+    beginAbilityActivation(fakeSaved, 'Ablehnt', 'Ablehnt – ' + eq.name + ' (ausgerüstet)', () => {
+      // Ausgerüstete Karte auf Friedhof des Buwemon-Besitzers
+      const targetP = parseInt((buwLsid.match(/^p(\d)/)||[])[1]||'1');
+      const pfx = 'p'+targetP;
+      const currentBuwCd = G.slots[buwLsid];
+      if (!currentBuwCd || !currentBuwCd.equipped) return;
+      const realIdx = currentBuwCd.equipped.findIndex((e2,i) => i === equipIdx);
+      if (realIdx === -1) return;
+      const removedEq = currentBuwCd.equipped.splice(realIdx, 1)[0];
+      renderSlot(buwLsid);
+      const graves = is4 ? G4.graves[pfx] : G.graves[pfx];
+      if (graves) { graves.push({name:removedEq.name,color:removedEq.color,type:removedEq.ctype||'eff',file:removedEq.file||''}); if(is4)updGrave4(pfx);else updGrave(pfx); }
+      // Ablehnt auf eigenen Friedhof
+      const ownPfx = 'p'+saved.ownerP;
+      G.slots[saved.effSlotId] = null; renderSlot(saved.effSlotId);
+      const ownGraves = is4 ? G4.graves[ownPfx] : G.graves[ownPfx];
+      if (ownGraves) { ownGraves.push({name:'Ablehnt',color:'',type:'eff',file:''}); if(is4)updGrave4(ownPfx);else updGrave(ownPfx); }
+      if (NET.mode==='multi') { is4 ? netSendState4() : netSendState(); }
+    });
+    return;
+  }
+
   if (!slotEl) return;
   const physSid = slotEl.id;
   const lsid = toLogicalId(physSid);
@@ -3239,9 +3301,13 @@ document.addEventListener('pointerdown', (e) => {
         // Ziel-Effektkarte auf Friedhof
         const targetP = parseInt((lsid.match(/^p(\d)/)||[])[1]||'1');
         const pfx = 'p'+targetP;
+        const cdNow = G.slots[lsid]; // frisch lesen
         G.slots[lsid] = null; renderSlot(lsid);
+        // Glaskuppel aus aktivem Register entfernen
+        if (activeGlaskuppel2p[targetP] === lsid) delete activeGlaskuppel2p[targetP];
+        if (activeGlaskuppel4p[targetP] === lsid) delete activeGlaskuppel4p[targetP];
         const graves = is4 ? G4.graves[pfx] : G.graves[pfx];
-        if (graves && cd) { graves.push({name:cd.name,color:cd.color,type:cd.type||cd.ctype,file:cd.file||''}); if(is4)updGrave4(pfx);else updGrave(pfx); }
+        if (graves && cdNow) { graves.push({name:cdNow.name,color:cdNow.color,type:cdNow.type||cdNow.ctype,file:cdNow.file||''}); if(is4)updGrave4(pfx);else updGrave(pfx); }
         // Ablehnt selbst auf Friedhof
         const ownPfx = 'p'+ownerP;
         G.slots[effSlotId] = null; renderSlot(effSlotId);
@@ -3256,6 +3322,9 @@ document.addEventListener('pointerdown', (e) => {
         if (activePermanentAbilities.has(lsid)) {
           dinkelmehlSuppressed.add(lsid);
           const g = abilityGlowEl(lsid); if (g) g.classList.remove('ability-shimmer');
+          // Overlay entfernen
+          const slotEl2 = document.getElementById(physId(lsid));
+          if (slotEl2) { const ov = slotEl2.querySelector('.ability-shimmer-overlay'); if (ov) ov.remove(); }
           if (NET.mode==='multi') netSend({t:'dinkelmehl_suppress', slotId:lsid});
         }
         // Dinkelmehl selbst auf Friedhof
@@ -3268,6 +3337,76 @@ document.addEventListener('pointerdown', (e) => {
     }
   }
 }, true);
+
+// ── WÜRD' MIR STINKEN (Maxodia der Verbotene) ──
+function beginWuerdMirStinken(btn, el) {
+  closePopup();
+  beginAbilityActivation(el, "Würd' mir stinken", "Würd' mir stinken", () => {
+    doWuerdMirStinkenWithFeedback(el);
+  });
+}
+
+function doWuerdMirStinkenWithFeedback(el) {
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const myP = NET.mode === 'multi' ? NET.myPlayer : (parseInt((el.dataset.slotId.match(/^p(\d)/)||[])[1]||'1'));
+  const specResults = []; // [{name, survived}]
+
+  function moveSlotWithFeedback(pfx, sid, cd, isIs4) {
+    if (cd.color === '#cc5500') {
+      G.slots[sid] = null; renderSlot(sid);
+      if (isIs4) { G4.banish.push({name:cd.name,color:cd.color,type:cd.type,file:cd.file||''}); transferEquippedOnBanish(cd, true); }
+      else { G.banish.push({name:cd.name,color:cd.color,type:cd.type,file:cd.file||''}); transferEquippedOnBanish(cd, false); }
+      return true;
+    } else if (cd.type === 'spec') {
+      const hit = Math.random() < 0.5;
+      specResults.push({ name: cd.name, survived: !hit });
+      if (hit) {
+        G.slots[sid] = null; renderSlot(sid);
+        if (isIs4) G4.graves[pfx].push({name:cd.name,color:cd.color,type:cd.type,file:cd.file||''});
+        else G.graves[pfx].push({name:cd.name,color:cd.color,type:cd.type,file:cd.file||''});
+        return true;
+      }
+      return false;
+    } else {
+      G.slots[sid] = null; renderSlot(sid);
+      if (isIs4) G4.graves[pfx].push({name:cd.name,color:cd.color,type:cd.type,file:cd.file||''});
+      else G.graves[pfx].push({name:cd.name,color:cd.color,type:cd.type,file:cd.file||''});
+      return true;
+    }
+  }
+
+  const targets = is4 ? [1,2,3,4].filter(p => p !== myP && G4.active[p]) : (myP === 1 ? ['p2'] : ['p1']);
+  const clearedSlots = {};
+  if (is4) {
+    targets.forEach(p => {
+      const pfx = 'p'+p;
+      ['buw1','buw2','buw3'].forEach(s => {
+        const sid = pfx+'-'+s+'-4'; const cd = G.slots[sid];
+        if (cd && moveSlotWithFeedback(pfx, sid, cd, true)) clearedSlots[sid] = null;
+      });
+      ['eff1','eff2','eff3','eff4'].forEach(s => {
+        const sid = pfx+'-'+s+'-4'; const cd = G.slots[sid];
+        if (cd) { G.slots[sid]=null; renderSlot(sid); G4.graves[pfx].push({name:cd.name,color:cd.color,type:cd.type,file:cd.file||''}); clearedSlots[sid]=null; }
+      });
+      updGrave4(pfx); checkExBuwemon(pfx, '-4');
+    });
+    updBanish4();
+    if (NET.mode==='multi') { netSend({t:'slots4_update',slots:clearedSlots}); targets.forEach(p=>{netSend({t:'grave4_update',player:'p'+p,graves:G4.graves['p'+p]});}); netSend({t:'banish4_update',banish:G4.banish}); netSendState4(); }
+  } else {
+    targets.forEach(pfx => {
+      ['buw1','buw2','buw3'].forEach(s => { const sid=pfx+'-'+s; const cd=G.slots[sid]; if(cd) moveSlotWithFeedback(pfx,sid,cd,false); });
+      ['eff1','eff2','eff3','eff4'].forEach(s => { const sid=pfx+'-'+s; const cd=G.slots[sid]; if(!cd)return; G.slots[sid]=null; renderSlot(sid); G.graves[pfx].push(cd); });
+      updGrave(pfx); checkExBuwemon(pfx);
+    });
+    updBanish();
+    if (NET.mode==='multi') netSendState();
+  }
+  // Feedback für Spezial-Buwemon anzeigen
+  if (specResults.length > 0) {
+    const msg = specResults.map(r => r.name + ': ' + (r.survived ? '🛡 überlebt (50% Glück)' : '💀 gestorben')).join(' | ');
+    showOutcomeToast('Würd\' mir stinken – ' + msg, is4);
+  }
+}
 
 // ── LUIS MÜNSTERS – Münster ──
 // Nach erfolgreicher Aktivierung: Luis wird zum lebenden Calgon (4/6 Abwehr aller Angriffe auf ihn).
@@ -3640,6 +3779,7 @@ const SPECIAL_ABILITY_HANDLERS = {
   'Picky Eating': (btn, el) => { closePopup(); confirmPickyEating(btn, el); },
   'Gottkomplex': (btn, el) => beginGottkomplex(btn, el),
   'Münster': (btn, el) => beginLuisMuenster(btn, el),
+  "Würd' mir stinken": (btn, el) => beginWuerdMirStinken(btn, el),
   'Bett abbauen': (btn, el) => beginVerbotAbility(btn, el, 'Eine Runde noch Verbot', 'Bett abbauen'),
   'Ein Problem mit Alkohol': (btn, el) => beginVerbotAbility(btn, el, 'Nachschlag Verbot', 'Ein Problem mit Alkohol'),
 };
@@ -4756,6 +4896,8 @@ function renderSlot(slotId) {
       const eqImg = document.createElement('img');
       eqImg.src = 'karten/' + (eq.file || imgFileFor(eq.name));
       eqImg.alt = eq.name;
+      eqImg.className = 'equip-item';
+      eqImg.dataset.equipIdx = idx;
       eqImg.draggable = false;
       eqImg.style.cssText = `width:${eqW}px;height:${eqH}px;border-radius:2px;object-fit:cover;box-shadow:0 0 0 1px rgba(0,0,0,0.6);display:block;cursor:grab;flex-shrink:0;pointer-events:auto;`;
       let eqClickCount = 0, eqClickTimer = null;
@@ -4846,10 +4988,10 @@ function renderSlot(slotId) {
       if (g) g.classList.add('abil-glow-fx-black');
     }
   }
-  // Dauerfähigkeits-Schimmer wiederherstellen
+  // Dauerfähigkeits-Schimmer wiederherstellen (Overlay neu hinzufügen nach renderSlot)
   if (activePermanentAbilities && activePermanentAbilities.has(slotId) && !dinkelmehlSuppressed.has(slotId)) {
-    const g = abilityGlowEl(slotId);
-    if (g) g.classList.add('ability-shimmer');
+    // kurz warten damit das DOM fertig gebaut ist
+    setTimeout(() => setAbilityShimmer(slotId, true), 10);
   }
 }
 
@@ -7729,7 +7871,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v40t
+    v41e
   </div>
 </div>
 
@@ -8262,12 +8404,15 @@ function onNetData(d) {
       updGrave(sPfx);
     }
     if (d.slots) {
-      // Nur Slots des Senders überschreiben – nie Slots anderer Spieler nullen
-      // (sonst werden z.B. Effektkarten des Empfängers fälschlich gelöscht)
+      // Volle Slots nur vom Sender übernehmen.
+      // Leere Slots (null) von allen übernehmen – so werden getötete Buwemon überall entfernt.
       Object.keys(d.slots).forEach(slot => {
-        if (!slot.startsWith(sPfx)) return; // nur eigene Slots des Senders
-        G.slots[slot] = d.slots[slot] || null;
-        renderSlot(slot);
+        if (slot.startsWith(sPfx)) {
+          G.slots[slot] = d.slots[slot] || null;
+          renderSlot(slot);
+        } else if (d.slots[slot] === null || d.slots[slot] === undefined) {
+          if (G.slots[slot]) { G.slots[slot] = null; renderSlot(slot); }
+        }
       });
       checkExBuwemon('p1');
       checkExBuwemon('p2');
@@ -8474,7 +8619,12 @@ if (d.t === 'state4') {
     }, false, null);
   }
   if (d.t === 'attack_summary') {
-    showOutcomeToast(d.text, d.is4);
+    showOutcomeToast(d.text, d.is4, true);
+  }
+  if (d.t === 'outcome_toast') {
+    showOutcomeToast(d.text, d.is4, true);
+    // DEBUG: entfernen nach Test
+    if (!window._dbg) { window._dbg=true; console.log('outcome_toast empfangen:', d.text); }
   }
   if (d.t === 'wanze_reveal') {
     updateRevealStatus(d.targetP, d.open, d.is4);
@@ -8484,7 +8634,8 @@ if (d.t === 'state4') {
   }
   if (d.t === 'dinkelmehl_suppress') {
     dinkelmehlSuppressed.add(d.slotId);
-    const g = abilityGlowEl(d.slotId); if (g) g.classList.remove('ability-shimmer');
+    const slotEl3 = document.getElementById(physId(d.slotId));
+    if (slotEl3) { const ov = slotEl3.querySelector('.ability-shimmer-overlay'); if (ov) ov.remove(); }
   }
   if (d.t === 'ability_decline') {
     if (pendingAbility) {
@@ -8515,6 +8666,7 @@ if (d.t === 'state4') {
     clearAbilityUI();
     pendingAbility = null;
     cleanUpOwnAbilityCards(d.playedCards, d.killSlotId, d.killOwnerP, d.is4, wasAttack, d.returnToHand, d.tutMirLeidSlotId, d.combatSlotIds);
+    if (d.outcomeText) showOutcomeToast(d.outcomeText, d.is4, true);
   }
   if (d.t === 'ability_press') {
     setRemoteAbilityPressed(d.ability, true);
