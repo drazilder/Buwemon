@@ -2150,7 +2150,7 @@ function renderBrowserList(){
         ${(!isGrave&&!isBanish)?`<button onclick="moveBCard(${realIdx},-1)" ${realIdx===0?'disabled':''}>↑</button>
         <button onclick="moveBCard(${realIdx},1)" ${realIdx===rawData.length-1?'disabled':''}>↓</button>
         <button onclick="moveBCardTop(${realIdx})" title="Ganz nach oben">⏫ Ganz nach oben</button>`:''}
-        <button class="field-btn" onclick="bCardToField(${realIdx},'${G.browserSource}')">🃏 Aufs Spielfeld</button>
+        <button class="field-btn sandbox-only" onclick="bCardToField(${realIdx},'${G.browserSource}')">🃏 Aufs Spielfeld</button>
       </div>`;
     // Double-click to show popup
     let clickCount=0,clickTimer=null;
@@ -3149,6 +3149,7 @@ function resolveWanze(activatorP, targetP, is4) {
     });
   }
   updateRevealStatus(targetP, true, is4);
+  if (NET.mode === 'multi') netSend({t:'wanze_reveal', targetP, is4, open: true});
 }
 
 function clearWanzeReveal() {
@@ -3170,6 +3171,7 @@ function clearWanzeReveal() {
     });
   }
   updateRevealStatus(targetP, false, is4);
+  if (NET.mode === 'multi') netSend({t:'wanze_reveal', targetP, is4, open: false});
 }
 
 // ── GOTTKOMPLEX (Marzo der Gott) ──
@@ -3265,6 +3267,90 @@ function resolveRGB(slotId, is4, ownerPOverride) {
     }
   }
   if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
+}
+
+// ── EINE RUNDE NOCH ──
+function openEineRundeNochPopup(ownerP, effSlotId, is4) {
+  const activePlayers = is4 ? [1,2,3,4].filter(p => G4.active[p]) : [1,2];
+  const sorted = [ownerP, ...activePlayers.filter(p => p !== ownerP)];
+  const modal = document.getElementById('verbot-target-modal');
+  const title = document.getElementById('verbot-target-title');
+  const btns = document.getElementById('verbot-target-btns');
+  title.textContent = 'Eine Runde noch – Friedhof auswählen';
+  btns.innerHTML = '';
+  sorted.forEach(p => {
+    const btn = document.createElement('button');
+    btn.textContent = (p === ownerP ? '👤 ' : '') + 'Spieler ' + p + ' (Friedhof)';
+    btn.style.cssText = 'padding:10px 16px;border-radius:8px;border:1px solid rgba(0,0,0,0.15);font-family:\'Kievit\',sans-serif;font-size:.95rem;cursor:pointer;background:#f2f2f2;color:#2a2e3a;width:100%;';
+    btn.onclick = () => openEineRundeNochGrave(ownerP, p, effSlotId, is4);
+    btns.appendChild(btn);
+  });
+  modal.classList.add('open');
+}
+
+function openEineRundeNochGrave(ownerP, graveP, effSlotId, is4) {
+  const pfx = 'p'+graveP;
+  const graves = is4 ? G4.graves[pfx] : G.graves[pfx];
+  const isOwn = graveP === ownerP;
+  // Nested: Friedhof-Liste über browser-modal anzeigen, aber mit "Auswählen"-Buttons
+  const list = document.getElementById('browser-list');
+  document.getElementById('browser-title').textContent = 'Friedhof Spieler ' + graveP;
+  document.getElementById('browser-sub').textContent = (graves||[]).length + ' Karten';
+  document.getElementById('browser-shuffle-btn').style.display = 'none';
+  list.innerHTML = '';
+  if (!graves || !graves.length) {
+    list.innerHTML = '<p style="color:#aaa;font-size:.82rem;padding:8px;">Leer.</p>';
+  } else {
+    [...graves].reverse().forEach((cd, i) => {
+      const realIdx = graves.length - 1 - i;
+      const isGreen = cd.color === '#6fb62c';
+      const canSelect = isOwn || (cd.type === 'buw' && isGreen);
+      const row = document.createElement('div');
+      row.className = 'deck-row';
+      row.innerHTML = `<span class="deck-row-num">${i+1}</span>
+        <img class="deck-row-thumb" src="${thumbFor(cd.name)}" alt="${cd.name}">
+        <span class="deck-row-name">${cd.name}</span>
+        <div class="deck-row-btns">
+          ${canSelect ? `<button onclick="selectEineRundeNoch(${graveP},${realIdx},'${effSlotId}',${is4},${ownerP})">✔ Auswählen</button>` : ''}
+        </div>`;
+      list.appendChild(row);
+    });
+  }
+  document.getElementById('browser-modal').classList.add('open');
+}
+
+function selectEineRundeNoch(graveP, idx, effSlotId, is4, ownerP) {
+  const pfx = 'p'+graveP;
+  const graves = is4 ? G4.graves[pfx] : G.graves[pfx];
+  const cd = graves[idx];
+  if (!cd) return;
+  // Karte aus dem Friedhof entfernen
+  graves.splice(idx, 1);
+  if (is4) updGrave4(pfx); else updGrave(pfx);
+  // Karte auf die Hand von ownerP legen
+  const uid = G.nid++;
+  const el2 = spawnCard({name:cd.name,color:cd.color,type:cd.type||'buw',uid,file:cd.file||imgFileFor(cd.name)},0,0,false);
+  if (is4) {
+    if (!handOrderByPlayer4p[ownerP]) handOrderByPlayer4p[ownerP]=[];
+    handOrderByPlayer4p[ownerP].push(uid);
+    if (ownerP===myLogicalPlayer4p()) layoutMyHand4();
+    else { el2.style.display='none'; renderSimulatedHand('p'+ownerP,handCardsFromUids(handOrderByPlayer4p[ownerP]),true); }
+  } else {
+    if (!handOrderByPlayer2p[ownerP]) handOrderByPlayer2p[ownerP]=[];
+    handOrderByPlayer2p[ownerP].push(uid);
+    if (ownerP===myLogicalPlayer2p()) layoutMyHand();
+    else { el2.style.display='none'; renderSimulatedHand('p'+ownerP,handCardsFromUids(handOrderByPlayer2p[ownerP]),false); }
+  }
+  // Eine Runde noch Karte auf den Friedhof des Anwenders
+  G.slots[effSlotId] = null; renderSlot(effSlotId);
+  const ownPfx = 'p'+ownerP;
+  const ownGraves = is4 ? G4.graves[ownPfx] : G.graves[ownPfx];
+  ownGraves.push({name:'Eine Runde noch',color:cd.color,type:'eff',file:imgFileFor('Eine Runde noch')});
+  if (is4) updGrave4(ownPfx); else updGrave(ownPfx);
+  // Popups schließen
+  document.getElementById('browser-modal').classList.remove('open');
+  document.getElementById('verbot-target-modal').classList.remove('open');
+  if (NET.mode==='multi') { is4 ? netSendState4() : netSendState(); }
 }
 
 // ── VERBOTS-ZIELFÄHIGKEITEN (Lord Phillipp/Mecces Pakt, Flosama/Bett abbauen, Maxibu/Ein Problem mit Alkohol) ──
@@ -3879,10 +3965,10 @@ function applyLP(p){
 function updateRevealStatus(p, isRevealed, is4) {
   if (is4) {
     const s = document.getElementById('p'+p+'-reveal-status-4');
-    if (s) s.textContent = isRevealed ? 'offen' : 'verdeckt';
+    if (s) { s.textContent = isRevealed ? 'offen' : 'verdeckt'; s.style.color = isRevealed ? '#fff' : ''; s.style.background = isRevealed ? 'rgba(180,50,50,0.7)' : ''; }
   } else {
     const s = document.getElementById('p'+p+'-reveal-status');
-    if (s) s.textContent = isRevealed ? 'Hand offen' : 'Hand verdeckt';
+    if (s) { s.textContent = isRevealed ? 'Hand offen' : 'Hand verdeckt'; s.style.color = isRevealed ? '#fff' : ''; s.style.background = isRevealed ? 'rgba(180,50,50,0.7)' : ''; }
   }
 }
 
@@ -4647,6 +4733,35 @@ function onCardDockedToEffSlot(player, slotId, cd) {
   }
   */
   /* (RGB handled in onCardDockedToEffSlot via beginAbilityActivation) */
+
+  // Eine Runde noch: prüfen ob nicht durch Verbotskarte geblockt, dann Reaktionsfenster, dann Friedhof-Auswahl
+  if (cd.name === 'Eine Runde noch') {
+    const ownerP = parseInt(player.replace('p',''));
+    const suf2 = is4 ? '-4' : '';
+    // Prüfen ob "Eine Runde noch Verbot" im Spiel ist (eigene Verbotsfelder)
+    const blocked = ['verbot1','verbot2','verbot3'].some(vs => {
+      const v = G.slots[player+'-'+vs+suf2];
+      return v && v.name === 'Eine Runde noch Verbot';
+    });
+    if (blocked) {
+      setTimeout(() => alert('Eine Runde noch ist durch eine Verbotskarte blockiert!'), 0);
+      // Karte wieder auf die Hand zurück
+      G.slots[slotId] = null; renderSlot(slotId);
+      const uid = G.nid++;
+      const el2 = spawnCard({name:cd.name,color:cd.color,type:cd.type||'eff',uid,file:cd.file||imgFileFor(cd.name)},0,0,false);
+      if (!handOrderByPlayer2p[ownerP]) handOrderByPlayer2p[ownerP]=[];
+      handOrderByPlayer2p[ownerP].push(uid); layoutMyHand();
+      return;
+    }
+    const fake = document.createElement('div');
+    fake.dataset.name = cd.name; fake.dataset.color = cd.color;
+    fake.dataset.ctype = cd.type||'eff'; fake.dataset.uid = cd.uid||0;
+    fake.dataset.slotId = slotId;
+    beginAbilityActivation(fake, 'Eine Runde noch', 'Eine Runde noch', () => {
+      openEineRundeNochPopup(ownerP, slotId, is4);
+    });
+    return;
+  }
 
   // Wanze: Spieler auswählen (oder bei nur 2 aktiven direkt) → Reaktionsfenster → Handkarten aufdecken
   if (cd.name === 'Wanze') {
@@ -7365,7 +7480,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v40p
+    v40r
   </div>
 </div>
 
@@ -8112,6 +8227,9 @@ if (d.t === 'state4') {
   if (d.t === 'attack_summary') {
     showOutcomeToast(d.text, d.is4);
   }
+  if (d.t === 'wanze_reveal') {
+    updateRevealStatus(d.targetP, d.open, d.is4);
+  }
   if (d.t === 'ability_decline') {
     if (pendingAbility) {
       if (!pendingAbility.declinedBy) pendingAbility.declinedBy = new Set();
@@ -8350,6 +8468,9 @@ function renderSimulatedHand(logicalPfx, cards, is4) {
   const suf = is4 ? '-4' : '';
   const physPfx = physId(logicalPfx);
   if (physPfx === 'p1') return; // das wäre die eigene Hand - wird separat (echt) gerendert
+  // Wenn diese Hand gerade durch Wanze aufgedeckt ist, nicht mit Rückseiten überschreiben
+  const logP = parseInt(logicalPfx.replace('p',''));
+  if (wanzeRevealedPlayer === logP) return;
   const handEl = document.getElementById(physPfx + '-hand' + suf);
   if (!handEl) return;
   handEl.querySelectorAll('.sim-hand-card').forEach(c => c.remove());
