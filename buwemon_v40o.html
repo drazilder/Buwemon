@@ -522,8 +522,9 @@ body {
   <div class="row-hand">
     <div class="zone zone-hand" id="p2-hand">
       <span class="zlbl">Hand – Spieler 1 – 0 Karten</span>
-      <button class="reveal-btn" onpointerdown="event.stopPropagation()" onclick="shuffleHand('p2')" style="bottom:32px;">🔀 Hand mischen</button>
-      <button class="reveal-btn" id="p2-reveal" onpointerdown="event.stopPropagation()" onclick="toggleReveal(2)">Hand verdeckt</button>
+      <button class="reveal-btn sandbox-only" onpointerdown="event.stopPropagation()" onclick="shuffleHand('p2')" style="bottom:32px;">🔀 Hand mischen</button>
+      <button class="reveal-btn sandbox-only" id="p2-reveal" onpointerdown="event.stopPropagation()" onclick="toggleReveal(2)">Hand verdeckt</button>
+      <span class="reveal-btn automatik-only" id="p2-reveal-status" style="pointer-events:none;cursor:default;">Hand verdeckt</span>
     </div>
   </div>
 
@@ -590,8 +591,9 @@ body {
   <div class="row-hand">
     <div class="zone zone-hand" id="p1-hand">
       <span class="zlbl">Hand – Spieler 2 – 0 Karten</span>
-      <button class="reveal-btn" onpointerdown="event.stopPropagation()" onclick="shuffleHand('p1')" style="bottom:32px;">🔀 Hand mischen</button>
-      <button class="reveal-btn" id="p1-reveal" onpointerdown="event.stopPropagation()" onclick="toggleReveal(1)">Hand verdeckt</button>
+      <button class="reveal-btn sandbox-only" onpointerdown="event.stopPropagation()" onclick="shuffleHand('p1')" style="bottom:32px;">🔀 Hand mischen</button>
+      <button class="reveal-btn sandbox-only" id="p1-reveal" onpointerdown="event.stopPropagation()" onclick="toggleReveal(1)">Hand verdeckt</button>
+      <span class="reveal-btn automatik-only" id="p1-reveal-status" style="pointer-events:none;cursor:default;">Hand verdeckt</span>
     </div>
   </div>
 </div>
@@ -601,19 +603,19 @@ body {
 
   <div id="p2-hand-4" class="hand4-zone" style="position:absolute;top:8px;bottom:auto;left:320px;right:320px;height:113px;">
   <span style="position:absolute;top:4px;left:0;right:0;font-size:.55rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">Hand – Spieler 2 – 0 Karten</span>
-  <button onpointerdown="event.stopPropagation()" id="p2-hide-4" onclick="hideHand4(2)" style="position:absolute;bottom:22px;right:5px;display:none;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand verbergen</button><button onpointerdown="event.stopPropagation()" onclick="shuffleHand4('p2')" style="position:absolute;bottom:4px;right:75px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">🔀 mischen</button><button onpointerdown="event.stopPropagation()" id="p2-reveal-4" onclick="openRevealPopup4(2)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand öffnen</button>
+  <button onpointerdown="event.stopPropagation()" id="p2-hide-4" onclick="hideHand4(2)" style="position:absolute;bottom:22px;right:5px;display:none;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;" class="sandbox-only">Hand verbergen</button><button onpointerdown="event.stopPropagation()" onclick="shuffleHand4('p2')" style="position:absolute;bottom:4px;right:75px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;" class="sandbox-only">🔀 mischen</button><button onpointerdown="event.stopPropagation()" id="p2-reveal-4" onclick="openRevealPopup4(2)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;" class="sandbox-only">Hand öffnen</button><span id="p2-reveal-status-4" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;min-height:16px;font-family:'Kievit',sans-serif;pointer-events:none;" class="automatik-only">verdeckt</span>
 </div>
   <div id="p1-hand-4" class="hand4-zone" style="position:absolute;top:auto;bottom:8px;left:320px;right:320px;height:113px;">
   <span style="position:absolute;top:4px;left:0;right:0;font-size:.55rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">Hand – Spieler 1 – 0 Karten</span>
-  <button onpointerdown="event.stopPropagation()" id="p1-hide-4" onclick="hideHand4(1)" style="position:absolute;bottom:22px;right:5px;display:none;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand verbergen</button><button onpointerdown="event.stopPropagation()" onclick="shuffleHand4('p1')" style="position:absolute;bottom:4px;right:75px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">🔀 mischen</button><button onpointerdown="event.stopPropagation()" id="p1-reveal-4" onclick="openRevealPopup4(1)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand öffnen</button>
+  <button onpointerdown="event.stopPropagation()" id="p1-hide-4" onclick="hideHand4(1)" style="position:absolute;bottom:22px;right:5px;display:none;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;" class="sandbox-only">Hand verbergen</button><button onpointerdown="event.stopPropagation()" onclick="shuffleHand4('p1')" style="position:absolute;bottom:4px;right:75px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;" class="sandbox-only">🔀 mischen</button><button onpointerdown="event.stopPropagation()" id="p1-reveal-4" onclick="openRevealPopup4(1)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;" class="sandbox-only">Hand öffnen</button><span id="p1-reveal-status-4" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;min-height:16px;font-family:'Kievit',sans-serif;pointer-events:none;" class="automatik-only">verdeckt</span>
 </div>
   <div id="p3-hand-4" class="hand4-zone" style="position:absolute;top:90px;bottom:90px;left:8px;right:auto;width:151px;">
   <span style="position:absolute;top:4px;left:0;right:0;font-size:.55rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">Hand – Spieler 3 – 0 Karten</span>
-  <button onpointerdown="event.stopPropagation()" id="p3-hide-4" onclick="hideHand4(3)" style="position:absolute;bottom:22px;right:5px;display:none;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand verbergen</button><button onpointerdown="event.stopPropagation()" onclick="shuffleHand4('p3')" style="position:absolute;bottom:4px;right:75px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">🔀 mischen</button><button onpointerdown="event.stopPropagation()" id="p3-reveal-4" onclick="openRevealPopup4(3)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand öffnen</button>
+  <button onpointerdown="event.stopPropagation()" id="p3-hide-4" onclick="hideHand4(3)" style="position:absolute;bottom:22px;right:5px;display:none;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;" class="sandbox-only">Hand verbergen</button><button onpointerdown="event.stopPropagation()" onclick="shuffleHand4('p3')" style="position:absolute;bottom:4px;right:75px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;" class="sandbox-only">🔀 mischen</button><button onpointerdown="event.stopPropagation()" id="p3-reveal-4" onclick="openRevealPopup4(3)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;" class="sandbox-only">Hand öffnen</button><span id="p3-reveal-status-4" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;min-height:16px;font-family:'Kievit',sans-serif;pointer-events:none;" class="automatik-only">verdeckt</span>
 </div>
   <div id="p4-hand-4" class="hand4-zone" style="position:absolute;top:90px;bottom:90px;left:auto;right:8px;width:151px;">
   <span style="position:absolute;top:4px;left:0;right:0;font-size:.55rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.3px;text-align:center;pointer-events:none;font-family:'AiSpec',sans-serif;font-style:italic;">Hand – Spieler 4 – 0 Karten</span>
-  <button onpointerdown="event.stopPropagation()" id="p4-hide-4" onclick="hideHand4(4)" style="position:absolute;bottom:22px;right:5px;display:none;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand verbergen</button><button onpointerdown="event.stopPropagation()" onclick="shuffleHand4('p4')" style="position:absolute;bottom:4px;right:75px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">🔀 mischen</button><button onpointerdown="event.stopPropagation()" id="p4-reveal-4" onclick="openRevealPopup4(4)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;">Hand öffnen</button>
+  <button onpointerdown="event.stopPropagation()" id="p4-hide-4" onclick="hideHand4(4)" style="position:absolute;bottom:22px;right:5px;display:none;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;" class="sandbox-only">Hand verbergen</button><button onpointerdown="event.stopPropagation()" onclick="shuffleHand4('p4')" style="position:absolute;bottom:4px;right:75px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;" class="sandbox-only">🔀 mischen</button><button onpointerdown="event.stopPropagation()" id="p4-reveal-4" onclick="openRevealPopup4(4)" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;cursor:pointer;min-height:16px;font-family:'Kievit',sans-serif;" class="sandbox-only">Hand öffnen</button><span id="p4-reveal-status-4" style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,0.07);border:1px solid rgba(0,0,0,0.11);border-radius:4px;padding:2px 5px;font-size:.5rem;min-height:16px;font-family:'Kievit',sans-serif;pointer-events:none;" class="automatik-only">verdeckt</span>
 </div>
 
   <div id="p1-grave-4" onclick="openGraveBrowser4('p1')" class="grave4-zone" style="position:absolute;left:1553px;top:755px;width:47px;height:66px;overflow:hidden;cursor:pointer;">
@@ -1626,6 +1628,7 @@ function endTurnPhysical(physP) {
 
 function endTurn(p) {
   if (TURN_2P !== p) return;
+  clearWanzeReveal();
   const next = p === 1 ? 2 : 1;
   setTurn2p(next);
   if (NET.mode === 'multi') netSend({t:'turn2', p: next, myColor: NET.myColor, myName: NET.myName, sender: NET.myPlayer});
@@ -1648,6 +1651,7 @@ function endTurnPhysical4(physP) {
 
 function endTurn4(p) {
   if (TURN_4P !== p) return;
+  clearWanzeReveal();
   const next = nextTurnPlayer4(p);
   setTurn4p(next);
   if (NET.mode === 'multi' && fourPlayerMode) netSend({t:'turn4', p: next, myPlayer: NET.myPlayer, myColor: G4.playerColors[NET.myPlayer], myName: G4.names[NET.myPlayer], sender: NET.myPlayer});
@@ -2579,39 +2583,52 @@ function clearAbilityUI() {
 
 // Jeder Spieler räumt NUR seine eigenen gespielten Antwortkarten und ggf. sein eigenes
 // blockiertes Buwemon selbst weg (jeder ist nur für seine eigenen Felder verantwortlich)
-function cleanUpOwnAbilityCards(playedCards, killSlotId, killOwnerP, is4, cleanAll, returnToHand, tutMirLeidSlotId) {
+function cleanUpOwnAbilityCards(playedCards, killSlotId, killOwnerP, is4, cleanAll, returnToHand, tutMirLeidSlotId, combatSlotIds) {
   const myP = NET.mode === 'multi' ? NET.myPlayer : null;
   (playedCards || []).forEach(pc => {
-    if (!cleanAll && myP !== null && pc.player !== myP) return;
+    // Karte aus dem Slot entfernen - das machen ALLE Clients (Slot muss überall leer sein)
+    // Ausnahme: Glaskuppel bleibt immer im Slot (sie hat ihre eigene Ablauf-Mechanik)
+    if (pc.cardName === 'Glaskuppel') return;
     const cd = G.slots[pc.slotId];
     if (!cd) return;
-    const pfx = 'p' + pc.player;
     G.slots[pc.slotId] = null;
     renderSlot(pc.slotId);
-    if (returnToHand && pc.cardName !== 'Glaskuppel') {
-      // Karte zurück auf die Hand des Besitzers
-      const uid = G.nid++;
-      const el2 = spawnCard({ name: cd.name, color: cd.color, type: cd.type || cd.ctype, uid, file: cd.file || imgFileFor(cd.name) }, 0, 0, false);
-      const p = pc.player;
-      if (is4) {
-        if (!handOrderByPlayer4p[p]) handOrderByPlayer4p[p] = [];
-        handOrderByPlayer4p[p].push(uid);
-        if (p === myLogicalPlayer4p()) layoutMyHand4();
-        else { el2.style.display='none'; renderSimulatedHand('p'+p, handCardsFromUids(handOrderByPlayer4p[p]), true); }
+
+    const p = pc.player;
+    const pfx = 'p' + p;
+
+    if (returnToHand) {
+      // Jeder Client legt NUR SEINE EIGENEN Karten auf seine Hand.
+      // Für fremde Spieler wird die simulierte Anzeige aktualisiert.
+      const isOwnCard = (myP === null || p === myP);
+      if (isOwnCard) {
+        const uid = G.nid++;
+        const el2 = spawnCard({ name: cd.name, color: cd.color, type: cd.type || cd.ctype, uid, file: cd.file || imgFileFor(cd.name) }, 0, 0, false);
+        if (is4) {
+          if (!handOrderByPlayer4p[p]) handOrderByPlayer4p[p] = [];
+          handOrderByPlayer4p[p].push(uid);
+          layoutMyHand4();
+        } else {
+          if (!handOrderByPlayer2p[p]) handOrderByPlayer2p[p] = [];
+          handOrderByPlayer2p[p].push(uid);
+          layoutMyHand();
+        }
       } else {
-        if (!handOrderByPlayer2p[p]) handOrderByPlayer2p[p] = [];
-        handOrderByPlayer2p[p].push(uid);
-        if (p === myLogicalPlayer2p()) layoutMyHand();
-        else { el2.style.display='none'; renderSimulatedHand('p'+p, handCardsFromUids(handOrderByPlayer2p[p]), false); }
+        // Fremder Spieler: simulierte Handanzeige aktualisieren (Karte ist unsichtbar, aber in der Zählung)
+        // Der netSendState am Ende sorgt dafür, dass der andere Client seine echten Karten korrekt zeigt
+        if (is4) renderSimulatedHand('p'+p, handCardsFromUids(handOrderByPlayer4p[p]||[]), true);
+        else renderSimulatedHand('p'+p, handCardsFromUids(handOrderByPlayer2p[p]||[]), false);
       }
     } else {
+      // Normal: auf den Friedhof
+      if (!cleanAll && myP !== null && p !== myP) return;
       const bcd = { name: cd.name, color: cd.color, type: cd.type || cd.ctype, file: cd.file || '' };
-      if (is4) { G4.graves[pfx].push(bcd); updGrave4(pfx); if (NET.mode==='multi') netSend({t:'grave4_update', player:pfx, graves:G4.graves[pfx]}); }
-      else { G.graves[pfx].push(bcd); updGrave(pfx); }
+      if (is4) { if (G4.graves[pfx]) { G4.graves[pfx].push(bcd); updGrave4(pfx); } if (NET.mode==='multi') netSend({t:'grave4_update', player:pfx, graves:G4.graves[pfx]}); }
+      else { if (G.graves[pfx]) { G.graves[pfx].push(bcd); updGrave(pfx); } }
     }
   });
-  // Tut-mir-leid selbst auf den Friedhof des Angreifers (tutMirLeidOwnerP ist der Angreifer)
-  if (tutMirLeidSlotId) {
+  // Tut-mir-leid selbst auf den Friedhof - nur der Angreifer-Client macht das
+  if (tutMirLeidSlotId && (myP === null || parseInt((tutMirLeidSlotId.match(/^p(\d)/)||[])[1]||'1') === myP)) {
     const tutOwnerP = parseInt((tutMirLeidSlotId.match(/^p(\d)/)||[])[1] || '1');
     const pfx = 'p' + tutOwnerP;
     const bcd = { name: 'Tut mir leid\u2026', color: '#aaaaaa', type: 'eff', file: imgFileFor('Tut mir leid\u2026') };
@@ -2628,6 +2645,32 @@ function cleanUpOwnAbilityCards(playedCards, killSlotId, killOwnerP, is4, cleanA
       if (is4) { G4.graves[pfx].push(bcd); updGrave4(pfx); if (NET.mode==='multi') netSend({t:'grave4_update', player:pfx, graves:G4.graves[pfx]}); }
       else { G.graves[pfx].push(bcd); updGrave(pfx); }
     }
+  }
+  // Ausgerüstete Clubmate/13er Bogen/Clubmate Ereignis der kämpfenden Buwemon zurück auf die Hand
+  if (returnToHand && combatSlotIds) {
+    combatSlotIds.forEach(sid => {
+      const buwCd = G.slots[sid];
+      if (!buwCd || !buwCd.equipped) return;
+      const ownerP = parseInt((sid.match(/^p(\d)/)||[])[1] || '1');
+      buwCd.equipped = buwCd.equipped.filter(eq => {
+        if (eq.name !== 'Clubmate' && eq.name !== '13er Bogen' && eq.name !== 'Clubmate Ereignis') return true;
+        const uid = G.nid++;
+        const el2 = spawnCard({ name: eq.name, color: eq.color, type: eq.ctype||'eff', uid, file: eq.file||imgFileFor(eq.name) }, 0, 0, false);
+        if (is4) {
+          if (!handOrderByPlayer4p[ownerP]) handOrderByPlayer4p[ownerP] = [];
+          handOrderByPlayer4p[ownerP].push(uid);
+          if (ownerP === myLogicalPlayer4p()) layoutMyHand4();
+          else { el2.style.display='none'; renderSimulatedHand('p'+ownerP, handCardsFromUids(handOrderByPlayer4p[ownerP]), true); }
+        } else {
+          if (!handOrderByPlayer2p[ownerP]) handOrderByPlayer2p[ownerP] = [];
+          handOrderByPlayer2p[ownerP].push(uid);
+          if (ownerP === myLogicalPlayer2p()) layoutMyHand();
+          else { el2.style.display='none'; renderSimulatedHand('p'+ownerP, handCardsFromUids(handOrderByPlayer2p[ownerP]), false); }
+        }
+        return false;
+      });
+      renderSlot(sid);
+    });
   }
   if (NET.mode === 'multi') { if (is4) netSendState4(); else netSendState(); }
 }
@@ -2777,8 +2820,9 @@ function finalizeAbilityChain(killsBuwemon) {
     }
     playedCardsToClean = playedCards.filter(pc => pc.cardName !== 'Tut mir leid\u2026');
   }
+  const combatSlotIds = (returnToHand && data.defenderSlotId) ? [data.slotId, data.defenderSlotId].filter(Boolean) : null;
 
-  cleanUpOwnAbilityCards(playedCardsToClean, killSlotId, killOwnerP, data.is4, data.isAttack, returnToHand, tutMirLeidSlotId);
+  cleanUpOwnAbilityCards(playedCardsToClean, killSlotId, killOwnerP, data.is4, data.isAttack, returnToHand, tutMirLeidSlotId, combatSlotIds);
 
   if (isActivatorHere) {
     if (data.isAttack) {
@@ -2796,7 +2840,7 @@ function finalizeAbilityChain(killsBuwemon) {
     } else {
       if (!wasBlocked && resolveFn) resolveFn();
     }
-    if (NET.mode === 'multi') netSend({t:'ability_resolved', wasBlocked, playedCards: playedCardsToClean, killSlotId, killOwnerP, is4: data.is4, returnToHand, tutMirLeidSlotId});
+    if (NET.mode === 'multi') netSend({t:'ability_resolved', wasBlocked, playedCards: playedCardsToClean, killSlotId, killOwnerP, is4: data.is4, returnToHand, tutMirLeidSlotId, combatSlotIds});
   }
 }
 
@@ -3002,34 +3046,7 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
       atkPowerOverride = sel.attackPower - 30;
       if (atkColor === '#008899') attackerDiesAfterwards = true; // Angreifer ist Cyan
     } else if (defense.name === 'Tut mir leid\u2026') {
-      // Alle Hauptlogik (Karten auf Hand, Tut-mir-leid auf Friedhof) läuft in finalizeAbilityChain
-      // via cleanUpOwnAbilityCards. Nur die Ausrüstungs-Rückgabe passiert hier, da nur resolveAttack
-      // die Slot-IDs der kämpfenden Buwemon kennt.
-      const combatSlots = new Set([sel.slotId, defenderSlotId].filter(Boolean));
-      combatSlots.forEach(sid => {
-        const buwCd = G.slots[sid];
-        if (!buwCd || !buwCd.equipped) return;
-        const ownerP = parseInt((sid.match(/^p(\d)/)||[])[1] || '1');
-        buwCd.equipped = buwCd.equipped.filter(eq => {
-          if (eq.name !== 'Clubmate' && eq.name !== '13er Bogen' && eq.name !== 'Clubmate Ereignis') return true;
-          const uid = G.nid++;
-          const el2 = spawnCard({ name: eq.name, color: eq.color, type: eq.ctype || 'eff', uid, file: eq.file || imgFileFor(eq.name) }, 0, 0, false);
-          if (is4) {
-            if (!handOrderByPlayer4p[ownerP]) handOrderByPlayer4p[ownerP] = [];
-            handOrderByPlayer4p[ownerP].push(uid);
-            if (ownerP === myLogicalPlayer4p()) layoutMyHand4();
-            else { el2.style.display='none'; renderSimulatedHand('p'+ownerP, handCardsFromUids(handOrderByPlayer4p[ownerP]), true); }
-          } else {
-            if (!handOrderByPlayer2p[ownerP]) handOrderByPlayer2p[ownerP] = [];
-            handOrderByPlayer2p[ownerP].push(uid);
-            if (ownerP === myLogicalPlayer2p()) layoutMyHand();
-            else { el2.style.display='none'; renderSimulatedHand('p'+ownerP, handCardsFromUids(handOrderByPlayer2p[ownerP]), false); }
-          }
-          return false;
-        });
-        renderSlot(sid);
-      });
-      return; // resolveAttack hier fertig - restliche Logik in finalizeAbilityChain
+      return; // Alles (Effektkarten + Ausrüstungen zurück auf Hand) läuft in finalizeAbilityChain via cleanUpOwnAbilityCards
     } else if (defense.name === 'RGB') {
       // RGB zieht 2 Karten für den Besitzer (ownerP aus defense) - Kampf läuft danach normal weiter
       if (defense.ownerP) resolveRGB(null, is4, defense.ownerP);
@@ -3077,6 +3094,109 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
   if (NET.mode === 'multi') netSend({t:'attack_summary', text: 'Kampf: ' + summary, is4});
 
   if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
+}
+
+// ── WANZE ──
+// Spieler auswählen, dann Reaktionsfenster. Bei Erfolg: alle Handkarten des Ziels werden
+// für den Aktivator sichtbar (aufgedeckt) bis er seinen Zug beendet.
+let pendingWanze = null;
+let wanzeRevealedPlayer = null; // welcher Spieler gerade durch Wanze aufgedeckt ist
+
+function beginWanze(btn, cardEl) {
+  closePopup();
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const activatorP = parseInt((cardEl.dataset.slotId.match(/^p(\d)/)||[])[1] || '1');
+  pendingWanze = { cardEl, activatorP, is4 };
+  const suf = is4 ? '-4' : '';
+  const toast = document.getElementById('abil-toast'+suf);
+  const titleEl = document.getElementById('abil-toast-title'+suf);
+  const subEl = document.getElementById('abil-toast-sub'+suf);
+  const barWrap = document.getElementById('abil-toast-bar-wrap'+suf);
+  const skipBtn = document.getElementById('abil-toast-skip'+suf);
+  titleEl.innerHTML = '<b>Wanze</b>';
+  subEl.textContent = 'Klicke auf irgendeinen Bereich eines gegnerischen Spielers';
+  barWrap.style.display = 'none';
+  skipBtn.style.display = 'inline-block';
+  skipBtn.textContent = 'Abbrechen';
+  skipBtn.onclick = () => { toast.classList.remove('open'); barWrap.style.display=''; pendingWanze = null; };
+  toast.classList.add('open');
+}
+
+// Globaler Klick-Listener für Wanze-Zielauswahl
+document.addEventListener('pointerdown', (e) => {
+  if (!pendingWanze || sandboxMode) return;
+  const { activatorP, cardEl, is4 } = pendingWanze;
+  // Jede Zone die zu einem Spieler gehört (hand, buw, eff, grave etc.)
+  const zoneEl = e.target.closest('[id^="p"]');
+  if (!zoneEl) return;
+  const m = zoneEl.id.match(/^p(\d)/);
+  if (!m) return;
+  const physP = parseInt(m[1]);
+  const logicalPfx = is4 ? toLogicalId('p'+physP) : toLogicalId('p'+physP);
+  const targetP = parseInt(logicalPfx.replace('p',''));
+  if (targetP === activatorP) return;
+  e.stopPropagation();
+  const suf = is4 ? '-4' : '';
+  document.getElementById('abil-toast'+suf).classList.remove('open');
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
+  const savedWanze = pendingWanze;
+  pendingWanze = null;
+  beginAbilityActivation(cardEl, 'Wanze', 'Wanze (gegen Spieler ' + targetP + ')', () => {
+    resolveWanze(savedWanze.activatorP, targetP, savedWanze.is4);
+  });
+}, true);
+
+function resolveWanze(activatorP, targetP, is4) {
+  // Nur für den Aktivator: Handkarten von targetP aufdecken
+  if (NET.mode === 'multi' && NET.myPlayer !== activatorP) return;
+  wanzeRevealedPlayer = targetP;
+  // Simulierte Handkarten des Ziels als ECHTE aufgedeckte Karten anzeigen
+  const hand = is4 ? (handOrderByPlayer4p[targetP]||[]) : (handOrderByPlayer2p[targetP]||[]);
+  // Karteninformationen kommen aus den simulierten Handkarten (sim-hand-card Elemente)
+  const physPfx = physId('p'+targetP);
+  const suf = is4 ? '-4' : '';
+  const handEl = document.getElementById(physPfx+'-hand'+suf);
+  if (handEl) {
+    handEl.querySelectorAll('.sim-hand-card').forEach((c, i) => {
+      c.style.cursor = 'pointer';
+      c.style.pointerEvents = 'auto';
+      // Karte aufdecken: Rückseite durch echtes Kartenbild ersetzen
+      const img = c.querySelector('img');
+      if (img && c.dataset.file) img.src = c.dataset.file;
+      else if (img && c.dataset.name) img.src = thumbFor(c.dataset.name);
+      // Doppelklick öffnet Popup
+      c.ondblclick = (e2) => {
+        e2.stopPropagation();
+        const fake = document.createElement('div');
+        fake.dataset.name = c.dataset.name; fake.dataset.color = c.dataset.color;
+        fake.dataset.ctype = c.dataset.ctype; fake.dataset.uid = c.dataset.uid || 0;
+        fake.dataset.fd = '0';
+        openPopup(fake);
+      };
+    });
+  }
+  updateRevealStatus(targetP, true, is4);
+}
+
+function clearWanzeReveal() {
+  if (wanzeRevealedPlayer === null) return;
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const targetP = wanzeRevealedPlayer;
+  wanzeRevealedPlayer = null;
+  // Wieder verdecken: simulierte Handkarten zurück auf Rückseite
+  const physPfx = physId('p'+targetP);
+  const suf = is4 ? '-4' : '';
+  const handEl = document.getElementById(physPfx+'-hand'+suf);
+  if (handEl) {
+    handEl.querySelectorAll('.sim-hand-card').forEach(c => {
+      const img = c.querySelector('img');
+      if (img) img.src = BACK;
+      c.style.cursor = '';
+      c.style.pointerEvents = 'none';
+      c.ondblclick = null;
+    });
+  }
+  updateRevealStatus(targetP, false, is4);
 }
 
 // ── GOTTKOMPLEX (Marzo der Gott) ──
@@ -3242,6 +3362,7 @@ const SPECIAL_ABILITY_HANDLERS = {
   'Raum-Zeit-Genozid': (btn) => { closePopup(); if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) openColorRemove4(btn); else openColorRemove(btn); },
   'Picky Eating': (btn, el) => { closePopup(); confirmPickyEating(btn, el); },
   'Gottkomplex': (btn, el) => beginGottkomplex(btn, el),
+  'Wanze': (btn, el) => beginWanze(btn, el),
   'Bett abbauen': (btn, el) => beginVerbotAbility(btn, el, 'Eine Runde noch Verbot', 'Bett abbauen'),
   'Ein Problem mit Alkohol': (btn, el) => beginVerbotAbility(btn, el, 'Nachschlag Verbot', 'Ein Problem mit Alkohol'),
 };
@@ -3783,6 +3904,16 @@ function applyLP(p){
 }
 
 // ── REVEAL ──
+function updateRevealStatus(p, isRevealed, is4) {
+  if (is4) {
+    const s = document.getElementById('p'+p+'-reveal-status-4');
+    if (s) s.textContent = isRevealed ? 'offen' : 'verdeckt';
+  } else {
+    const s = document.getElementById('p'+p+'-reveal-status');
+    if (s) s.textContent = isRevealed ? 'Hand offen' : 'Hand verdeckt';
+  }
+}
+
 function toggleReveal(p){
   G.reveal[p] = !G.reveal[p];
   const btn = document.getElementById('p'+p+'-reveal');
@@ -3791,6 +3922,7 @@ function toggleReveal(p){
     btn.style.background = G.reveal[p] ? 'rgba(180,50,50,0.5)' : '';
     btn.style.color = G.reveal[p] ? '#fff' : '';
   }
+  updateRevealStatus(p, G.reveal[p], false);
   applyRevealToHand(p);
   if (NET.mode === 'multi') {
     netSend({t:'reveal', p, val: G.reveal[p]});
@@ -7221,7 +7353,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v40j
+    v40o
   </div>
 </div>
 
@@ -7754,8 +7886,10 @@ function onNetData(d) {
       updGrave(sPfx);
     }
     if (d.slots) {
-      // Update all slots from sender
+      // Nur Slots des Senders überschreiben – nie Slots anderer Spieler nullen
+      // (sonst werden z.B. Effektkarten des Empfängers fälschlich gelöscht)
       Object.keys(d.slots).forEach(slot => {
+        if (!slot.startsWith(sPfx)) return; // nur eigene Slots des Senders
         G.slots[slot] = d.slots[slot] || null;
         renderSlot(slot);
       });
@@ -7994,7 +8128,7 @@ if (d.t === 'state4') {
     const wasAttack = pendingAbility && pendingAbility.isAttack;
     clearAbilityUI();
     pendingAbility = null;
-    cleanUpOwnAbilityCards(d.playedCards, d.killSlotId, d.killOwnerP, d.is4, wasAttack, d.returnToHand, d.tutMirLeidSlotId);
+    cleanUpOwnAbilityCards(d.playedCards, d.killSlotId, d.killOwnerP, d.is4, wasAttack, d.returnToHand, d.tutMirLeidSlotId, d.combatSlotIds);
   }
   if (d.t === 'ability_press') {
     setRemoteAbilityPressed(d.ability, true);
