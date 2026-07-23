@@ -1672,7 +1672,7 @@ function endTurn(p) {
   if (TURN_2P !== p) return;
   clearWanzeReveal();
   clearDinkelmehlSuppression();
-  ragequitBlockedNames.clear();
+  ragequitBlockedUids.clear();
   const next = p === 1 ? 2 : 1;
   setTurn2p(next);
   if (NET.mode === 'multi') netSend({t:'turn2', p: next, myColor: NET.myColor, myName: NET.myName, sender: NET.myPlayer});
@@ -1697,7 +1697,7 @@ function endTurn4(p) {
   if (TURN_4P !== p) return;
   clearWanzeReveal();
   clearDinkelmehlSuppression();
-  ragequitBlockedNames.clear();
+  ragequitBlockedUids.clear();
   const next = nextTurnPlayer4(p);
   setTurn4p(next);
   if (NET.mode === 'multi' && fourPlayerMode) netSend({t:'turn4', p: next, myPlayer: NET.myPlayer, myColor: G4.playerColors[NET.myPlayer], myName: G4.names[NET.myPlayer], sender: NET.myPlayer});
@@ -3383,7 +3383,7 @@ document.addEventListener('pointerdown', (e) => {
 }, true);
 
 // ── RAGEQUIT ──
-let ragequitBlockedNames = new Set(); // Kartennamen die im selben Zug nicht wieder gedockt werden dürfen
+let ragequitBlockedUids = new Set(); // Kartennamen die im selben Zug nicht wieder gedockt werden dürfen
 
 function beginRagequit(ownerP, is4, effSlotId, effCd) {
   pendingOwnTurnTarget = {
@@ -3414,8 +3414,8 @@ function resolveRagequit(buwSlotId, buwCd, ownerP, is4, effSlotId) {
     // Auf Hand zurück
     const uid = G.nid++;
     const el2 = spawnCard({name:buwCd.name,color:buwCd.color,type:buwCd.type||'buw',uid,file:buwCd.file||imgFileFor(buwCd.name)},0,0,false);
-    ragequitBlockedNames.add(buwCd.name);
-    if (NET.mode === 'multi') netSend({t:'ragequit_block', name: buwCd.name});
+    ragequitBlockedUids.add(uid); // uid der neu gespawnten Karte
+    if (NET.mode === 'multi') netSend({t:'ragequit_block', uid});
     if (is4) {
       if (!handOrderByPlayer4p[ownerP]) handOrderByPlayer4p[ownerP]=[];
       handOrderByPlayer4p[ownerP].push(uid);
@@ -5556,7 +5556,7 @@ function checkExBuwemon(player, suffix) {
 
 function tryDockCard(el) {
   // Ragequit-Sperre: Buwemon das gerade per Ragequit auf die Hand genommen wurde darf nicht gedockt werden
-  if (!sandboxMode && (el.dataset.ctype === 'buw' || el.dataset.ctype === 'spec') && ragequitBlockedNames.has(el.dataset.name)) {
+  if (!sandboxMode && (el.dataset.ctype === 'buw' || el.dataset.ctype === 'spec') && ragequitBlockedUids.has(parseInt(el.dataset.uid))) {
     showOutcomeToast('⚠ Dieses Buwemon darf erst im nächsten Zug wieder ausgespielt werden!', false);
     return false;
   }
@@ -5944,7 +5944,7 @@ function releaseSlot(slotId, x, y) {
           const wasBan = checkDropOnBanish(el);
           if (!wasBan) checkDropOnGrave(el);
           // Ragequit-Sperre: Karte zurück auf die Hand wenn nicht gedockt und nicht auf Friedhof/Verbannt
-          if (!sandboxMode && !wasBan && !docked && (el.dataset.ctype === 'buw' || el.dataset.ctype === 'spec') && ragequitBlockedNames.has(el.dataset.name)) {
+          if (!sandboxMode && !wasBan && !docked && (el.dataset.ctype === 'buw' || el.dataset.ctype === 'spec') && ragequitBlockedUids.has(parseInt(el.dataset.uid))) {
             const myP2 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode ? myLogicalPlayer4p() : myLogicalPlayer2p();
             const uid2 = parseInt(el.dataset.uid);
             if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) {
@@ -8078,7 +8078,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v41q
+    v41r
   </div>
 </div>
 
@@ -8833,7 +8833,7 @@ if (d.t === 'state4') {
     // DEBUG: entfernen nach Test
     if (!window._dbg) { window._dbg=true; console.log('outcome_toast empfangen:', d.text); }
   }
-  if (d.t === 'ragequit_block') { ragequitBlockedNames.add(d.name); }
+  if (d.t === 'ragequit_block') { ragequitBlockedUids.add(d.uid); }
   if (d.t === 'wanze_reveal') {
     updateRevealStatus(d.targetP, d.open, d.is4);
   }
