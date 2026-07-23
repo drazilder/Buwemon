@@ -3408,6 +3408,7 @@ function resolveRagequit(buwSlotId, buwCd, ownerP, is4, effSlotId) {
     const uid = G.nid++;
     const el2 = spawnCard({name:buwCd.name,color:buwCd.color,type:buwCd.type||'buw',uid,file:buwCd.file||imgFileFor(buwCd.name)},0,0,false);
     ragequitBlockedUids.add(uid);
+    if (NET.mode === 'multi') netSend({t:'ragequit_block', uid});
     if (is4) {
       if (!handOrderByPlayer4p[ownerP]) handOrderByPlayer4p[ownerP]=[];
       handOrderByPlayer4p[ownerP].push(uid);
@@ -4169,7 +4170,7 @@ function onCarryDrop(e) {
       if (isEffSlot && !(cd.type === 'eff' || EFF_EREIGNIS_NAMES.includes(cd.name))) break;
       if (isVerbotSlot && !VERBOT_NAMES.includes(cd.name)) break;
       const isBuwSlot = !isExSlot && !isEffSlot && !isVerbotSlot;
-      if (isBuwSlot && ragequitBlockedUids.has(parseInt(el.dataset.uid))) { showOutcomeToast('Dieses Buwemon darf erst im nächsten Zug wieder ausgespielt werden!', false); break; }
+      if (isBuwSlot && ragequitBlockedUids.has(parseInt(el.dataset.uid))) { showOutcomeToast('Dieses Buwemon darf erst im nächsten Zug wieder ausgespielt werden!', false); return false; }
       if (isBuwSlot && cd.type !== 'buw' && cd.type !== 'spec') break;
       const player = (lsid.match(/^p[1-4]/)||['p2'])[0];
       const zoneSuffix2 = lsid.endsWith('-4') ? '-4' : '';
@@ -5710,6 +5711,7 @@ function tryDockCard(el) {
       const player = (lsid.match(/^p[1-4]/)||['p2'])[0];
       const zoneSuffix = lsid.endsWith('-4') ? '-4' : '';
       const isBuwSlot = !isExSlot && !isEffSlot && !isVerbotSlot;
+      if (isBuwSlot && ragequitBlockedUids.has(parseInt(el.dataset.uid))) { showOutcomeToast('Dieses Buwemon darf erst im nächsten Zug wieder ausgespielt werden!', false); return false; }
       if (isBuwSlot) { checkExBuwemon(player, zoneSuffix); checkZoneColor(player, zoneSuffix); }
       if (isEffSlot || isVerbotSlot) checkVerbote(player, zoneSuffix);
       if (isEffSlot) onCardDockedToEffSlot(player, lsid, cd);
@@ -8017,7 +8019,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v41k
+    v41m
   </div>
 </div>
 
@@ -8772,6 +8774,7 @@ if (d.t === 'state4') {
     // DEBUG: entfernen nach Test
     if (!window._dbg) { window._dbg=true; console.log('outcome_toast empfangen:', d.text); }
   }
+  if (d.t === 'ragequit_block') { ragequitBlockedUids.add(d.uid); }
   if (d.t === 'wanze_reveal') {
     updateRevealStatus(d.targetP, d.open, d.is4);
   }
