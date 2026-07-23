@@ -1672,7 +1672,7 @@ function endTurn(p) {
   if (TURN_2P !== p) return;
   clearWanzeReveal();
   clearDinkelmehlSuppression();
-  ragequitBlockedNames.clear();
+  ragequitBlockedUids.clear();
   const next = p === 1 ? 2 : 1;
   setTurn2p(next);
   if (NET.mode === 'multi') netSend({t:'turn2', p: next, myColor: NET.myColor, myName: NET.myName, sender: NET.myPlayer});
@@ -1697,7 +1697,7 @@ function endTurn4(p) {
   if (TURN_4P !== p) return;
   clearWanzeReveal();
   clearDinkelmehlSuppression();
-  ragequitBlockedNames.clear();
+  ragequitBlockedUids.clear();
   const next = nextTurnPlayer4(p);
   setTurn4p(next);
   if (NET.mode === 'multi' && fourPlayerMode) netSend({t:'turn4', p: next, myPlayer: NET.myPlayer, myColor: G4.playerColors[NET.myPlayer], myName: G4.names[NET.myPlayer], sender: NET.myPlayer});
@@ -3042,6 +3042,28 @@ function showOutcomeToast(text, is4, noSync) {
 // Besitzers - passiert immer nach einem Kampf, unabhängig vom Ausgang (nur falls das
 // verteidigende Buwemon den Kampf überlebt hat - stirbt es, wird die komplette Ausrüstung
 // bereits über den normalen Friedhof-Umzug mit erledigt).
+const TEMP_EQUIP_NAMES = ['Clubmate', '13er Bogen', 'Clubmate Ereignis']; // verschwinden nach jedem Kampf
+const PERM_EQUIP_NAMES = ['Minus20 Ereignis', 'Plus10 Ereignis']; // bleiben dauerhaft
+
+function clearCombatEquipAfterFight(slotIds, is4) {
+  (slotIds || []).forEach(sid => {
+    const cd = G.slots[sid];
+    if (!cd || !cd.equipped || !cd.equipped.length) return;
+    const p = parseInt((sid.match(/^p(\d)/)||[])[1]||'0');
+    const pfx = 'p'+p;
+    const toRemove = cd.equipped.filter(eq => TEMP_EQUIP_NAMES.includes(eq.name));
+    if (!toRemove.length) return;
+    cd.equipped = cd.equipped.filter(eq => !TEMP_EQUIP_NAMES.includes(eq.name));
+    toRemove.forEach(eq => {
+      if (eq.ctype === 'ereignis') return; // Ereigniskarten nur löschen, nicht auf Friedhof
+      const graves = is4 ? G4.graves[pfx] : G.graves[pfx];
+      if (graves) graves.push({name:eq.name,color:eq.color,type:'eff',file:eq.file||''});
+    });
+    if (is4) updGrave4(pfx); else updGrave(pfx);
+    renderSlot(sid);
+  });
+}
+
 function moveCombatEquipToGrave(defenderSlotId, preEquipCount, is4) {
   if (preEquipCount === undefined || preEquipCount === null) return;
   const cd = G.slots[defenderSlotId];
@@ -3066,6 +3088,7 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
   if (resolveInfo.fourAceFour) {
     // FourAceFour bei einem Angriff: Angreifer stirbt, Angriff schlägt komplett fehl. Nicht abwehrbar.
     moveToGraveLogical(sel.slotId, G.slots[sel.slotId], is4);
+    clearCombatEquipAfterFight([sel.slotId, defenderSlotId].filter(Boolean), is4);
     if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
     return;
   }
@@ -3127,6 +3150,7 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
   if (attackFails) {
     if (attackerDiesInstead) moveToGraveLogical(sel.slotId, G.slots[sel.slotId], is4);
     moveCombatEquipToGrave(defenderSlotId, preEquipCount, is4);
+    clearCombatEquipAfterFight([sel.slotId, defenderSlotId].filter(Boolean), is4);
     if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
     return;
   }
@@ -3151,6 +3175,9 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
   if (attackerDiesAfterwards && G.slots[sel.slotId]) {
     moveToGraveLogical(sel.slotId, G.slots[sel.slotId], is4);
   }
+
+  // Temporäre Ausrüstungen (Clubmate, 13er Bogen, Clubmate Ereignis) beider kämpfenden Buwemon auf Friedhof
+  clearCombatEquipAfterFight([sel.slotId, defenderSlotId].filter(Boolean), is4);
 
   // Sichtbare Ergebnis-Zusammenfassung für alle
   let summary;
@@ -3383,7 +3410,7 @@ document.addEventListener('pointerdown', (e) => {
 }, true);
 
 // ── RAGEQUIT ──
-let ragequitBlockedNames = new Set(); // Kartennamen die im selben Zug nicht wieder gedockt werden dürfen
+let ragequitBlockedUids = new Set(); // Kartennamen die im selben Zug nicht wieder gedockt werden dürfen
 
 function beginRagequit(ownerP, is4, effSlotId, effCd) {
   pendingOwnTurnTarget = {
@@ -3414,8 +3441,8 @@ function resolveRagequit(buwSlotId, buwCd, ownerP, is4, effSlotId) {
     // Auf Hand zurück
     const uid = G.nid++;
     const el2 = spawnCard({name:buwCd.name,color:buwCd.color,type:buwCd.type||'buw',uid,file:buwCd.file||imgFileFor(buwCd.name)},0,0,false);
-    ragequitBlockedNames.add(buwCd.name);
-    if (NET.mode === 'multi') netSend({t:'ragequit_block', name: buwCd.name});
+    ragequitBlockedUids.add(uid); // uid der neu gespawnten Karte
+    if (NET.mode === 'multi') netSend({t:'ragequit_block', uid});
     if (is4) {
       if (!handOrderByPlayer4p[ownerP]) handOrderByPlayer4p[ownerP]=[];
       handOrderByPlayer4p[ownerP].push(uid);
@@ -3655,6 +3682,49 @@ function clearWanzeReveal() {
 // ── GOTTKOMPLEX (Marzo der Gott) ──
 // Zielauswahl: klicke ein gegnerisches normales Buwemon (kein Spezial/EX) an.
 // Bei Erfolg wandert es auf die Hand des Besitzers von Marzo.
+// ── PHÜLÜGÜLÜM – Döner schneiden ──
+let pendingDoener = null;
+function beginDoenerSchneiden(btn, cardEl) {
+  closePopup();
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const activatorP = parseInt((cardEl.dataset.slotId.match(/^p(\d)/)||[])[1] || '1');
+  pendingDoener = { cardEl, activatorP, is4 };
+  const suf = is4 ? '-4' : '';
+  const toast = document.getElementById('abil-toast'+suf);
+  document.getElementById('abil-toast-title'+suf).innerHTML = '<b>Döner schneiden</b>';
+  document.getElementById('abil-toast-sub'+suf).textContent = 'Klicke auf ein gegnerisches Buwemon';
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = 'none';
+  const skipBtn = document.getElementById('abil-toast-skip'+suf);
+  skipBtn.textContent = 'Abbrechen'; skipBtn.style.display = 'inline-block';
+  skipBtn.onclick = () => { toast.classList.remove('open'); document.getElementById('abil-toast-bar-wrap'+suf).style.display=''; pendingDoener=null; };
+  toast.classList.add('open');
+}
+// Klick-Listener für Döner-Zielauswahl
+document.addEventListener('pointerdown', (e) => {
+  if (!pendingDoener || sandboxMode) return;
+  const { cardEl, activatorP, is4 } = pendingDoener;
+  const slotEl = e.target.closest('[id$="-buw1"],[id$="-buw2"],[id$="-buw3"],[id$="-buw1-4"],[id$="-buw2-4"],[id$="-buw3-4"]');
+  if (!slotEl) return;
+  const lsid = toLogicalId(slotEl.id);
+  const cd = G.slots[lsid];
+  if (!cd) return;
+  const targetP = parseInt((lsid.match(/^p(\d)/)||[])[1]||'0');
+  if (targetP === activatorP) return;
+  e.stopPropagation();
+  const suf = is4 ? '-4' : '';
+  document.getElementById('abil-toast'+suf).classList.remove('open');
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
+  pendingDoener = null;
+  beginAbilityActivation(cardEl, 'Döner schneiden', 'Döner schneiden – ' + cd.name, () => {
+    const cdNow = G.slots[lsid];
+    if (!cdNow) return;
+    if (!cdNow.equipped) cdNow.equipped = [];
+    cdNow.equipped.push({ name: 'Minus20 Ereignis', color: '#888888', ctype: 'ereignis', file: 'karten/Minus20_Ereignis.png' });
+    renderSlot(lsid);
+    if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
+  }, lsid, { defenderName: cd.name, defenderColor: cd.color });
+}, true);
+
 let pendingGottkomplex = null; // {cardEl, activatorP, is4}
 
 function beginGottkomplex(btn, cardEl) {
@@ -3924,7 +3994,7 @@ const SPECIAL_ABILITY_HANDLERS = {
 const ABILITY_EFFECTS = {
   'Glibbern': null,
   'Mecces Pakt': null,
-  'Döner schneiden': null,
+  'Döner schneiden': (btn, el) => beginDoenerSchneiden(btn, el),
   'Schicksal': () => { if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) openOverview4(); else openOverview(); },
   'Drogen': null,
   'Saugkraft': null,
@@ -3975,9 +4045,13 @@ function computeEquipBonus(buwColorHexRaw, equipped) {
   let bonus = 0;
   (equipped || []).forEach(eq => {
     if (eq.name === 'Clubmate' || eq.name === 'Clubmate Ereignis') {
-      bonus += (buwColorHexRaw === '#6622aa') ? 40 : 20; // Violett
+      bonus += (buwColorHexRaw === '#6622aa') ? 40 : 20;
     } else if (eq.name === '13er Bogen') {
-      bonus += (buwColorHexRaw === '#cc3333' || buwColorHexRaw === '#666666') ? 60 : 50; // Rot oder Grau
+      bonus += (buwColorHexRaw === '#cc3333' || buwColorHexRaw === '#666666') ? 60 : 50;
+    } else if (eq.name === 'Minus20 Ereignis') {
+      bonus -= 20;
+    } else if (eq.name === 'Plus10 Ereignis') {
+      bonus += 10;
     }
   });
   return bonus;
@@ -5556,7 +5630,7 @@ function checkExBuwemon(player, suffix) {
 
 function tryDockCard(el) {
   // Ragequit-Sperre: Buwemon das gerade per Ragequit auf die Hand genommen wurde darf nicht gedockt werden
-  if (!sandboxMode && (el.dataset.ctype === 'buw' || el.dataset.ctype === 'spec') && ragequitBlockedNames.has(el.dataset.name)) {
+  if (!sandboxMode && (el.dataset.ctype === 'buw' || el.dataset.ctype === 'spec') && ragequitBlockedUids.has(parseInt(el.dataset.uid))) {
     showOutcomeToast('⚠ Dieses Buwemon darf erst im nächsten Zug wieder ausgespielt werden!', false);
     return false;
   }
@@ -5944,7 +6018,7 @@ function releaseSlot(slotId, x, y) {
           const wasBan = checkDropOnBanish(el);
           if (!wasBan) checkDropOnGrave(el);
           // Ragequit-Sperre: Karte zurück auf die Hand wenn nicht gedockt und nicht auf Friedhof/Verbannt
-          if (!sandboxMode && !wasBan && !docked && (el.dataset.ctype === 'buw' || el.dataset.ctype === 'spec') && ragequitBlockedNames.has(el.dataset.name)) {
+          if (!sandboxMode && !wasBan && !docked && (el.dataset.ctype === 'buw' || el.dataset.ctype === 'spec') && ragequitBlockedUids.has(parseInt(el.dataset.uid))) {
             const myP2 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode ? myLogicalPlayer4p() : myLogicalPlayer2p();
             const uid2 = parseInt(el.dataset.uid);
             if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) {
@@ -8078,7 +8152,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v41q
+    v41s
   </div>
 </div>
 
@@ -8833,7 +8907,7 @@ if (d.t === 'state4') {
     // DEBUG: entfernen nach Test
     if (!window._dbg) { window._dbg=true; console.log('outcome_toast empfangen:', d.text); }
   }
-  if (d.t === 'ragequit_block') { ragequitBlockedNames.add(d.name); }
+  if (d.t === 'ragequit_block') { ragequitBlockedUids.add(d.uid); }
   if (d.t === 'wanze_reveal') {
     updateRevealStatus(d.targetP, d.open, d.is4);
   }
