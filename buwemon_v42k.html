@@ -3498,6 +3498,26 @@ function clearLegilimens() {
 }
 
 
+// Globaler Klick-Listener für Antika-Zielauswahl (Handzone klicken)
+document.addEventListener('pointerdown', (e) => {
+  if (!pendingAntika || sandboxMode) return;
+  const { activatorP, is4, opponents, startAgainst } = pendingAntika;
+  const handEl = e.target.closest('[id$="-hand"],[id$="-hand-4"]');
+  if (!handEl) return;
+  const m = handEl.id.match(/^p(\d)/);
+  if (!m) return;
+  const physP = parseInt(m[1]);
+  const logP = parseInt(toLogicalId('p'+physP).replace('p',''));
+  if (!opponents.includes(logP)) return;
+  e.stopPropagation();
+  const suf = is4 ? '-4' : '';
+  document.getElementById('abil-toast'+suf).classList.remove('open');
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
+  const saved = pendingAntika;
+  pendingAntika = null;
+  saved.startAgainst(logP);
+}, true);
+
 let ragequitBlockedUids = new Set(); // Kartennamen die im selben Zug nicht wieder gedockt werden dürfen
 
 function beginRagequit(ownerP, is4, effSlotId, effCd) {
@@ -3771,6 +3791,72 @@ function clearWanzeReveal() {
 // ── GOTTKOMPLEX (Marzo der Gott) ──
 // Zielauswahl: klicke ein gegnerisches normales Buwemon (kein Spezial/EX) an.
 // Bei Erfolg wandert es auf die Hand des Besitzers von Marzo.
+// ── ANTIKA – Quit livin' on dreams ──
+let pendingAntika = null;
+
+function beginAntika(btn, cardEl) {
+  closePopup();
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const activatorP = parseInt((cardEl.dataset.slotId.match(/^p(\d)/)||[])[1]||'1');
+  const activePlayers = is4 ? [1,2,3,4].filter(p => G4.active[p]) : [1,2];
+  const opponents = activePlayers.filter(p => p !== activatorP);
+
+  const startAgainst = (targetP) => {
+    beginAbilityActivation(cardEl, "Quit livin' on dreams", "Quit livin' on dreams", () => {
+      resolveAntika(activatorP, targetP, is4);
+    });
+  };
+
+  if (opponents.length <= 1) {
+    startAgainst(opponents[0]);
+  } else {
+    pendingAntika = { cardEl, activatorP, is4, opponents, startAgainst };
+    const suf = is4 ? '-4' : '';
+    const toast = document.getElementById('abil-toast'+suf);
+    document.getElementById('abil-toast-title'+suf).innerHTML = '<b>Quit livin\' on dreams</b>';
+    document.getElementById('abil-toast-sub'+suf).textContent = 'Klicke auf die Handzone eines Gegners';
+    document.getElementById('abil-toast-bar-wrap'+suf).style.display = 'none';
+    const skipBtn = document.getElementById('abil-toast-skip'+suf);
+    skipBtn.textContent = 'Abbrechen'; skipBtn.style.display = 'inline-block';
+    skipBtn.onclick = () => { toast.classList.remove('open'); document.getElementById('abil-toast-bar-wrap'+suf).style.display=''; pendingAntika=null; };
+    toast.classList.add('open');
+  }
+}
+
+function resolveAntika(activatorP, targetP, is4) {
+  const hand = is4 ? (handOrderByPlayer4p[targetP]||[]) : (handOrderByPlayer2p[targetP]||[]);
+  if (!hand.length) { showOutcomeToast('Gegner hat keine Handkarten!', is4); return; }
+  const randIdx = Math.floor(Math.random() * hand.length);
+  const stolenUid = hand[randIdx];
+  // Karte aus der Hand des Ziels entfernen
+  if (is4) handOrderByPlayer4p[targetP] = hand.filter(u => u !== stolenUid);
+  else handOrderByPlayer2p[targetP] = hand.filter(u => u !== stolenUid);
+  // Karte finden
+  const stolenEl = G.cards.find(c => parseInt(c.dataset.uid) === stolenUid);
+  const cd = stolenEl ? { name: stolenEl.dataset.name, color: stolenEl.dataset.color, type: stolenEl.dataset.ctype, file: stolenEl.dataset.file||'' } : null;
+  if (stolenEl) stolenEl.remove();
+  G.cards = G.cards.filter(c => parseInt(c.dataset.uid) !== stolenUid);
+  if (cd) {
+    const uid2 = G.nid++;
+    const el2 = spawnCard({name:cd.name,color:cd.color,type:cd.type,uid:uid2,file:cd.file},0,0,false);
+    if (is4) {
+      if (!handOrderByPlayer4p[activatorP]) handOrderByPlayer4p[activatorP]=[];
+      handOrderByPlayer4p[activatorP].push(uid2);
+      if (activatorP===myLogicalPlayer4p()) layoutMyHand4();
+      else { el2.style.display='none'; renderSimulatedHand('p'+activatorP,handCardsFromUids(handOrderByPlayer4p[activatorP]),true); }
+      renderSimulatedHand('p'+targetP, handCardsFromUids(handOrderByPlayer4p[targetP]||[]), true);
+    } else {
+      if (!handOrderByPlayer2p[activatorP]) handOrderByPlayer2p[activatorP]=[];
+      handOrderByPlayer2p[activatorP].push(uid2);
+      if (activatorP===myLogicalPlayer2p()) layoutMyHand();
+      else { el2.style.display='none'; renderSimulatedHand('p'+activatorP,handCardsFromUids(handOrderByPlayer2p[activatorP]),false); }
+      renderSimulatedHand('p'+targetP, handCardsFromUids(handOrderByPlayer2p[targetP]||[]), false);
+    }
+    showOutcomeToast('Antika klaut: ' + cd.name + ' von Spieler ' + targetP, is4);
+  }
+  if (NET.mode==='multi') { is4 ? netSendState4() : netSendState(); }
+}
+
 // ── PHÜLÜGÜLÜM – Döner schneiden ──
 let pendingDoener = null;
 function beginDoenerSchneiden(btn, cardEl) {
@@ -4069,6 +4155,7 @@ const SPECIAL_ABILITY_HANDLERS = {
   "Würd' mir stinken": (btn, el) => beginWuerdMirStinken(btn, el),
   'Vollrauchen': (btn, el) => beginLisaAbility(btn, el),
   'Legilimens': (btn, el) => beginLegilimens(btn, el),
+  "Quit livin' on dreams": (btn, el) => beginAntika(btn, el),
   'Döner schneiden': (btn, el) => beginDoenerSchneiden(btn, el),
   'Bett abbauen': (btn, el) => beginVerbotAbility(btn, el, 'Eine Runde noch Verbot', 'Bett abbauen'),
   'Ein Problem mit Alkohol': (btn, el) => beginVerbotAbility(btn, el, 'Nachschlag Verbot', 'Ein Problem mit Alkohol'),
@@ -5929,7 +6016,6 @@ function tryDockCard(el) {
       // if slot occupied, release old card to field
       if (G.slots[lsid]) releaseSlot(lsid, sr.left + 4, sr.top + 4);
       G.slots[lsid] = cd;
-      resetAbilityUsesForSlot(lsid); // Neues Buwemon im Slot = frischer Fähigkeits-Zähler
       if (!sandboxMode && !debugMode && cd.type === 'buw') turnBuwemonPlaced = true;
       checkAbilityBlock(cd, lsid);
       // Always tell the other player to remove this card
@@ -8283,7 +8369,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v42i
+    v42k
   </div>
 </div>
 
@@ -9301,24 +9387,27 @@ const ABILITY_LIMITS = {
 function canUseAbility(slotId, abilityName) {
   if (debugMode || sandboxMode) return true;
   if (turnAttackOrAbilityUsed) return false;
+  const lsid = toLogicalId(slotId);
   const limit = ABILITY_LIMITS[abilityName];
-  if (limit === null || limit === undefined) return true; // Unendlich
-  const used = abilityUsesThisLife[slotId] || 0;
+  if (limit === null || limit === undefined) return true;
+  const used = abilityUsesThisLife[lsid] || 0;
   return used < limit;
 }
 
 function markAbilityUsed(slotId, abilityName) {
   if (debugMode || sandboxMode) return;
   turnAttackOrAbilityUsed = true;
+  const lsid = toLogicalId(slotId);
   const limit = ABILITY_LIMITS[abilityName];
   if (limit !== null && limit !== undefined) {
-    abilityUsesThisLife[slotId] = (abilityUsesThisLife[slotId] || 0) + 1;
+    abilityUsesThisLife[lsid] = (abilityUsesThisLife[lsid] || 0) + 1;
   }
   updateAbilityButtonStates();
 }
 
 function resetAbilityUsesForSlot(slotId) {
-  delete abilityUsesThisLife[slotId];
+  const lsid = toLogicalId(slotId);
+  delete abilityUsesThisLife[lsid];
 }
 
 function updateAbilityButtonStates() {
