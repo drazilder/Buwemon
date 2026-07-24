@@ -1673,6 +1673,7 @@ function endTurn(p) {
   clearWanzeReveal();
   clearDinkelmehlSuppression();
   ragequitBlockedUids.clear();
+  resetTurnFlags();
   const next = p === 1 ? 2 : 1;
   setTurn2p(next);
   if (NET.mode === 'multi') netSend({t:'turn2', p: next, myColor: NET.myColor, myName: NET.myName, sender: NET.myPlayer});
@@ -1698,6 +1699,7 @@ function endTurn4(p) {
   clearWanzeReveal();
   clearDinkelmehlSuppression();
   ragequitBlockedUids.clear();
+  resetTurnFlags();
   const next = nextTurnPlayer4(p);
   setTurn4p(next);
   if (NET.mode === 'multi' && fourPlayerMode) netSend({t:'turn4', p: next, myPlayer: NET.myPlayer, myColor: G4.playerColors[NET.myPlayer], myName: G4.names[NET.myPlayer], sender: NET.myPlayer});
@@ -2461,6 +2463,12 @@ function beginAbilityActivation(el, abilityKey, abilityName, resolveFn, defender
   const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
   const slotId = el.dataset.slotId;
   if (!slotId) return;
+  // Zug-Regel: Buwemon-Fähigkeiten (nicht Effektkarten) nur einmal pro Zug
+  const isBuwAbility = (el.dataset.ctype === 'buw' || el.dataset.ctype === 'spec') && abilityKey !== 'angriff';
+  if (isBuwAbility && !sandboxMode && !debugMode) {
+    if (turnAttackOrAbilityUsed) { showOutcomeToast('⚠ Du hast in diesem Zug bereits angegriffen oder eine Fähigkeit genutzt!', is4); return; }
+    if (!canUseAbility(slotId, abilityKey)) { showOutcomeToast('⚠ Diese Fähigkeit wurde bereits ausgeschöpft!', is4); return; }
+  }
   // Der Besitzer der aktivierenden Karte ergibt sich aus ihrem Slot, NICHT aus NET.myPlayer
   // (im Solo-Modus ist NET.myPlayer immer 1, unabhängig davon wessen Karte gerade agiert)
   const activatorP = parseInt((slotId.match(/^p(\d)/)||[])[1] || '1');
@@ -2475,6 +2483,8 @@ function beginAbilityActivation(el, abilityKey, abilityName, resolveFn, defender
     isAttack: abilityKey === 'angriff',
   };
   if (NET.mode === 'multi') netSend({t:'ability_pending', ...data, sender: NET.myPlayer});
+  // Zug-Regel: Fähigkeit als genutzt markieren
+  if (isBuwAbility && !sandboxMode && !debugMode) markAbilityUsed(slotId, abilityKey);
   startAbilityReactionWindow(data, true, resolveFn);
 }
 
@@ -2903,6 +2913,7 @@ let pendingAttackSelection = null; // {cardEl, slotId, attackerP, is4, attackNam
 function beginAttackSelection(btn, cardEl) {
   closePopup();
   if (pendingAbility) { alert('Es läuft gerade schon eine Fähigkeit/ein Angriff - bitte warten.'); return; }
+  if (!sandboxMode && !debugMode && turnAttackOrAbilityUsed) { showOutcomeToast('⚠ Du hast in diesem Zug bereits angegriffen oder eine Fähigkeit genutzt!', false); return; }
   const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
   const slotId = cardEl.dataset.slotId;
   if (!slotId) return;
@@ -2939,6 +2950,7 @@ function confirmAttackTarget(lsid, targetCd) {
   const defenderP = parseInt((lsid.match(/^p(\d)/)||[])[1] || '0');
   const preEquipCount = (targetCd.equipped || []).length;
   pendingAttackSelection = null;
+  markAbilityUsed(sel.slotId, 'angriff');
   // Lisa Schutzwall: Ziel eventuell umleiten
   const redirectedSlotId = applyLisaRedirect(lsid, defenderP, sel.is4);
   if (redirectedSlotId === null) {
@@ -2997,6 +3009,8 @@ function applyLpDamage(p, amount, is4) {
 
 function moveToGraveLogical(slotId, cd, is4) {
   if (!cd) return;
+  resetAbilityUsesForSlot(slotId);
+  if (legilimensSlotId === slotId) clearLegilimens();
   // Dauerfähigkeit beenden wenn Buwemon stirbt
   if (activePermanentAbilities.has(slotId)) {
     setAbilityShimmer(slotId, false);
@@ -3409,7 +3423,74 @@ document.addEventListener('pointerdown', (e) => {
   }
 }, true);
 
-// ── RAGEQUIT ──
+// ── ALEXERUS SNAPE – Legilimens ──
+// Dauerfähigkeit: alle gegnerischen Handkarten offen, solange Alexerus im selben Slot bleibt
+let legilimensSlotId = null; // SlotId von Alexerus mit aktiver Fähigkeit
+let legilimensRevealedPlayers = []; // Spieler deren Karten aufgedeckt sind
+
+function beginLegilimens(btn, el) {
+  closePopup();
+  beginAbilityActivation(el, 'Legilimens', 'Legilimens', () => {
+    const slotId = toLogicalId(el.dataset.slotId);
+    const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+    const ownerP = parseInt((slotId.match(/^p(\d)/)||[])[1]||'1');
+    const activePlayers = is4 ? [1,2,3,4].filter(p => G4.active[p]) : [1,2];
+    const opponents = activePlayers.filter(p => p !== ownerP);
+    legilimensSlotId = slotId;
+    legilimensRevealedPlayers = opponents;
+    setAbilityShimmer(slotId, true);
+    if (NET.mode === 'multi') netSend({t:'ability_shimmer', slotId, active: true});
+    opponents.forEach(p => {
+      revealHandForLegilimens(p, is4);
+      updateRevealStatus(p, true, is4);
+      if (NET.mode === 'multi') netSend({t:'wanze_reveal', targetP: p, is4, open: true});
+    });
+  });
+}
+
+function revealHandForLegilimens(targetP, is4) {
+  const physPfx = physId('p'+targetP);
+  const suf = is4 ? '-4' : '';
+  const handEl = document.getElementById(physPfx+'-hand'+suf);
+  if (!handEl) return;
+  handEl.querySelectorAll('.sim-hand-card').forEach(c => {
+    const img = c.querySelector('img');
+    if (!img) return;
+    const src = c.dataset.file || (c.dataset.name ? thumbFor(c.dataset.name) : null);
+    if (src) img.src = src;
+    c.style.pointerEvents = 'auto'; c.style.cursor = 'pointer';
+    c.ondblclick = (e2) => {
+      e2.stopPropagation();
+      const fake = document.createElement('div');
+      fake.dataset.name = c.dataset.name; fake.dataset.color = c.dataset.color;
+      fake.dataset.ctype = c.dataset.ctype; fake.dataset.uid = c.dataset.uid || 0; fake.dataset.fd = '0';
+      openPopup(fake);
+    };
+  });
+}
+
+function clearLegilimens() {
+  if (!legilimensSlotId) return;
+  const slotId = legilimensSlotId;
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  legilimensRevealedPlayers.forEach(p => {
+    const physPfx = physId('p'+p);
+    const suf = is4 ? '-4' : '';
+    const handEl = document.getElementById(physPfx+'-hand'+suf);
+    if (handEl) handEl.querySelectorAll('.sim-hand-card').forEach(c => {
+      const img = c.querySelector('img'); if (img) img.src = BACK;
+      c.style.pointerEvents = 'none'; c.style.cursor = ''; c.ondblclick = null;
+    });
+    updateRevealStatus(p, false, is4);
+    if (NET.mode === 'multi') netSend({t:'wanze_reveal', targetP: p, is4, open: false});
+  });
+  setAbilityShimmer(slotId, false);
+  if (NET.mode === 'multi') netSend({t:'ability_shimmer', slotId, active: false});
+  legilimensSlotId = null;
+  legilimensRevealedPlayers = [];
+}
+
+
 let ragequitBlockedUids = new Set(); // Kartennamen die im selben Zug nicht wieder gedockt werden dürfen
 
 function beginRagequit(ownerP, is4, effSlotId, effCd) {
@@ -3978,6 +4059,7 @@ const SPECIAL_ABILITY_HANDLERS = {
   'Münster': (btn, el) => beginLuisMuenster(btn, el),
   "Würd' mir stinken": (btn, el) => beginWuerdMirStinken(btn, el),
   'Vollrauchen': (btn, el) => beginLisaAbility(btn, el),
+  'Legilimens': (btn, el) => beginLegilimens(btn, el),
   'Döner schneiden': (btn, el) => beginDoenerSchneiden(btn, el),
   'Bett abbauen': (btn, el) => beginVerbotAbility(btn, el, 'Eine Runde noch Verbot', 'Bett abbauen'),
   'Ein Problem mit Alkohol': (btn, el) => beginVerbotAbility(btn, el, 'Nachschlag Verbot', 'Ein Problem mit Alkohol'),
@@ -4098,8 +4180,11 @@ function renderPopupActionButtons(el, fd) {
   };
 
   const atkName = CARD_ATTACKS[name];
+  const turnBlocked = !sandboxMode && !debugMode && turnAttackOrAbilityUsed;
   if (atkName) {
-    wrap.appendChild(makeBtn('Angriff_Icon.png', atkName, (btn, cardEl) => beginAttackSelection(btn, cardEl), totalPower));
+    const atkBtn = makeBtn('Angriff_Icon.png', atkName, (btn, cardEl) => beginAttackSelection(btn, cardEl), totalPower);
+    if (turnBlocked) { atkBtn.style.opacity = '0.3'; atkBtn.style.pointerEvents = 'none'; }
+    wrap.appendChild(atkBtn);
   }
   if (!isEx) {
     const abName = CARD_ABILITIES[name];
@@ -4115,7 +4200,11 @@ function renderPopupActionButtons(el, fd) {
         }
         // effectFn === null: Fähigkeit noch nicht implementiert -> Button bleibt ohne Funktion
       }
-      wrap.appendChild(makeBtn('Fähigkeit_Icon.png', abName, handler));
+      const abBtn = makeBtn('Fähigkeit_Icon.png', abName, handler);
+      const slotIdForLimit = el.dataset.slotId;
+      const abilityBlocked = turnBlocked || (!sandboxMode && !debugMode && !canUseAbility(slotIdForLimit, abName));
+      if (abilityBlocked) { abBtn.style.opacity = '0.3'; abBtn.style.pointerEvents = 'none'; }
+      wrap.appendChild(abBtn);
     }
   }
 }
@@ -4694,6 +4783,19 @@ function showDebugMenu() {
   addBtn.onclick = () => { overlay.remove(); showAddCardMenu(); };
   btnWrap.appendChild(addBtn);
 
+  if (!sandboxMode) {
+    const dbgBtn = document.createElement('button');
+    dbgBtn.id = 'debug-mode-btn-ingame';
+    dbgBtn.textContent = '🐛 Debug Modus: ' + (debugMode ? 'AN' : 'AUS');
+    dbgBtn.style.cssText = 'padding:14px 24px;font-size:1.1rem;border-radius:10px;border:none;background:' + (debugMode ? '#cc8800' : '#555') + ';color:#fff;cursor:pointer;font-family:"Kievit",sans-serif;';
+    dbgBtn.onclick = () => {
+      debugMode = !debugMode;
+      dbgBtn.textContent = '🐛 Debug Modus: ' + (debugMode ? 'AN' : 'AUS');
+      dbgBtn.style.background = debugMode ? '#cc8800' : '#555';
+    };
+    btnWrap.appendChild(dbgBtn);
+  }
+
   box.appendChild(btnWrap);
 
   const closeBtn = document.createElement('button');
@@ -5118,8 +5220,8 @@ function renderSlot(slotId) {
         }
         eqClickTimer = setTimeout(() => {
           eqClickCount = 0;
-          // Einzelklick (kein Doppelklick): Ausrüstung als lose, ziehbare Karte in Originalgröße herausnehmen
-          // und die aktuelle Zieh-Geste nahtlos übernehmen (wie beim Herausziehen aus einem Buwemonfeld)
+          // Einzelklick: Im Automatik-Modus nicht ziehbar
+          if (!sandboxMode) return;
           const slotData = G.slots[slotId];
           if (!slotData || !slotData.equipped) return;
           const stillIdx = slotData.equipped.indexOf(eq);
@@ -5192,6 +5294,8 @@ function renderSlot(slotId) {
     }
   }
   // Dauerfähigkeits-Schimmer wiederherstellen (Overlay neu hinzufügen nach renderSlot)
+  // Legilimens: wenn Alexerus seinen Slot verlassen hat, Fähigkeit beenden
+  if (legilimensSlotId && (legilimensSlotId === slotId || legilimensSlotId.replace('-4','') === slotId.replace('-4','')) && !G.slots[legilimensSlotId]) clearLegilimens();
   if (activePermanentAbilities && activePermanentAbilities.has(slotId) && !dinkelmehlSuppressed.has(slotId)) {
     // kurz warten damit das DOM fertig gebaut ist
     setTimeout(() => setAbilityShimmer(slotId, true), 10);
@@ -5800,6 +5904,10 @@ function tryDockCard(el) {
         const buwSuffix = lsid.endsWith('-4') ? '-4' : '';
         if (!hasSummonCard(buwPlayer, cname, buwSuffix)) continue;
       }
+      // Zug-Regel: normales Buwemon nur einmal pro Zug legen
+      if (!sandboxMode && !debugMode && isBuwOrExSlot && !isExSlot && ctype === 'buw') {
+        if (turnBuwemonPlaced) { showOutcomeToast('⚠ Du hast in diesem Zug bereits ein Buwemon gelegt!', lsid.endsWith('-4')); continue; }
+      }
       // dock it
       const cd = {
         name: el.dataset.name,
@@ -5812,6 +5920,7 @@ function tryDockCard(el) {
       // if slot occupied, release old card to field
       if (G.slots[lsid]) releaseSlot(lsid, sr.left + 4, sr.top + 4);
       G.slots[lsid] = cd;
+      if (!sandboxMode && !debugMode && cd.type === 'buw') turnBuwemonPlaced = true;
       checkAbilityBlock(cd, lsid);
       // Always tell the other player to remove this card
       if (NET.mode === 'multi') {
@@ -5838,6 +5947,8 @@ function tryDockCard(el) {
 function releaseSlot(slotId, x, y) {
   const cd = G.slots[slotId];
   if (!cd || cd.type === 'ex-auto') { G.slots[slotId] = null; renderSlot(slotId); return; }
+  resetAbilityUsesForSlot(slotId);
+  if (legilimensSlotId === slotId) clearLegilimens();
   G.slots[slotId] = null;
   renderSlot(slotId);
   if (cd.uid) {
@@ -8109,6 +8220,12 @@ document.querySelectorAll('.swatch').forEach(sw=>{
       letter-spacing:1px;color:#2a2e3a;cursor:pointer;width:100%;
       box-shadow:0 2px 12px rgba(0,0,0,0.13),inset 0 1px 0 rgba(255,255,255,0.8);
       transition:transform .12s,box-shadow .12s;text-shadow:0 1px 2px rgba(255,255,255,0.7);">▶ Spielen</button>
+    <button id="debug-mode-btn" onclick="toggleDebugMode()" style="background:linear-gradient(160deg,#c8ccd4 0%,#e8ecf2 40%,#d0d4dc 70%,#f0f2f6 100%);
+      border:1px solid rgba(255,255,255,0.7);border-radius:10px;padding:12px 24px;
+      font-size:1rem;font-weight:700;font-family:'AiSpec',sans-serif;font-style:italic;
+      letter-spacing:1px;color:#2a2e3a;cursor:pointer;width:100%;
+      box-shadow:0 2px 12px rgba(0,0,0,0.13),inset 0 1px 0 rgba(255,255,255,0.8);
+      transition:transform .12s,box-shadow .12s;text-shadow:0 1px 2px rgba(255,255,255,0.7);">🐛 Debug Modus: AUS</button>
     <button onclick="showLobbyMode(null)" style="background:linear-gradient(160deg,#c8ccd4 0%,#e8ecf2 40%,#d0d4dc 70%,#f0f2f6 100%);
       border:1px solid rgba(255,255,255,0.7);border-radius:10px;padding:12px 24px;
       font-size:1rem;font-weight:700;font-family:'AiSpec',sans-serif;font-style:italic;
@@ -8156,7 +8273,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v42b
+    v42g
   </div>
 </div>
 
@@ -8921,6 +9038,7 @@ if (d.t === 'state4') {
   }
   if (d.t === 'ability_shimmer') {
     setAbilityShimmer(d.slotId, d.active);
+    if (!d.active && legilimensSlotId === d.slotId) clearLegilimens();
   }
   if (d.t === 'dinkelmehl_suppress') {
     dinkelmehlSuppressed.add(d.slotId);
@@ -9144,6 +9262,70 @@ function toggleErweiterung() {
 }
 
 let sandboxMode = true;
+let debugMode = false; // Debug-Modus: Zug-Regeln deaktiviert
+
+// Zug-Status
+let turnAttackOrAbilityUsed = false; // wurde in diesem Zug schon angegriffen oder Fähigkeit genutzt?
+let turnBuwemonPlaced = false; // wurde in diesem Zug schon ein normales Buwemon gelegt?
+
+// Fähigkeits-Nutzungs-Zähler: slotId -> Anzahl genutzter Fähigkeiten
+const abilityUsesThisLife = {};
+
+// Fähigkeits-Limits pro Karte (Unendlich = null, Einmal = 1)
+const ABILITY_LIMITS = {
+  'Glibbern': null, 'Döner schneiden': null, 'Quit livin\' on dreams': null,
+  'Klorian': null, 'Meme Belästigung': null, 'Ein Drink zu viel': null,
+  'Clubmate Hamsterung': null, 'Killsteal': null, 'Zwillingsattacke': null,
+  "Ohohoho": null, 'Pumpen': null, 'Goldrausch': null, 'Arsch anfassen': null,
+  'Saugkraft': null, // Schwammika: kommt auf kopierte Fähigkeit an - behandeln wie unendlich
+  // Einmal:
+  'Mecces Pakt': 1, 'Schicksal': 1, 'Gottkomplex': 1, 'Rotation': 1, 'Treue': 1,
+  'Toxische Männlichkeit': 1, "Würd' mir stinken": 1, 'Ein Problem mit Alkohol': 1,
+  'Bett abbauen': 1, 'Recast': 1, 'Hühnchen Spam': 1, 'Mecces Völlerei': 1,
+  'Drogen': 1, 'Marie hat recht': 1, 'Picky Eating': 1, 'Gossip': 1,
+  'Liiinks': 1, 'Überspringen': 1, 'Raum-Zeit-Genozid': 1,
+  // Dauerfähigkeiten (Einmal, bleiben aktiv):
+  'Florianopolis Dominanz': 1, 'Vollrauchen': 1, 'Legilimens': 1, 'Münster': 1,
+};
+
+function canUseAbility(slotId, abilityName) {
+  if (debugMode || sandboxMode) return true;
+  if (turnAttackOrAbilityUsed) return false;
+  const limit = ABILITY_LIMITS[abilityName];
+  if (limit === null || limit === undefined) return true; // Unendlich
+  const used = abilityUsesThisLife[slotId] || 0;
+  return used < limit;
+}
+
+function markAbilityUsed(slotId, abilityName) {
+  if (debugMode || sandboxMode) return;
+  turnAttackOrAbilityUsed = true;
+  const limit = ABILITY_LIMITS[abilityName];
+  if (limit !== null && limit !== undefined) {
+    abilityUsesThisLife[slotId] = (abilityUsesThisLife[slotId] || 0) + 1;
+  }
+  updateAbilityButtonStates();
+}
+
+function resetAbilityUsesForSlot(slotId) {
+  delete abilityUsesThisLife[slotId];
+}
+
+function updateAbilityButtonStates() {
+  // Alle Angriffs- und Fähigkeits-Buttons verblassen wenn bereits genutzt
+  // (wird beim Öffnen des Popups angewendet)
+}
+
+function toggleDebugMode() {
+  debugMode = !debugMode;
+  const btn = document.getElementById('debug-mode-btn');
+  if (btn) { btn.textContent = '🐛 Debug Modus: ' + (debugMode ? 'AN' : 'AUS'); btn.style.background = debugMode ? 'linear-gradient(160deg,#ffcc44,#ffaa00)' : ''; }
+}
+
+function resetTurnFlags() {
+  turnAttackOrAbilityUsed = false;
+  turnBuwemonPlaced = false;
+}
 
 // ── PERSPEKTIVEN-SYSTEM (nur Automatik-Modus) ──
 // Man selbst ist immer "unten". Alle Slot-IDs im Code sind LOGISCH (z.B. G.slots['p2-buw1']
@@ -9169,6 +9351,8 @@ function renderSimulatedHand(logicalPfx, cards, is4) {
   // Wenn diese Hand gerade durch Wanze aufgedeckt ist, nicht mit Rückseiten überschreiben
   const logP = parseInt(logicalPfx.replace('p',''));
   if (wanzeRevealedPlayer === logP) return;
+  // Legilimens: nach renderSimulatedHand sofort wieder aufdecken
+  const legilIsActive = legilimensRevealedPlayers && legilimensRevealedPlayers.includes(logP);
   const handEl = document.getElementById(physPfx + '-hand' + suf);
   if (!handEl) return;
   handEl.querySelectorAll('.sim-hand-card').forEach(c => c.remove());
@@ -9196,6 +9380,8 @@ function renderSimulatedHand(logicalPfx, cards, is4) {
     c.style.zIndex = String(i);
     handEl.appendChild(c);
   });
+  // Legilimens: neu gerenderte Karten sofort aufdecken wenn Fähigkeit aktiv
+  if (legilIsActive) revealHandForLegilimens(logP, is4);
 }
 
 let myPerspective = 1; // 2p: 1 oder 2.
