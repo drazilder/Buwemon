@@ -3710,11 +3710,13 @@ function tryConfirmDoener(lsid, cd) {
   pendingDoener = null;
   beginAbilityActivation(cardEl, 'Döner schneiden', 'Döner schneiden – ' + cd.name, () => {
     const cdNow = G.slots[lsid];
-    if (!cdNow) return;
+    if (!cdNow) { showOutcomeToast('DEBUG: lsid=' + lsid + ' -> null', is4); return; }
     if (!cdNow.equipped) cdNow.equipped = [];
     cdNow.equipped.push({ name: 'Minus20 Ereignis', color: '#888888', ctype: 'ereignis', file: 'karten/Minus20_Ereignis.png' });
     renderSlot(lsid);
+    showOutcomeToast('Minus20 ausgerüstet auf ' + cdNow.name, is4);
     if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
+    setTimeout(() => renderSlot(lsid), 200);
   }, lsid, { defenderName: cd.name, defenderColor: cd.color });
   return true;
 }
@@ -3977,6 +3979,7 @@ const SPECIAL_ABILITY_HANDLERS = {
   'Münster': (btn, el) => beginLuisMuenster(btn, el),
   "Würd' mir stinken": (btn, el) => beginWuerdMirStinken(btn, el),
   'Vollrauchen': (btn, el) => beginLisaAbility(btn, el),
+  'Döner schneiden': (btn, el) => beginDoenerSchneiden(btn, el),
   'Bett abbauen': (btn, el) => beginVerbotAbility(btn, el, 'Eine Runde noch Verbot', 'Bett abbauen'),
   'Ein Problem mit Alkohol': (btn, el) => beginVerbotAbility(btn, el, 'Nachschlag Verbot', 'Ein Problem mit Alkohol'),
 };
@@ -8154,7 +8157,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v41w
+    v41z
   </div>
 </div>
 
