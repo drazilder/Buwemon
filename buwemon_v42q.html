@@ -1092,7 +1092,7 @@ const IMG = {
   "Marzo der Gott": "karten/Marzo_Der_Gott.png",
   "Marcopter": "karten/Marcopter.png",
   "Marco der Hund": "karten/Marco_der_Hund.png",
-  "Leonie Norris": "karten/Leo_Norris.png",
+  "Leo Norris": "karten/Leo_Norris.png",
   "Kax Maufmann": "karten/Kax_Maufmann.png",
   "Maxodia der Verbotene": "karten/Maxodia.png",
   "Maxibu": "karten/Maxibu.png",
@@ -1791,7 +1791,7 @@ const CARD_DB=[
   {name:"Marzo der Gott",count:3,color:"#cc5500",type:"buw"},
   {name:"Marcopter",count:3,color:"#cc5500",type:"buw"},
   {name:"Marco der Hund",count:3,color:"#cc5500",type:"buw"},
-  {name:"Leonie Norris",count:3,color:"#cc5500",type:"buw"},
+  {name:"Leo Norris",count:3,color:"#cc5500",type:"buw"},
   {name:"Kax Maufmann",count:3,color:"#1a44bb",type:"buw"},
   {name:"Maxodia der Verbotene",count:3,color:"#1a44bb",type:"buw"},
   {name:"Maxibu",count:3,color:"#1a44bb",type:"buw"},
@@ -1885,7 +1885,7 @@ const G={deck:[],nid:1,cards:[],reveal:{1:false,2:false},lp:{1:300,2:300},lpHist
 let fourPlayerMode = false;
 
 let erweiterungAN = true;
-const NO_DLC = {'Gilip der Glibbrige':3,'Lord Phillipp of Glencoe':3,'Phülügülüm':3,'Baby Niko':0,'Grünika':3,'Schwammika':3,'Antika':3,'Marie die Königsgardistin':0,'Marzo der Gott':3,'Marcopter':3,'Marco der Hund':3,'Leonie Norris':0,'Kax Maufmann':3,'Maxodia der Verbotene':3,'Maxibu':3,'Hoffi der rasierte Karnevalsprinz':0,'Barista Clarista der Mister-Fister':3,'Clarry Pather der Maincharacter':3,'ClariSSIO':3,'Alicia die ehrenlose Fettsau':0,'Glorian':3,'Flosama':3,'Klorian':3,'Lisa aus Australien':0,'Suffia':3,'Luis Münsters':3,'Cedzilla':3,'Griechischer ApoRed':0,'Fabio das Berlin-City-Girl':3,'Giraffael':3,'Hannah im Bach':3,'Alexerus Snape':0,'Die Pogofanten':1,"L'Enderdragon":1,'Golop der Grobe':0,'Der Zeitführer':1,'BOOM Clan':1,'Glaskuppel':6,'Calgon':6,'Clubmate':5,'Eine Runde noch':5,'RGB':5,'Nachschlag':5,'Mecces':5,'Ablehnt':5,'Dinkelmehl':5,'Wanze':2,'UwU ':2,'Tut mir leid…':2,'Ragequit':2,'Random Vote':2,'Neue BESSERE Karte':2,'Discord Meeting':2,'Zeitmaschinen Veruntreuung':2,'Sigma Transformation':0,'Tristanverbot':2,'Elefanten Aufstand':2,'Stein':2,'13er Bogen':2,'Vertragsbruch':2,'FourAceFour-Feuer-Reverse-Blöff':1};
+const NO_DLC = {'Gilip der Glibbrige':3,'Lord Phillipp of Glencoe':3,'Phülügülüm':3,'Baby Niko':0,'Grünika':3,'Schwammika':3,'Antika':3,'Marie die Königsgardistin':0,'Marzo der Gott':3,'Marcopter':3,'Marco der Hund':3,'Leo Norris':0,'Kax Maufmann':3,'Maxodia der Verbotene':3,'Maxibu':3,'Hoffi der rasierte Karnevalsprinz':0,'Barista Clarista der Mister-Fister':3,'Clarry Pather der Maincharacter':3,'ClariSSIO':3,'Alicia die ehrenlose Fettsau':0,'Glorian':3,'Flosama':3,'Klorian':3,'Lisa aus Australien':0,'Suffia':3,'Luis Münsters':3,'Cedzilla':3,'Griechischer ApoRed':0,'Fabio das Berlin-City-Girl':3,'Giraffael':3,'Hannah im Bach':3,'Alexerus Snape':0,'Die Pogofanten':1,"L'Enderdragon":1,'Golop der Grobe':0,'Der Zeitführer':1,'BOOM Clan':1,'Glaskuppel':6,'Calgon':6,'Clubmate':5,'Eine Runde noch':5,'RGB':5,'Nachschlag':5,'Mecces':5,'Ablehnt':5,'Dinkelmehl':5,'Wanze':2,'UwU ':2,'Tut mir leid…':2,'Ragequit':2,'Random Vote':2,'Neue BESSERE Karte':2,'Discord Meeting':2,'Zeitmaschinen Veruntreuung':2,'Sigma Transformation':0,'Tristanverbot':2,'Elefanten Aufstand':2,'Stein':2,'13er Bogen':2,'Vertragsbruch':2,'FourAceFour-Feuer-Reverse-Blöff':1};
 function buildDeck(){let d=[];CARD_DB.forEach(def=>{let cnt=erweiterungAN?def.count:(NO_DLC[def.name]??0);for(let i=0;i<cnt;i++)d.push({name:def.name,color:def.color,type:def.type,uid:G.nid++});});return shuffle(d);}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 G.deck=buildDeck();updDeck();
@@ -3791,6 +3791,83 @@ function clearWanzeReveal() {
 // ── GOTTKOMPLEX (Marzo der Gott) ──
 // Zielauswahl: klicke ein gegnerisches normales Buwemon (kein Spezial/EX) an.
 // Bei Erfolg wandert es auf die Hand des Besitzers von Marzo.
+// ── MARCOPTER – Rotation ──
+let pendingMarcopter = null;
+
+function beginMarcopter(btn, cardEl) {
+  closePopup();
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const activatorP = parseInt((cardEl.dataset.slotId.match(/^p(\d)/)||[])[1]||'1');
+  // Prüfen ob mind. 10 Handkarten
+  const myHand = is4 ? (handOrderByPlayer4p[activatorP]||[]) : (handOrderByPlayer2p[activatorP]||[]);
+  if (myHand.length < 10) { showOutcomeToast('⚠ Rotation benötigt mindestens 10 Handkarten!', is4); return; }
+  const activePlayers = is4 ? [1,2,3,4].filter(p => G4.active[p]) : [1,2];
+  const opponents = activePlayers.filter(p => p !== activatorP);
+
+  const startAgainst = (targetP) => {
+    beginAbilityActivation(cardEl, 'Rotation', 'Rotation', () => {
+      resolveMarcopter(activatorP, targetP, is4);
+    });
+  };
+
+  if (opponents.length <= 1) {
+    startAgainst(opponents[0]);
+  } else {
+    pendingMarcopter = { cardEl, activatorP, is4, opponents, startAgainst };
+    const suf = is4 ? '-4' : '';
+    const toast = document.getElementById('abil-toast'+suf);
+    document.getElementById('abil-toast-title'+suf).innerHTML = '<b>Rotation</b>';
+    document.getElementById('abil-toast-sub'+suf).textContent = 'Klicke auf die Handzone eines Gegners';
+    document.getElementById('abil-toast-bar-wrap'+suf).style.display = 'none';
+    const skipBtn = document.getElementById('abil-toast-skip'+suf);
+    skipBtn.textContent = 'Abbrechen'; skipBtn.style.display = 'inline-block';
+    skipBtn.onclick = () => { toast.classList.remove('open'); document.getElementById('abil-toast-bar-wrap'+suf).style.display=''; pendingMarcopter=null; };
+    toast.classList.add('open');
+  }
+}
+
+document.addEventListener('pointerdown', (e) => {
+  if (!pendingMarcopter || sandboxMode) return;
+  const { activatorP, is4, opponents, startAgainst } = pendingMarcopter;
+  const handEl = e.target.closest('[id$="-hand"],[id$="-hand-4"]');
+  if (!handEl) return;
+  const m = handEl.id.match(/^p(\d)/);
+  if (!m) return;
+  const logP = parseInt(toLogicalId('p'+parseInt(m[1])).replace('p',''));
+  if (!opponents.includes(logP)) return;
+  e.stopPropagation();
+  const suf = is4 ? '-4' : '';
+  document.getElementById('abil-toast'+suf).classList.remove('open');
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
+  const saved = pendingMarcopter;
+  pendingMarcopter = null;
+  saved.startAgainst(logP);
+}, true);
+
+function resolveMarcopter(activatorP, targetP, is4) {
+  // Handkarten beider Spieler tauschen
+  const myHand = is4 ? [...(handOrderByPlayer4p[activatorP]||[])] : [...(handOrderByPlayer2p[activatorP]||[])];
+  const theirHand = is4 ? [...(handOrderByPlayer4p[targetP]||[])] : [...(handOrderByPlayer2p[targetP]||[])];
+  // Karten-Daten sammeln vor dem Tausch
+  const myCds = myHand.map(uid => { const el = G.cards.find(c=>parseInt(c.dataset.uid)===uid); return el ? {name:el.dataset.name,color:el.dataset.color,type:el.dataset.ctype,file:el.dataset.file||''} : null; }).filter(Boolean);
+  const theirCds = theirHand.map(uid => { const el = G.cards.find(c=>parseInt(c.dataset.uid)===uid); return el ? {name:el.dataset.name,color:el.dataset.color,type:el.dataset.ctype,file:el.dataset.file||''} : null; }).filter(Boolean);
+  // Alte Karten entfernen
+  [...myHand,...theirHand].forEach(uid => {
+    const el = G.cards.find(c=>parseInt(c.dataset.uid)===uid);
+    if (el) { el.remove(); G.cards = G.cards.filter(c=>parseInt(c.dataset.uid)!==uid); }
+  });
+  // Neue Karten spawnen (Aktivator bekommt gegnerische Karten)
+  const newMyUids = theirCds.map(cd => { const uid=G.nid++; spawnCard({...cd,uid},0,0,false); return uid; });
+  const newTheirUids = myCds.map(cd => { const uid=G.nid++; const el2=spawnCard({...cd,uid},0,0,false); el2.style.display='none'; return uid; });
+  if (is4) { handOrderByPlayer4p[activatorP]=newMyUids; handOrderByPlayer4p[targetP]=newTheirUids; layoutMyHand4(); renderSimulatedHand('p'+targetP,handCardsFromUids(newTheirUids),true); }
+  else { handOrderByPlayer2p[activatorP]=newMyUids; handOrderByPlayer2p[targetP]=newTheirUids; layoutMyHand(); renderSimulatedHand('p'+targetP,handCardsFromUids(newTheirUids),false); }
+  showOutcomeToast('Rotation: Handkarten getauscht mit Spieler '+targetP, is4);
+  if (NET.mode==='multi') {
+    netSend({t:'marcopter_swap', activatorP, targetP, is4, myCds, theirCds});
+    is4?netSendState4():netSendState();
+  }
+}
+
 // ── MARIE DIE KÖNIGSGARDISTIN – Marie hat recht ──
 let pendingMarie = null;
 let marieRevealState = null; // {activatorP, targetP, is4}
@@ -4264,6 +4341,7 @@ const SPECIAL_ABILITY_HANDLERS = {
   'Raum-Zeit-Genozid': (btn) => { closePopup(); if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) openColorRemove4(btn); else openColorRemove(btn); },
   'Picky Eating': (btn, el) => { closePopup(); confirmPickyEating(btn, el); },
   'Gottkomplex': (btn, el) => beginGottkomplex(btn, el),
+  'Rotation': (btn, el) => beginMarcopter(btn, el),
   'Münster': (btn, el) => beginLuisMuenster(btn, el),
   "Würd' mir stinken": (btn, el) => beginWuerdMirStinken(btn, el),
   'Vollrauchen': (btn, el) => beginLisaAbility(btn, el),
@@ -6842,11 +6920,11 @@ function checkLPWin(p) {
 
 // ── TOXISCHE MÄNNLICHKEIT ──
 const MAENNLICHE_BUWEMON = ["Gilip der Glibbrige", "Lord Phillipp of Glencoe", "Phülügülüm", "Baby Niko", "Marzo der Gott", "Marcopter", "Marco der Hund", "Kax Maufmann", "Maxodia der Verbotene", "Maxibu", "Hoffi der rasierte Karnevalsprinz", "Glorian", "Flosama", "Klorian", "Luis Münsters", "Cedzilla", "Griechischer ApoRed", "Fabio das Berlin-City-Girl", "Giraffael"];
-const GENDER_MAP = {'Gilip der Glibbrige':'m','Lord Phillipp of Glencoe':'m','Phülügülüm':'m','Baby Niko':'m','Grünika':'f','Schwammika':'f','Antika':'f','Marie die Königsgardistin':'f','Marzo der Gott':'m','Marcopter':'m','Marco der Hund':'m','Leonie Norris':'f','Kax Maufmann':'m','Maxodia der Verbotene':'m','Maxibu':'m','Hoffi der rasierte Karnevalsprinz':'m','Clarry Pather der Maincharacter':'f','Barista Clarista der Mister-Fister':'f','ClariSSIO':'f','Alicia die ehrenlose Fettsau':'f','Glorian':'m','Flosama':'m','Klorian':'m','Lisa aus Australien':'f','Suffia':'f','Luis Münsters':'m','Cedzilla':'m','Griechischer ApoRed':'m','Fabio das Berlin-City-Girl':'m','Giraffael':'m','Hannah im Bach':'f','Alexerus Snape':'f','Die Pogofanten':'n','L\'Enderdragon':'n','Golop der Grobe':'n','Der Zeitführer':'n','BOOM Clan':'n'};
+const GENDER_MAP = {'Gilip der Glibbrige':'m','Lord Phillipp of Glencoe':'m','Phülügülüm':'m','Baby Niko':'m','Grünika':'f','Schwammika':'f','Antika':'f','Marie die Königsgardistin':'f','Marzo der Gott':'m','Marcopter':'m','Marco der Hund':'m','Leo Norris':'f','Kax Maufmann':'m','Maxodia der Verbotene':'m','Maxibu':'m','Hoffi der rasierte Karnevalsprinz':'m','Clarry Pather der Maincharacter':'f','Barista Clarista der Mister-Fister':'f','ClariSSIO':'f','Alicia die ehrenlose Fettsau':'f','Glorian':'m','Flosama':'m','Klorian':'m','Lisa aus Australien':'f','Suffia':'f','Luis Münsters':'m','Cedzilla':'m','Griechischer ApoRed':'m','Fabio das Berlin-City-Girl':'m','Giraffael':'m','Hannah im Bach':'f','Alexerus Snape':'f','Die Pogofanten':'n','L\'Enderdragon':'n','Golop der Grobe':'n','Der Zeitführer':'n','BOOM Clan':'n'};
 
-const CARD_ATTACKS = {'Gilip der Glibbrige':'Gulaschkanone','Lord Phillipp of Glencoe':'Todesstrafe','Phülügülüm':'Kinderkeller','Baby Niko':'Apple Vergötterung','Grünika':'Oh mein Gott','Schwammika':'Juradebatte','Antika':'TOD TOD TOD','Marie die Königsgardistin':'Schwalmtal Schlag','Marzo der Gott':'Rage Anfall','Marcopter':'Propeller Schredder','Marco der Hund':'Robbenlachen','Leonie Norris':'Überfahren','Kax Maufmann':'Loch buddeln','Maxodia der Verbotene':'Factorio Verführung','Maxibu':'Tornado','Hoffi der rasierte Karnevalsprinz':'Rasur','Clarry Pather der Maincharacter':'Ultraschall AH','Barista Clarista der Mister-Fister':'Sei mal ehrlich','ClariSSIO':'Nuttööö','Alicia die ehrenlose Fettsau':'Nazimusik','Glorian':'Feuerball','Flosama':'Baconbombe','Klorian':'Imagine Dragons','Lisa aus Australien':'Attacke_v3_final','Suffia':'Ferien in Algerien','Luis Münsters':'Sniper','Cedzilla':'Ehrenschlag','Griechischer ApoRed':'Insi-Modus','Fabio das Berlin-City-Girl':'Politik Diskussion','Giraffael':'Hals Hieb','Hannah im Bach':'Plantschen','Alexerus Snape':'Lego Falle','Die Pogofanten':'Pogo Zertramplung','L\'Enderdragon':'Baguette Schelle','Golop der Grobe':'Sigma Schlag','Der Zeitführer':'Zeitreisen Abtreibung','BOOM Clan':'Bowspam','Drakkschah EX':'Gottloser Bowspam','Schahco EX':'Rage','Drukkschah EX':'Unsichtbarkeit','Annischah EX':'Intellenz','Drikkschah EX':'Feuerball Jump','Schahbio EX':'Gigantische Glaskuppel','Drokkschah EX':'Von hinten Taktik','Clarischah EX':'Rumschreien','Darkschah EX':'Vernichtung'};
-const CARD_ATTACK_POWER = {'Gilip der Glibbrige':200,'Lord Phillipp of Glencoe':160,'Phülügülüm':140,'Baby Niko':160,'Grünika':160,'Schwammika':140,'Antika':160,'Marie die Königsgardistin':120,'Marzo der Gott':120,'Marcopter':180,'Marco der Hund':160,'Leonie Norris':160,'Kax Maufmann':160,'Maxodia der Verbotene':120,'Maxibu':180,'Hoffi der rasierte Karnevalsprinz':160,'Clarry Pather der Maincharacter':180,'Barista Clarista der Mister-Fister':160,'ClariSSIO':140,'Alicia die ehrenlose Fettsau':160,'Glorian':160,'Flosama':180,'Klorian':140,'Lisa aus Australien':140,'Suffia':180,'Luis Münsters':140,'Cedzilla':140,'Griechischer ApoRed':160,'Fabio das Berlin-City-Girl':140,'Giraffael':140,'Hannah im Bach':160,'Alexerus Snape':160,'Die Pogofanten':300,'L\'Enderdragon':300,'Golop der Grobe':300,'Der Zeitführer':300,'BOOM Clan':320,'Drakkschah EX':300,'Schahco EX':300,'Drukkschah EX':300,'Annischah EX':300,'Drikkschah EX':300,'Schahbio EX':300,'Drokkschah EX':300,'Clarischah EX':300,'Darkschah EX':1000};
-const CARD_ABILITIES = {'Gilip der Glibbrige':'Glibbern','Lord Phillipp of Glencoe':'Mecces Pakt','Phülügülüm':'Döner schneiden','Baby Niko':'Schicksal','Grünika':'Drogen','Schwammika':'Saugkraft','Antika':'Quit livin\' on dreams','Marie die Königsgardistin':'Marie hat recht','Marzo der Gott':'Gottkomplex','Marcopter':'Rotation','Marco der Hund':'Treue','Leonie Norris':'Toxische Männlichkeit','Kax Maufmann':'Meme Belästigung','Maxodia der Verbotene':'Würd\' mir stinken','Maxibu':'Ein Problem mit Alkohol','Hoffi der rasierte Karnevalsprinz':'Ein Drink zu viel','Clarry Pather der Maincharacter':'Recast','Barista Clarista der Mister-Fister':'Hühnchen Spam','ClariSSIO':'Arsch anfassen','Alicia die ehrenlose Fettsau':'Mecces Völlerei','Glorian':'Florianopolis Dominanz','Flosama':'Bett abbauen','Klorian':'Spülung','Lisa aus Australien':'Vollrauchen','Suffia':'Killsteal','Luis Münsters':'Münster','Cedzilla':'Picky Eating','Griechischer ApoRed':'Zwillingsattacke','Fabio das Berlin-City-Girl':'Clubmate Hamsterung','Giraffael':'Liiinks','Hannah im Bach':'Gossip','Alexerus Snape':'Legilimens','Die Pogofanten':'Überspringen','L\'Enderdragon':'Ohohoho','Golop der Grobe':'Pumpen','Der Zeitführer':'Raum-Zeit-Genozid','BOOM Clan':'Goldrausch'};
+const CARD_ATTACKS = {'Gilip der Glibbrige':'Gulaschkanone','Lord Phillipp of Glencoe':'Todesstrafe','Phülügülüm':'Kinderkeller','Baby Niko':'Apple Vergötterung','Grünika':'Oh mein Gott','Schwammika':'Juradebatte','Antika':'TOD TOD TOD','Marie die Königsgardistin':'Schwalmtal Schlag','Marzo der Gott':'Rage Anfall','Marcopter':'Propeller Schredder','Marco der Hund':'Robbenlachen','Leo Norris':'Überfahren','Kax Maufmann':'Loch buddeln','Maxodia der Verbotene':'Factorio Verführung','Maxibu':'Tornado','Hoffi der rasierte Karnevalsprinz':'Rasur','Clarry Pather der Maincharacter':'Ultraschall AH','Barista Clarista der Mister-Fister':'Sei mal ehrlich','ClariSSIO':'Nuttööö','Alicia die ehrenlose Fettsau':'Nazimusik','Glorian':'Feuerball','Flosama':'Baconbombe','Klorian':'Imagine Dragons','Lisa aus Australien':'Attacke_v3_final','Suffia':'Ferien in Algerien','Luis Münsters':'Sniper','Cedzilla':'Ehrenschlag','Griechischer ApoRed':'Insi-Modus','Fabio das Berlin-City-Girl':'Politik Diskussion','Giraffael':'Hals Hieb','Hannah im Bach':'Plantschen','Alexerus Snape':'Lego Falle','Die Pogofanten':'Pogo Zertramplung','L\'Enderdragon':'Baguette Schelle','Golop der Grobe':'Sigma Schlag','Der Zeitführer':'Zeitreisen Abtreibung','BOOM Clan':'Bowspam','Drakkschah EX':'Gottloser Bowspam','Schahco EX':'Rage','Drukkschah EX':'Unsichtbarkeit','Annischah EX':'Intellenz','Drikkschah EX':'Feuerball Jump','Schahbio EX':'Gigantische Glaskuppel','Drokkschah EX':'Von hinten Taktik','Clarischah EX':'Rumschreien','Darkschah EX':'Vernichtung'};
+const CARD_ATTACK_POWER = {'Gilip der Glibbrige':200,'Lord Phillipp of Glencoe':160,'Phülügülüm':140,'Baby Niko':160,'Grünika':160,'Schwammika':140,'Antika':160,'Marie die Königsgardistin':120,'Marzo der Gott':120,'Marcopter':180,'Marco der Hund':160,'Leo Norris':160,'Kax Maufmann':160,'Maxodia der Verbotene':120,'Maxibu':180,'Hoffi der rasierte Karnevalsprinz':160,'Clarry Pather der Maincharacter':180,'Barista Clarista der Mister-Fister':160,'ClariSSIO':140,'Alicia die ehrenlose Fettsau':160,'Glorian':160,'Flosama':180,'Klorian':140,'Lisa aus Australien':140,'Suffia':180,'Luis Münsters':140,'Cedzilla':140,'Griechischer ApoRed':160,'Fabio das Berlin-City-Girl':140,'Giraffael':140,'Hannah im Bach':160,'Alexerus Snape':160,'Die Pogofanten':300,'L\'Enderdragon':300,'Golop der Grobe':300,'Der Zeitführer':300,'BOOM Clan':320,'Drakkschah EX':300,'Schahco EX':300,'Drukkschah EX':300,'Annischah EX':300,'Drikkschah EX':300,'Schahbio EX':300,'Drokkschah EX':300,'Clarischah EX':300,'Darkschah EX':1000};
+const CARD_ABILITIES = {'Gilip der Glibbrige':'Glibbern','Lord Phillipp of Glencoe':'Mecces Pakt','Phülügülüm':'Döner schneiden','Baby Niko':'Schicksal','Grünika':'Drogen','Schwammika':'Saugkraft','Antika':'Quit livin\' on dreams','Marie die Königsgardistin':'Marie hat recht','Marzo der Gott':'Gottkomplex','Marcopter':'Rotation','Marco der Hund':'Treue','Leo Norris':'Toxische Männlichkeit','Kax Maufmann':'Meme Belästigung','Maxodia der Verbotene':'Würd\' mir stinken','Maxibu':'Ein Problem mit Alkohol','Hoffi der rasierte Karnevalsprinz':'Ein Drink zu viel','Clarry Pather der Maincharacter':'Recast','Barista Clarista der Mister-Fister':'Hühnchen Spam','ClariSSIO':'Arsch anfassen','Alicia die ehrenlose Fettsau':'Mecces Völlerei','Glorian':'Florianopolis Dominanz','Flosama':'Bett abbauen','Klorian':'Spülung','Lisa aus Australien':'Vollrauchen','Suffia':'Killsteal','Luis Münsters':'Münster','Cedzilla':'Picky Eating','Griechischer ApoRed':'Zwillingsattacke','Fabio das Berlin-City-Girl':'Clubmate Hamsterung','Giraffael':'Liiinks','Hannah im Bach':'Gossip','Alexerus Snape':'Legilimens','Die Pogofanten':'Überspringen','L\'Enderdragon':'Ohohoho','Golop der Grobe':'Pumpen','Der Zeitführer':'Raum-Zeit-Genozid','BOOM Clan':'Goldrausch'};
 function genderSymbolHtml(name) {
   const g = GENDER_MAP[name];
   if (g === 'm') return '<span style="color:#4a90e2;font-size:1.1em;" title="Männlich">♂</span>';
@@ -8483,7 +8561,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v42p
+    v42q
   </div>
 </div>
 
@@ -9239,6 +9317,21 @@ if (d.t === 'state4') {
   if (d.t === 'equip_update') {
     const cd = G.slots[d.slotId];
     if (cd) { cd.equipped = d.equipped; renderSlot(d.slotId); }
+  }
+  if (d.t === 'marcopter_swap') {
+    const myL = d.is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+    // Alte Handkarten entfernen
+    const oldUids = d.is4 ? [...(handOrderByPlayer4p[d.activatorP]||[]),...(handOrderByPlayer4p[d.targetP]||[])] : [...(handOrderByPlayer2p[d.activatorP]||[]),...(handOrderByPlayer2p[d.targetP]||[])];
+    oldUids.forEach(uid => { const el=G.cards.find(c=>parseInt(c.dataset.uid)===uid); if(el){el.remove();G.cards=G.cards.filter(c=>parseInt(c.dataset.uid)!==uid);} });
+    // Neue spawnen
+    const newActUids = d.theirCds.map(cd => { const uid=G.nid++; const el2=spawnCard({...cd,uid},0,0,false); if(myL!==d.activatorP)el2.style.display='none'; return uid; });
+    const newTarUids = d.myCds.map(cd => { const uid=G.nid++; const el2=spawnCard({...cd,uid},0,0,false); if(myL!==d.targetP)el2.style.display='none'; return uid; });
+    if (d.is4) { handOrderByPlayer4p[d.activatorP]=newActUids; handOrderByPlayer4p[d.targetP]=newTarUids; }
+    else { handOrderByPlayer2p[d.activatorP]=newActUids; handOrderByPlayer2p[d.targetP]=newTarUids; }
+    if (myL===d.activatorP) layoutMyHand();
+    else if (myL===d.targetP) { if(d.is4)layoutMyHand4();else layoutMyHand(); }
+    renderSimulatedHand('p'+d.activatorP,handCardsFromUids(newActUids),d.is4);
+    renderSimulatedHand('p'+d.targetP,handCardsFromUids(newTarUids),d.is4);
   }
   if (d.t === 'antika_steal') {
     const myL = d.is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
