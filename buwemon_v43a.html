@@ -2960,7 +2960,7 @@ function confirmAttackTarget(lsid, targetCd) {
   const defenderP = parseInt((lsid.match(/^p(\d)/)||[])[1] || '0');
   const preEquipCount = (targetCd.equipped || []).length;
   pendingAttackSelection = null;
-  markAbilityUsed(sel.slotId, 'angriff');
+  if (!sel.isDrogen) markAbilityUsed(sel.slotId, 'angriff'); // Drogen markiert sich selbst in beginAbilityActivation
   // Lisa Schutzwall: Ziel eventuell umleiten
   const redirectedSlotId = applyLisaRedirect(lsid, defenderP, sel.is4);
   if (redirectedSlotId === null) {
@@ -4095,9 +4095,9 @@ function beginGruenikaDrogen(btn, cardEl) {
   pendingAttackSelection = {
     cardEl, slotId, is4,
     attackerP: parseInt((slotId.match(/^p(\d)/)||[])[1]||'1'),
-    attackPower: 220, // Override: immer 220 AP
+    attackPower: 220,
     attackName: 'Drogen (220 AP)',
-    isDrogen: true, // Flag für Nachbehandlung
+    isDrogen: true,
   };
   const toast = document.getElementById('abil-toast'+suf);
   document.getElementById('abil-toast-title'+suf).innerHTML = '<b>Drogen</b>';
@@ -4107,7 +4107,7 @@ function beginGruenikaDrogen(btn, cardEl) {
   skipBtn.textContent = 'Abbrechen'; skipBtn.style.display = 'inline-block';
   skipBtn.onclick = () => { toast.classList.remove('open'); document.getElementById('abil-toast-bar-wrap'+suf).style.display=''; pendingAttackSelection=null; };
   toast.classList.add('open');
-  markAbilityUsed(slotId, 'Drogen');
+  // Aktion wird erst markiert wenn Kampfsituation startet (in confirmAttackTarget → beginAbilityActivation)
 }
 
 // Nach Drogen-Angriff: 100-Ereigniskarte ausrüsten (außer bei Dinkelmehl)
@@ -8659,7 +8659,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v42z
+    v43a
   </div>
 </div>
 
