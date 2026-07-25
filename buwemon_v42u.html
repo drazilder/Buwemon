@@ -1673,7 +1673,15 @@ function endTurn(p) {
   clearWanzeReveal();
   clearDinkelmehlSuppression();
   ragequitBlockedUids.clear();
-  resetTurnFlags();
+  resetTurnFlags(); // Erst Flags zurücksetzen (setzt turnActionsAllowed=1)
+  // Nachschlag-Karten auf Friedhof
+  if (!sandboxMode) {
+    const pfx = 'p'+p;
+    ['eff1','eff2','eff3','eff4'].forEach(es => {
+      const sid = pfx+'-'+es; const nc = G.slots[sid];
+      if (nc && nc.name === 'Nachschlag') { G.slots[sid]=null; renderSlot(sid); G.graves[pfx].push({name:'Nachschlag',color:nc.color,type:'eff',file:''}); updGrave(pfx); }
+    });
+  }
   const next = p === 1 ? 2 : 1;
   setTurn2p(next);
   if (NET.mode === 'multi') netSend({t:'turn2', p: next, myColor: NET.myColor, myName: NET.myName, sender: NET.myPlayer});
@@ -2466,7 +2474,7 @@ function beginAbilityActivation(el, abilityKey, abilityName, resolveFn, defender
   // Zug-Regel: Buwemon-Fähigkeiten (nicht Effektkarten) nur einmal pro Zug
   const isBuwAbility = (el.dataset.ctype === 'buw' || el.dataset.ctype === 'spec') && abilityKey !== 'angriff';
   if (isBuwAbility && !sandboxMode && !debugMode) {
-    if (turnAttackOrAbilityUsed) { showOutcomeToast('⚠ Du hast in diesem Zug bereits angegriffen oder eine Fähigkeit genutzt!', is4); return; }
+    if (turnActionsUsed >= turnActionsAllowed) { showOutcomeToast('⚠ Du hast in diesem Zug bereits angegriffen oder eine Fähigkeit genutzt!', is4); return; }
     if (!canUseAbility(slotId, abilityKey)) { showOutcomeToast('⚠ Diese Fähigkeit wurde bereits ausgeschöpft!', is4); return; }
   }
   // Der Besitzer der aktivierenden Karte ergibt sich aus ihrem Slot, NICHT aus NET.myPlayer
@@ -2913,7 +2921,7 @@ let pendingAttackSelection = null; // {cardEl, slotId, attackerP, is4, attackNam
 function beginAttackSelection(btn, cardEl) {
   closePopup();
   if (pendingAbility) { alert('Es läuft gerade schon eine Fähigkeit/ein Angriff - bitte warten.'); return; }
-  if (!sandboxMode && !debugMode && turnAttackOrAbilityUsed) { showOutcomeToast('⚠ Du hast in diesem Zug bereits angegriffen oder eine Fähigkeit genutzt!', false); return; }
+  if (!sandboxMode && !debugMode && turnActionsUsed >= turnActionsAllowed) { showOutcomeToast('⚠ Du hast in diesem Zug bereits angegriffen oder eine Fähigkeit genutzt!', false); return; }
   const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
   const slotId = cardEl.dataset.slotId;
   if (!slotId) return;
@@ -3845,18 +3853,37 @@ document.addEventListener('pointerdown', (e) => {
 }, true);
 
 function resolveMarcopter(activatorP, targetP, is4) {
-  // Handkarten beider Spieler tauschen
+  const suf = is4 ? '-4' : '';
+  // Kartendaten aus G.cards ODER aus sim-hand-card Elementen holen
+  function getCardData(uid, playerP) {
+    const el = G.cards.find(c => parseInt(c.dataset.uid) === uid);
+    if (el) return {name:el.dataset.name,color:el.dataset.color,type:el.dataset.ctype,file:el.dataset.file||''};
+    // Aus simulierter Handzone
+    const physPfx = physId('p'+playerP);
+    const handEl = document.getElementById(physPfx+'-hand'+suf);
+    if (handEl) {
+      const sims = handEl.querySelectorAll('.sim-hand-card');
+      const hand = is4 ? (handOrderByPlayer4p[playerP]||[]) : (handOrderByPlayer2p[playerP]||[]);
+      const idx = hand.indexOf(uid);
+      if (idx >= 0 && sims[idx]) {
+        const c = sims[idx];
+        return {name:c.dataset.name,color:c.dataset.color,type:c.dataset.ctype,file:c.dataset.file||''};
+      }
+    }
+    return null;
+  }
+
   const myHand = is4 ? [...(handOrderByPlayer4p[activatorP]||[])] : [...(handOrderByPlayer2p[activatorP]||[])];
   const theirHand = is4 ? [...(handOrderByPlayer4p[targetP]||[])] : [...(handOrderByPlayer2p[targetP]||[])];
-  // Karten-Daten sammeln vor dem Tausch
-  const myCds = myHand.map(uid => { const el = G.cards.find(c=>parseInt(c.dataset.uid)===uid); return el ? {name:el.dataset.name,color:el.dataset.color,type:el.dataset.ctype,file:el.dataset.file||''} : null; }).filter(Boolean);
-  const theirCds = theirHand.map(uid => { const el = G.cards.find(c=>parseInt(c.dataset.uid)===uid); return el ? {name:el.dataset.name,color:el.dataset.color,type:el.dataset.ctype,file:el.dataset.file||''} : null; }).filter(Boolean);
-  // Alte Karten entfernen
+  const myCds = myHand.map(uid => getCardData(uid, activatorP)).filter(Boolean);
+  const theirCds = theirHand.map(uid => getCardData(uid, targetP)).filter(Boolean);
+
+  // Alte Karten aus G.cards entfernen
   [...myHand,...theirHand].forEach(uid => {
     const el = G.cards.find(c=>parseInt(c.dataset.uid)===uid);
     if (el) { el.remove(); G.cards = G.cards.filter(c=>parseInt(c.dataset.uid)!==uid); }
   });
-  // Neue Karten spawnen (Aktivator bekommt gegnerische Karten)
+  // Neue Karten spawnen
   const newMyUids = theirCds.map(cd => { const uid=G.nid++; spawnCard({...cd,uid},0,0,false); return uid; });
   const newTheirUids = myCds.map(cd => { const uid=G.nid++; const el2=spawnCard({...cd,uid},0,0,false); el2.style.display='none'; return uid; });
   if (is4) { handOrderByPlayer4p[activatorP]=newMyUids; handOrderByPlayer4p[targetP]=newTheirUids; layoutMyHand4(); renderSimulatedHand('p'+targetP,handCardsFromUids(newTheirUids),true); }
@@ -4468,7 +4495,7 @@ function renderPopupActionButtons(el, fd) {
   };
 
   const atkName = CARD_ATTACKS[name];
-  const turnBlocked = !sandboxMode && !debugMode && turnAttackOrAbilityUsed;
+  const turnBlocked = !sandboxMode && !debugMode && (turnActionsUsed >= turnActionsAllowed);
   if (atkName) {
     const atkBtn = makeBtn('Angriff_Icon.png', atkName, (btn, cardEl) => beginAttackSelection(btn, cardEl), totalPower);
     if (turnBlocked) { atkBtn.style.opacity = '0.3'; atkBtn.style.pointerEvents = 'none'; }
@@ -5769,7 +5796,20 @@ function onCardDockedToEffSlot(player, slotId, cd) {
     if (blocked) {
       applyLpDamage(ownerP, 50, is4);
       showOutcomeToast('Nachschlag ist verboten! Spieler ' + ownerP + ' verliert 50 LP.', is4);
+    } else {
+      const fake = document.createElement('div');
+      fake.dataset.name = cd.name; fake.dataset.color = cd.color;
+      fake.dataset.ctype = cd.type||'eff'; fake.dataset.uid = cd.uid||0; fake.dataset.slotId = slotId;
+      beginAbilityActivation(fake, 'Nachschlag', 'Nachschlag', () => {
+        if (!sandboxMode && !debugMode) {
+          turnActionsAllowed++; // Eine weitere Buwemonaktion erlaubt
+        }
+        showOutcomeToast('Nachschlag: Eine weitere Buwemonaktion erlaubt!', is4);
+        // Karte bleibt im Effektfeld bis Zug-Ende (wird in endTurn auf Friedhof verschoben)
+        if (NET.mode==='multi') { is4?netSendState4():netSendState(); }
+      });
     }
+    return;
   }
 
   if (cd.name === 'Eine Runde noch') {
@@ -8561,7 +8601,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v42q
+    v42u
   </div>
 </div>
 
@@ -9593,7 +9633,8 @@ let sandboxMode = true;
 let debugMode = false; // Debug-Modus: Zug-Regeln deaktiviert
 
 // Zug-Status
-let turnAttackOrAbilityUsed = false; // wurde in diesem Zug schon angegriffen oder Fähigkeit genutzt?
+let turnActionsUsed = 0; // Anzahl genutzter Angriffe/Fähigkeiten in diesem Zug
+let turnActionsAllowed = 1; // Grundregel: 1 pro Zug (erhöht durch Nachschlag)
 let turnBuwemonPlaced = false; // wurde in diesem Zug schon ein normales Buwemon gelegt?
 
 // Fähigkeits-Nutzungs-Zähler: slotId -> Anzahl genutzter Fähigkeiten
@@ -9618,17 +9659,19 @@ const ABILITY_LIMITS = {
 
 function canUseAbility(slotId, abilityName) {
   if (debugMode || sandboxMode) return true;
-  if (turnAttackOrAbilityUsed) return false;
+  if (turnActionsUsed >= turnActionsAllowed) return false;
   const lsid = toLogicalId(slotId);
   const limit = ABILITY_LIMITS[abilityName];
   if (limit === null || limit === undefined) return true;
   const used = abilityUsesThisLife[lsid] || 0;
+  // Wenn Nachschlag aktiv (mehr Aktionen erlaubt als Grundregel), Einzel-Limits ignorieren
+  if (turnActionsAllowed > 1) return true;
   return used < limit;
 }
 
 function markAbilityUsed(slotId, abilityName) {
   if (debugMode || sandboxMode) return;
-  turnAttackOrAbilityUsed = true;
+  turnActionsUsed++;
   const lsid = toLogicalId(slotId);
   const limit = ABILITY_LIMITS[abilityName];
   if (limit !== null && limit !== undefined) {
@@ -9654,7 +9697,8 @@ function toggleDebugMode() {
 }
 
 function resetTurnFlags() {
-  turnAttackOrAbilityUsed = false;
+  turnActionsUsed = 0;
+  turnActionsAllowed = 1;
   turnBuwemonPlaced = false;
   // Fähigkeits-Zähler pro Slot beim Zug-Ende leeren (nur Einmal-Fähigkeiten die noch aktiv sind bleiben gesetzt)
   // Aber wir leeren alle damit neue Buwemon im selben Slot keine Sperre erben
