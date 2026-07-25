@@ -2488,7 +2488,8 @@ function beginAbilityActivation(el, abilityKey, abilityName, resolveFn, defender
     defenderName: (extra && extra.defenderName) || null,
     defenderColor: (extra && extra.defenderColor) || null,
     extraText: (extra && extra.extraText) || '',
-    isAttack: abilityKey === 'angriff' || abilityKey === 'drogen',
+    isAttack: abilityKey === 'angriff' || abilityKey === 'drogen' || abilityKey === 'clari_phase2',
+    isClariPhase1: abilityKey === 'clari_phase1',
     isDrogen: (extra && extra.isDrogen) || false,
   };
   if (NET.mode === 'multi') netSend({t:'ability_pending', ...data, sender: NET.myPlayer});
@@ -2550,10 +2551,8 @@ function openAbilityRound(phase) {
       const eqCardColor = (function(){ const dc = G.slots[pendingAbility.defenderSlotId]; return dc ? dc.color : '#888888'; })();
       mainTxt = 'Spieler ' + equipInfo.ownerP + ' rüstet ' + coloredAbilName(equipInfo.name, eqCardColor) + ' aus';
     } else if (data.isAttack && pendingAbility.combatDefense) {
-      // Bei Angriffen bedeutet "chainBlocked" NICHT zwingend "abgewehrt" - das genaue Ergebnis
-      // (Würfelglück etc.) entscheidet sich erst bei der Auflösung. Hier daher neutral formulieren.
       mainTxt = coloredAbilName(pendingAbility.combatDefense.name, pendingAbility.combatDefense.colorHex) + ' liegt aktuell im Spiel';
-    } else if (data.isAttack) {
+    } else if (data.isAttack && pendingAbility.abilityKey !== 'drogen') {
       mainTxt = abilitySpan + ' - aktuell keine Verteidigungskarte im Spiel';
     } else {
       const standTxt = pendingAbility.chainBlocked ? 'wird aktuell abgewehrt' : 'wird aktuell NICHT abgewehrt';
@@ -2769,6 +2768,7 @@ function undoCombatEquip(pa) {
 }
 
 function checkAbilityBlock(cd, slotId) {
+  if (cd && cd.name === 'Dinkelmehl') showOutcomeToast('DEBUG: checkAbilityBlock erreicht mit Dinkelmehl, pendingAbility=' + (pendingAbility ? pendingAbility.abilityKey : 'null'), false);
   if (!pendingAbility || !cd) return;
   if (!/-eff\d/.test(slotId)) return;
   const player = parseInt((slotId.match(/^p(\d)/)||[])[1] || '0');
@@ -2776,7 +2776,9 @@ function checkAbilityBlock(cd, slotId) {
   const isAttack = !!pendingAbility.isAttack;
 
   let validNames;
-  if (isAttack) {
+  if (pendingAbility.isClariPhase1) {
+    validNames = [FOURACEFOUR_NAME, 'Dinkelmehl'];
+  } else if (isAttack) {
     validNames = ATTACK_DEFENSE_NAMES.concat(['Ablehnt', FOURACEFOUR_NAME]);
     if (pendingAbility.abilityKey === 'drogen') validNames = validNames.concat(['Dinkelmehl']);
   } else {
@@ -2799,8 +2801,7 @@ function checkAbilityBlock(cd, slotId) {
     // Bei Angriffen: Ablehnt schaltet nur um (klassisches Hin und Her), eine NEUE Verteidigungskarte
     // ERSETZT die aktuell aktive Verteidigung. FourAceFour hat bei Angriffen eine eigene,
     // feste Bedeutung (siehe resolveAttack) statt der generischen "tötet Erstantwort"-Regel.
-    if (cd.name === 'Ablehnt') {
-      if (pendingAbility.vertragsbruch) return; // Ablehnt kann Vertragsbruch nicht abwehren
+    if (cd.name === 'Ablehnt') {      if (pendingAbility.vertragsbruch) return; // Ablehnt kann Vertragsbruch nicht abwehren
       if (pendingAbility.lastCombatEquip) {
         undoCombatEquip(pendingAbility);
         pendingAbility.lastCombatEquip = null;
@@ -2814,6 +2815,10 @@ function checkAbilityBlock(cd, slotId) {
         undoCombatEquip(pendingAbility);
         pendingAbility.lastCombatEquip = null;
       }
+    } else if (cd.name === 'Dinkelmehl' && pendingAbility.abilityKey === 'drogen') {
+      // Bei Drogen: Dinkelmehl blockt die Fähigkeit komplett (wie bei normalen Fähigkeiten)
+      pendingAbility.chainBlocked = !pendingAbility.chainBlocked;
+      showOutcomeToast(pendingAbility.chainBlocked ? '<b>Dinkelmehl</b> – Grünikas Angriff wird abgewehrt!' : '<b>Dinkelmehl</b> – Abwehr aufgehoben', pendingAbility.is4);
     } else {
       pendingAbility.combatDefense = { name: cd.name, ownerP: player, colorHex: cd.color };
       pendingAbility.chainBlocked = true;
@@ -2907,7 +2912,20 @@ function finalizeAbilityChain(killsBuwemon) {
         else alert('DIAGNOSE: Angriff sollte aufgelöst werden, aber die Auflösungs-Funktion fehlt (resolveFn=null). Bitte diese Meldung an Claude weitergeben.');
       }
     } else {
-      if (!wasBlocked && resolveFn) resolveFn();
+      if (!wasBlocked && resolveFn) resolveFn({ combatDefense, fourAceFour: fourAceFourPlayed });
+      // Drogen: bei Dinkelmehl → Toast + kein 100-Karte; bei Calgon etc. → 100-Karte (passiert in resolveAttack)
+      if (wasBlocked && data.isDrogen && isActivatorHere) {
+        if (combatDefense && combatDefense.name === 'Dinkelmehl') {
+          showOutcomeToast('Dinkelmehl hat Grünikas Drogen-Angriff geblockt!', data.is4);
+        }
+        // Keine 100-Karte bei Dinkelmehl oder FourAceFour
+      }
+      // ClariSSIO Phase 1: FourAceFour tötet ClariSSIO
+      if (fourAceFourPlayed && data.isClariPhase1 && isActivatorHere) {
+        const clariCd = G.slots[data.slotId];
+        if (clariCd) moveToGraveLogical(data.slotId, clariCd, data.is4);
+        if (NET.mode === 'multi') { data.is4 ? netSendState4() : netSendState(); }
+      }
     }
     if (NET.mode === 'multi') netSend({t:'ability_resolved', wasBlocked, playedCards: playedCardsToClean, killSlotId, killOwnerP, is4: data.is4, returnToHand, tutMirLeidSlotId, combatSlotIds, outcomeText: _pendingOutcomeText});
   }
@@ -2960,7 +2978,7 @@ function confirmAttackTarget(lsid, targetCd) {
   const defenderP = parseInt((lsid.match(/^p(\d)/)||[])[1] || '0');
   const preEquipCount = (targetCd.equipped || []).length;
   pendingAttackSelection = null;
-  markAbilityUsed(sel.slotId, 'angriff');
+  if (!sel.isDrogen) markAbilityUsed(sel.slotId, 'angriff'); // Drogen markiert sich selbst in beginAbilityActivation
   // Lisa Schutzwall: Ziel eventuell umleiten
   const redirectedSlotId = applyLisaRedirect(lsid, defenderP, sel.is4);
   if (redirectedSlotId === null) {
@@ -3058,7 +3076,7 @@ function showOutcomeToast(text, is4, noSync) {
     el._timer = setTimeout(() => { el.style.display = 'none'; }, 5000);
   }
   // Text für ability_resolved Versand sammeln (wird von finalizeAbilityChain mitgeschickt)
-  if (!noSync) _pendingOutcomeText = (_pendingOutcomeText ? _pendingOutcomeText + ' | ' : '') + text;
+  _pendingOutcomeText = (_pendingOutcomeText ? _pendingOutcomeText + ' | ' : '') + text;
   if (!noSync && NET.mode === 'multi') netSend({t:'outcome_toast', text, is4});
 }
 
@@ -3150,12 +3168,12 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
     if (defense.name === 'Calgon') {
       // 4/6 Fehlschlag, bei blauem Verteidiger 100%
       attackFails = (defCd.color === '#1a44bb') ? true : (Math.random() < 4/6);
-      showOutcomeToast(attackFails ? '<b>Calgon</b> hat den Angriff abgewehrt!' : '<b>Calgon</b> hat NICHT gewirkt - Angriff wird durchgeführt.', is4);
+      showOutcomeToast(attackFails ? '<b>Calgon</b> hat den Angriff abgewehrt! (4/6)' : '<b>Calgon</b> hat NICHT gewirkt - Angriff wird durchgeführt.', is4);
     } else if (defense.name === 'Stein') {
       // 4/6 Fehlschlag + Angreifer stirbt, bei orangem Verteidiger 100%
       const roll = (defCd.color === '#cc5500') ? true : (Math.random() < 4/6);
       if (roll) { attackFails = true; attackerDiesInstead = true; }
-      showOutcomeToast(roll ? '<b>Stein</b> hat gewirkt - der Angreifer stirbt!' : '<b>Stein</b> hat NICHT gewirkt - Angriff wird durchgeführt.', is4);
+      showOutcomeToast(roll ? '<b>Stein</b> hat gewirkt - der Angreifer stirbt! (4/6)' : '<b>Stein</b> hat NICHT gewirkt - Angriff wird durchgeführt.', is4);
     } else if (defense.name === 'UwU ') {
       atkPowerOverride = sel.attackPower - 30;
       if (atkColor === '#008899') attackerDiesAfterwards = true; // Angreifer ist Cyan
@@ -3167,7 +3185,7 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
     } else if (defense.name === 'Glaskuppel') {
       lpProtected = true;
       if (atkColor === '#aa9900' && Math.random() < 0.5) lpProtected = false; // gelber Angreifer durchbricht mit 50%
-      if (atkColor === '#aa9900') showOutcomeToast(lpProtected ? '<b>Glaskuppel</b> hält stand!' : '<b>Glaskuppel</b> wurde durchbrochen!', is4);
+      if (atkColor === '#aa9900') showOutcomeToast(lpProtected ? '<b>Glaskuppel</b> hält stand! (50%)' : '<b>Glaskuppel</b> wurde durchbrochen! (50%)', is4);
     }
   }
 
@@ -4078,6 +4096,88 @@ function resolveAntika(activatorP, targetP, is4) {
   }
 }
 
+// ── CLARISSIO – Arsch anfassen ──
+let pendingClariSSIO = null; // {cardEl, activatorP, is4, opponents, startAgainst}
+
+function beginClariSSIO(btn, cardEl) {
+  closePopup();
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const activatorP = parseInt((cardEl.dataset.slotId.match(/^p(\d)/)||[])[1]||'1');
+  const activePlayers = is4 ? [1,2,3,4].filter(p => G4.active[p]) : [1,2];
+  const opponents = activePlayers.filter(p => p !== activatorP);
+
+  const startAgainst = (targetP) => {
+    // Phase 1: Dinkelmehl / FourAceFour abwehrbar
+    beginAbilityActivation(cardEl, 'clari_phase1', 'Arsch anfassen', () => {
+      // 50% Würfel
+      const hit = Math.random() < 0.5;
+      const txt = hit ? 'ClariSSIO: Fähigkeitsangriff gelingt! (50%)' : 'ClariSSIO: Fähigkeitsangriff schlägt fehl! (50%)';
+      showOutcomeToast(txt, is4);
+      if (!hit) return;
+      // Phase 2: normaler Angriff-Abwehr (Calgon etc.), LP-Schaden = ClariSSIO's aktuelle AP
+      setTimeout(() => {
+        const clariCd = G.slots[toLogicalId(cardEl.dataset.slotId)];
+        const clariPower = clariCd ? (CARD_ATTACK_POWER[clariCd.name] || 140) + computeEquipBonus(clariCd.color, clariCd.equipped) : 140;
+        const fakeAtk = {
+          cardEl, slotId: toLogicalId(cardEl.dataset.slotId), is4,
+          attackerP: activatorP, attackPower: clariPower,
+          attackName: 'Arsch anfassen – Direktangriff (' + clariPower + ' AP)',
+          isDirectLP: true, directLPTarget: targetP,
+        };
+        pendingAttackSelection = fakeAtk;
+        confirmAttackTargetLP(targetP, is4);
+      }, 1200);
+    });
+  };
+
+  if (opponents.length <= 1) {
+    startAgainst(opponents[0]);
+    return;
+  }
+  // Zielauswahl-Toast
+  pendingClariSSIO = { cardEl, activatorP, is4, opponents, startAgainst };
+  const suf = is4 ? '-4' : '';
+  const toast = document.getElementById('abil-toast'+suf);
+  document.getElementById('abil-toast-title'+suf).innerHTML = '<b>Arsch anfassen</b>';
+  document.getElementById('abil-toast-sub'+suf).textContent = 'Klicke auf einen Gegner (Buwemon, Handzone oder LP)';
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = 'none';
+  const skipBtn = document.getElementById('abil-toast-skip'+suf);
+  skipBtn.textContent = 'Abbrechen'; skipBtn.style.display = 'inline-block';
+  skipBtn.onclick = () => { toast.classList.remove('open'); document.getElementById('abil-toast-bar-wrap'+suf).style.display=''; pendingClariSSIO=null; };
+  toast.classList.add('open');
+}
+
+// ClariSSIO Zielauswahl im Slot-Klick-Handler (wird dort per tryConfirmClariSSIO aufgerufen)
+function tryConfirmClariSSIO(lsid, physId_fn) {
+  if (!pendingClariSSIO) return false;
+  const { activatorP, is4, opponents, startAgainst } = pendingClariSSIO;
+  const targetP = parseInt((lsid.match(/^p(\d)/)||[])[1]||'0');
+  if (!opponents.includes(targetP)) return false;
+  const suf = is4 ? '-4' : '';
+  document.getElementById('abil-toast'+suf).classList.remove('open');
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
+  pendingClariSSIO = null;
+  startAgainst(targetP);
+  return true;
+}
+
+// ClariSSIO: Klick auf LP-Anzeige zur Zielauswahl
+document.addEventListener('pointerdown', (e) => {
+  if (!pendingClariSSIO || sandboxMode) return;
+  const lpEl = e.target.closest('[id$="-lp"],[id$="-lp-4"]');
+  if (!lpEl) return;
+  const m = lpEl.id.match(/^p(\d)/);
+  if (!m) return;
+  const logP = parseInt(toLogicalId('p'+parseInt(m[1])).replace('p',''));
+  if (!pendingClariSSIO.opponents.includes(logP)) return;
+  e.stopPropagation();
+  const suf = pendingClariSSIO.is4 ? '-4' : '';
+  document.getElementById('abil-toast'+suf).classList.remove('open');
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
+  const saved = pendingClariSSIO; pendingClariSSIO = null;
+  saved.startAgainst(logP);
+}, true);
+
 // ── GRÜNIKA – Drogen ──
 // Funktioniert wie ein Angriff mit 220 AP. Danach (außer bei Dinkelmehl) bekommt Grünika
 // eine 100-Ereigniskarte ausgerüstet (reduziert AP auf 100).
@@ -4095,9 +4195,9 @@ function beginGruenikaDrogen(btn, cardEl) {
   pendingAttackSelection = {
     cardEl, slotId, is4,
     attackerP: parseInt((slotId.match(/^p(\d)/)||[])[1]||'1'),
-    attackPower: 220, // Override: immer 220 AP
+    attackPower: 220,
     attackName: 'Drogen (220 AP)',
-    isDrogen: true, // Flag für Nachbehandlung
+    isDrogen: true,
   };
   const toast = document.getElementById('abil-toast'+suf);
   document.getElementById('abil-toast-title'+suf).innerHTML = '<b>Drogen</b>';
@@ -4107,7 +4207,7 @@ function beginGruenikaDrogen(btn, cardEl) {
   skipBtn.textContent = 'Abbrechen'; skipBtn.style.display = 'inline-block';
   skipBtn.onclick = () => { toast.classList.remove('open'); document.getElementById('abil-toast-bar-wrap'+suf).style.display=''; pendingAttackSelection=null; };
   toast.classList.add('open');
-  markAbilityUsed(slotId, 'Drogen');
+  // Aktion wird erst markiert wenn Kampfsituation startet (in confirmAttackTarget → beginAbilityActivation)
 }
 
 // Nach Drogen-Angriff: 100-Ereigniskarte ausrüsten (außer bei Dinkelmehl)
@@ -4424,6 +4524,7 @@ const SPECIAL_ABILITY_HANDLERS = {
   'Picky Eating': (btn, el) => { closePopup(); confirmPickyEating(btn, el); },
   'Gottkomplex': (btn, el) => beginGottkomplex(btn, el),
   'Drogen': (btn, el) => beginGruenikaDrogen(btn, el),
+  'Arsch anfassen': (btn, el) => beginClariSSIO(btn, el),
   'Rotation': (btn, el) => beginMarcopter(btn, el),
   'Münster': (btn, el) => beginLuisMuenster(btn, el),
   "Würd' mir stinken": (btn, el) => beginWuerdMirStinken(btn, el),
@@ -6235,6 +6336,7 @@ function tryDockCard(el) {
           case 'Dinkelmehl':
             if (!isMyTurn && !isCombat) blockReason = 'Nur im eigenen Zug oder in einer Kampfsituation einsetzbar';
             if (isCombat && isMyCombat && pendingAbility.isAttack) blockReason = 'Als Angreifer kannst du Dinkelmehl nicht einsetzen';
+            if (isCombat && !isMyCombat && pendingAbility.abilityKey === 'drogen') blockReason = null; // Verteidiger darf Dinkelmehl bei Drogen
             break;
           case 'Ablehnt':
             if (!isMyTurn && !isCombat) blockReason = 'Nur im eigenen Zug oder in einer Kampfsituation einsetzbar';
@@ -6360,6 +6462,18 @@ function releaseSlot(slotId, x, y) {
     const lsid = toLogicalId(sid);
     const cdNow = G.slots[lsid];
 
+    // ClariSSIO Zielauswahl: Buwemon-Slot, Handzone oder LP eines Gegners
+    if (!sandboxMode && pendingClariSSIO) {
+      const targetP = parseInt((lsid.match(/^p(\d)/)||[])[1]||'0');
+      if (pendingClariSSIO.opponents.includes(targetP)) {
+        const suf = pendingClariSSIO.is4 ? '-4' : '';
+        document.getElementById('abil-toast'+suf).classList.remove('open');
+        document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
+        const saved = pendingClariSSIO; pendingClariSSIO = null;
+        saved.startAgainst(targetP);
+        e.stopPropagation(); return;
+      }
+    }
     // Döner schneiden-Zielauswahl: Klick auf ein gegnerisches Buwemon
     if (!sandboxMode && pendingDoener && cdNow) {
       const isBuw = /-buw\d(-4)?$/.test(lsid);
@@ -8659,7 +8773,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v42z
+    v43m
   </div>
 </div>
 
