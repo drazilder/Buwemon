@@ -2824,7 +2824,7 @@ function checkAbilityBlock(cd, slotId) {
       pendingAbility.chainBlocked = !pendingAbility.chainBlocked;
     } else {
       pendingAbility.combatDefense = { name: cd.name, ownerP: player, colorHex: cd.color };
-      pendingAbility.chainBlocked = true;
+      if (!isAttack) pendingAbility.chainBlocked = true; // Nur bei Fähigkeiten blockiert combatDefense den Angriff
       pendingAbility.lastCombatEquip = null;
     }
   } else {
@@ -2913,10 +2913,26 @@ function finalizeAbilityChain(killsBuwemon) {
       if (fourAceFourPlayed) {
         if (resolveFn) resolveFn({ fourAceFour: true });
       } else if (wasBlocked && (data.abilityKey === 'drogen' || data.isDrogen)) {
-        // Drogen + Dinkelmehl geblockt - abil-toast zeigt bereits alles, kein extra Toast nötig
+        // Drogen + Dinkelmehl geblockt - keine 100-Karte
       } else {
         if (resolveFn) resolveFn({ combatDefense, playedCardsForReturn: playedCards });
         else alert('DIAGNOSE: Angriff sollte aufgelöst werden, aber die Auflösungs-Funktion fehlt (resolveFn=null). Bitte diese Meldung an Claude weitergeben.');
+      }
+      // Drogen: 100-Karte IMMER außer bei Dinkelmehl-Block
+      if (data.abilityKey === 'drogen' || data.isDrogen) showOutcomeToast('DEBUG: drogen erkannt, wasBlocked=' + wasBlocked + ' fourAce=' + fourAceFourPlayed, data.is4);
+      if ((data.abilityKey === 'drogen' || data.isDrogen) && isActivatorHere && !(wasBlocked && !fourAceFourPlayed)) {
+        const _lsid = toLogicalId(data.slotId);
+        const _cd = G.slots[_lsid];
+        if (_cd) {
+          if (!_cd.equipped) _cd.equipped = [];
+          if (!_cd.equipped.some(eq => eq.name === '100 Ereignis')) {
+            _cd.equipped.push({ name: '100 Ereignis', color: '#888888', ctype: 'ereignis', file: '100.png' });
+          }
+          setTimeout(() => {
+            renderSlot(_lsid);
+            if (NET.mode === 'multi') netSend({t:'equip_update', slotId: _lsid, equipped: _cd.equipped});
+          }, 400);
+        }
       }
     } else {
       if (!wasBlocked && resolveFn) resolveFn({ combatDefense, fourAceFour: fourAceFourPlayed });
@@ -3140,7 +3156,6 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
     // FourAceFour bei einem Angriff: Angreifer stirbt, Angriff schlägt komplett fehl. Nicht abwehrbar.
     moveToGraveLogical(sel.slotId, G.slots[sel.slotId], is4);
     clearCombatEquipAfterFight([sel.slotId, defenderSlotId].filter(Boolean), is4);
-    if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
     return;
   }
 
@@ -4238,7 +4253,7 @@ function beginGruenikaDrogen(btn, cardEl) {
 
 // Nach Drogen-Angriff: 100-Ereigniskarte ausrüsten (außer bei Dinkelmehl)
 function applyDrogenNacheffekt(grueSlotId, isDinkelmehled) {
-  if (isDinkelmehled) return; // Dinkelmehl: kein Nacheffekt
+  if (isDinkelmehled) return;
   const cd = G.slots[grueSlotId];
   if (!cd) return;
   if (!cd.equipped) cd.equipped = [];
@@ -8799,7 +8814,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v44b
+    v44j
   </div>
 </div>
 
