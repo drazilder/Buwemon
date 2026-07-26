@@ -2768,7 +2768,6 @@ function undoCombatEquip(pa) {
 }
 
 function checkAbilityBlock(cd, slotId) {
-  if (cd && cd.name === 'Dinkelmehl') showOutcomeToast('DEBUG: checkAbilityBlock erreicht mit Dinkelmehl, pendingAbility=' + (pendingAbility ? pendingAbility.abilityKey : 'null'), false);
   if (!pendingAbility || !cd) return;
   if (!/-eff\d/.test(slotId)) return;
   const player = parseInt((slotId.match(/^p(\d)/)||[])[1] || '0');
@@ -2780,7 +2779,7 @@ function checkAbilityBlock(cd, slotId) {
     validNames = [FOURACEFOUR_NAME, 'Dinkelmehl'];
   } else if (isAttack) {
     validNames = ATTACK_DEFENSE_NAMES.concat(['Ablehnt', FOURACEFOUR_NAME]);
-    if (pendingAbility.abilityKey === 'drogen') validNames = validNames.concat(['Dinkelmehl']);
+    if (pendingAbility.abilityKey === 'drogen' || pendingAbility.isDrogen) validNames = validNames.concat(['Dinkelmehl']);
   } else {
     validNames = isFirstStep ? ABILITY_FIRST_RESPONSE_NAMES : ABILITY_CHAIN_RESPONSE_NAMES;
   }
@@ -2815,10 +2814,8 @@ function checkAbilityBlock(cd, slotId) {
         undoCombatEquip(pendingAbility);
         pendingAbility.lastCombatEquip = null;
       }
-    } else if (cd.name === 'Dinkelmehl' && pendingAbility.abilityKey === 'drogen') {
-      // Bei Drogen: Dinkelmehl blockt die Fähigkeit komplett (wie bei normalen Fähigkeiten)
+    } else if (cd.name === 'Dinkelmehl' && (pendingAbility.abilityKey === 'drogen' || pendingAbility.isDrogen)) {
       pendingAbility.chainBlocked = !pendingAbility.chainBlocked;
-      showOutcomeToast(pendingAbility.chainBlocked ? '<b>Dinkelmehl</b> – Grünikas Angriff wird abgewehrt!' : '<b>Dinkelmehl</b> – Abwehr aufgehoben', pendingAbility.is4);
     } else {
       pendingAbility.combatDefense = { name: cd.name, ownerP: player, colorHex: cd.color };
       pendingAbility.chainBlocked = true;
@@ -2907,6 +2904,9 @@ function finalizeAbilityChain(killsBuwemon) {
       // "wasBlocked" ist bei Angriffen KEIN Signal mehr für "nichts passiert".
       if (fourAceFourPlayed) {
         if (resolveFn) resolveFn({ fourAceFour: true });
+      } else if (wasBlocked && (data.abilityKey === 'drogen' || data.isDrogen)) {
+        // Drogen + Dinkelmehl: Angriff wird komplett geblockt, keine 100-Karte
+        showOutcomeToast('Dinkelmehl hat Grünikas Drogen-Angriff geblockt!', data.is4);
       } else {
         if (resolveFn) resolveFn({ combatDefense, playedCardsForReturn: playedCards });
         else alert('DIAGNOSE: Angriff sollte aufgelöst werden, aber die Auflösungs-Funktion fehlt (resolveFn=null). Bitte diese Meldung an Claude weitergeben.');
@@ -2986,7 +2986,8 @@ function confirmAttackTarget(lsid, targetCd) {
     return;
   }
   const finalTargetCd = redirectedSlotId !== lsid ? (G.slots[redirectedSlotId] || targetCd) : targetCd;
-  beginAbilityActivation(sel.cardEl, sel.isDrogen ? 'drogen' : 'angriff', sel.attackName, (resolveInfo) => resolveAttack(sel, redirectedSlotId, defenderP, false, resolveInfo, preEquipCount), redirectedSlotId, { defenderName: finalTargetCd.name, defenderColor: finalTargetCd.color, isDrogen: sel.isDrogen || false });
+  const isDogren = sel.isDrogen || (sel.attackName && sel.attackName.includes('Drogen'));
+  beginAbilityActivation(sel.cardEl, isDogren ? 'drogen' : 'angriff', sel.attackName, (resolveInfo) => resolveAttack(sel, redirectedSlotId, defenderP, false, resolveInfo, preEquipCount), redirectedSlotId, { defenderName: finalTargetCd.name, defenderColor: finalTargetCd.color, isDrogen: isDogren });
 }
 
 function confirmAttackTargetLP(defenderP, is4) {
@@ -2995,8 +2996,9 @@ function confirmAttackTargetLP(defenderP, is4) {
   const suf = is4 ? '-4' : '';
   document.getElementById('abil-toast'+suf).classList.remove('open');
   document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
+  const isDogren2 = sel.isDrogen || (sel.attackName && sel.attackName.includes('Drogen'));
   pendingAttackSelection = null;
-  beginAbilityActivation(sel.cardEl, 'angriff', sel.attackName, (resolveInfo) => resolveAttack(sel, null, defenderP, true, resolveInfo), null, { extraText: ' (Direktangriff auf Spieler ' + defenderP + ')' });
+  beginAbilityActivation(sel.cardEl, isDogren2 ? 'drogen' : 'angriff', sel.attackName, (resolveInfo) => resolveAttack(sel, null, defenderP, true, resolveInfo), null, { extraText: ' (Direktangriff auf Spieler ' + defenderP + ')', isDrogen: isDogren2 });
 }
 
 // Klick auf eine gegnerische LP-Anzeige während der Zielauswahl (nur wenn dieser Spieler kein Buwemon hat)
@@ -4252,7 +4254,7 @@ function tryConfirmDoener(lsid, cd) {
   pendingDoener = null;
   beginAbilityActivation(cardEl, 'Döner schneiden', 'Döner schneiden – ' + cd.name, () => {
     const cdNow = G.slots[lsid];
-    if (!cdNow) { showOutcomeToast('DEBUG: lsid=' + lsid + ' -> null', is4); return; }
+    if (!cdNow) return;
     if (!cdNow.equipped) cdNow.equipped = [];
     cdNow.equipped.push({ name: 'Minus 20', color: '#888888', ctype: 'ereignis', file: 'Minus_20.png' });
     renderSlot(lsid);
@@ -6336,7 +6338,7 @@ function tryDockCard(el) {
           case 'Dinkelmehl':
             if (!isMyTurn && !isCombat) blockReason = 'Nur im eigenen Zug oder in einer Kampfsituation einsetzbar';
             if (isCombat && isMyCombat && pendingAbility.isAttack) blockReason = 'Als Angreifer kannst du Dinkelmehl nicht einsetzen';
-            if (isCombat && !isMyCombat && pendingAbility.abilityKey === 'drogen') blockReason = null; // Verteidiger darf Dinkelmehl bei Drogen
+            if (isCombat && !isMyCombat && (pendingAbility.abilityKey === 'drogen' || pendingAbility.isDrogen)) blockReason = null; // Verteidiger darf Dinkelmehl bei Drogen
             break;
           case 'Ablehnt':
             if (!isMyTurn && !isCombat) blockReason = 'Nur im eigenen Zug oder in einer Kampfsituation einsetzbar';
@@ -8773,7 +8775,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v43m
+    v43v
   </div>
 </div>
 
