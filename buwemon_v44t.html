@@ -4242,18 +4242,15 @@ function beginZwillingsattacke(btn, cardEl) {
   const slotId = toLogicalId(cardEl.dataset.slotId);
   // Phase 1: Fähigkeit abwehren (Dinkelmehl/FourAceFour)
   beginAbilityActivation(cardEl, 'Zwillingsattacke', 'Zwillingsattacke', () => {
-    // Nicht abgewehrt: Erster Angriff
-    startZwillingsAngriff(cardEl, slotId, is4, () => {
-      // Nach erstem Angriff: zweiter Angriff
-      // Karte neu laden (AP könnten sich geändert haben, Ausrüstung weg)
-      startZwillingsAngriff(cardEl, slotId, is4, null);
-    });
+    setTimeout(() => startZwillingsAngriff(cardEl, slotId, is4, () => {
+      setTimeout(() => startZwillingsAngriff(cardEl, slotId, is4, null), 100);
+    }), 300);
   });
 }
 
 function startZwillingsAngriff(cardEl, slotId, is4, afterFn) {
   const slotData = G.slots[slotId];
-  if (!slotData) return; // Apo gestorben
+  if (!slotData) return;
   const attackPower = (CARD_ATTACK_POWER[slotData.name] || 0) + computeEquipBonus(slotData.color, slotData.equipped);
   const attackName = CARD_ATTACKS[slotData.name] || 'Zwillingsattacke';
   pendingAttackSelection = {
@@ -8864,7 +8861,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v44q
+    v44t
   </div>
 </div>
 
