@@ -3145,7 +3145,24 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
   }
 
   if (isDirect) {
-    applyLpDamage(defenderP, sel.attackPower, is4);
+    // Bei Direktangriff: Calgon/Stein etc. können trotzdem abwehren
+    let directFails = false;
+    const directDefense = resolveInfo.combatDefense;
+    if (directDefense) {
+      if (directDefense.name === 'Calgon') {
+        directFails = Math.random() < 4/6;
+        const _t = directFails ? '<b>Calgon</b> hat den Angriff abgewehrt! (4/6)' : '<b>Calgon</b> hat NICHT gewirkt - Angriff wird durchgeführt.';
+        setTimeout(() => { showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t, is4}); }, 600);
+      } else if (directDefense.name === 'Stein') {
+        const roll = Math.random() < 4/6;
+        if (roll) { directFails = true; moveToGraveLogical(sel.slotId, G.slots[sel.slotId], is4); }
+        const _t = roll ? '<b>Stein</b> hat gewirkt - der Angreifer stirbt! (4/6)' : '<b>Stein</b> hat NICHT gewirkt - Angriff wird durchgeführt.';
+        setTimeout(() => { showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t, is4}); }, 600);
+      }
+    }
+    if (!directFails) applyLpDamage(defenderP, sel.attackPower, is4);
+    if (sel.isDrogen || (sel.attackName && sel.attackName.includes('Drogen'))) applyDrogenNacheffekt(sel.slotId, false);
+    clearCombatEquipAfterFight([sel.slotId].filter(Boolean), is4);
     if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
     return;
   }
@@ -4197,7 +4214,7 @@ function beginGruenikaDrogen(btn, cardEl) {
     return;
   }
   const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
-  const slotId = cardEl.dataset.slotId;
+  const slotId = toLogicalId(cardEl.dataset.slotId);
   if (!slotId) return;
   // Zielauswahl starten – genau wie bei beginAttackSelection
   const suf = is4 ? '-4' : '';
@@ -8782,7 +8799,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v43y
+    v44a
   </div>
 </div>
 
