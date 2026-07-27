@@ -4081,6 +4081,309 @@ function clearMarieReveal() {
   });
 }
 
+// ── KLORIAN – Spülung ──
+let pendingSpuelung = null;
+
+function beginSpuelung(btn, cardEl) {
+  closePopup();
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const activatorP = parseInt((cardEl.dataset.slotId.match(/^p(\d)/)||[])[1]||'1');
+  const activePlayers = is4 ? [1,2,3,4].filter(p => G4.active[p]) : [1,2];
+  // Nur Gegner mit mind. 8 Handkarten
+  const opponents = activePlayers.filter(p => {
+    if (p === activatorP) return false;
+    const hand = is4 ? (handOrderByPlayer4p[p]||[]) : (handOrderByPlayer2p[p]||[]);
+    return hand.length >= 8;
+  });
+  if (!opponents.length) { showOutcomeToast('⚠ Kein Gegner hat mind. 8 Handkarten!', is4); return; }
+
+  const startAgainst = (targetP) => {
+    beginAbilityActivation(cardEl, 'Spülung', 'Spülung', () => {
+      resolveSpuelung(activatorP, targetP, is4);
+    });
+  };
+
+  if (opponents.length === 1) { startAgainst(opponents[0]); return; }
+
+  pendingSpuelung = { cardEl, activatorP, is4, opponents, startAgainst };
+  const suf = is4 ? '-4' : '';
+  const toast = document.getElementById('abil-toast'+suf);
+  document.getElementById('abil-toast-title'+suf).innerHTML = '<b>Spülung</b>';
+  document.getElementById('abil-toast-sub'+suf).textContent = 'Klicke auf die Handzone eines Gegners (mind. 8 Karten)';
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = 'none';
+  const skipBtn = document.getElementById('abil-toast-skip'+suf);
+  skipBtn.textContent = 'Abbrechen'; skipBtn.style.display = 'inline-block';
+  skipBtn.onclick = () => { toast.classList.remove('open'); document.getElementById('abil-toast-bar-wrap'+suf).style.display=''; pendingSpuelung=null; };
+  toast.classList.add('open');
+}
+
+document.addEventListener('pointerdown', (e) => {
+  if (!pendingSpuelung || sandboxMode) return;
+  const { activatorP, is4, opponents, startAgainst } = pendingSpuelung;
+  const handEl = e.target.closest('[id$="-hand"],[id$="-hand-4"]');
+  if (!handEl) return;
+  const m = handEl.id.match(/^p(\d)/);
+  if (!m) return;
+  const logP = parseInt(toLogicalId('p'+parseInt(m[1])).replace('p',''));
+  if (!opponents.includes(logP)) return;
+  e.stopPropagation();
+  const suf = is4 ? '-4' : '';
+  document.getElementById('abil-toast'+suf).classList.remove('open');
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
+  const saved = pendingSpuelung; pendingSpuelung = null;
+  saved.startAgainst(logP);
+}, true);
+
+function resolveSpuelung(activatorP, targetP, is4) {
+  const hand = is4 ? (handOrderByPlayer4p[targetP]||[]) : (handOrderByPlayer2p[targetP]||[]);
+  const toDiscard = Math.floor(hand.length / 2);
+  if (NET.mode === 'multi') {
+    netSend({t:'spuelung_start', targetP, toDiscard, is4});
+    const myL = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+    if (myL === targetP) startSpuelungUI(targetP, toDiscard, is4);
+  } else {
+    startSpuelungUI(targetP, toDiscard, is4);
+  }
+}
+
+function startSpuelungUI(targetP, toDiscard, is4) {
+  const hand = is4 ? (handOrderByPlayer4p[targetP]||[]) : (handOrderByPlayer2p[targetP]||[]);
+  const selected = new Set();
+  const handCards = hand.map(uid => G.cards.find(c2 => parseInt(c2.dataset.uid) === uid)).filter(Boolean);
+
+  // Modal erstellen
+  const modal = document.createElement('div');
+  modal.className = 'abil-toast'; modal.style.cssText = 'display:block;position:fixed;right:8px;top:50%;transform:translateY(-50%);width:220px;z-index:9500;';
+  document.body.appendChild(modal);
+
+  const title = document.createElement('div');
+  title.className = 'abil-toast-title'; title.style.cssText = '';
+  title.textContent = 'Spülung! Wähle ' + toDiscard + ' Karten zum Abwerfen';
+  modal.appendChild(title);
+
+  const counter = document.createElement('div');
+  counter.className = 'abil-toast-sub'; counter.style.cssText = '';
+  counter.textContent = '0 / ' + toDiscard + ' ausgewählt';
+  modal.appendChild(counter);
+
+  const btn = document.createElement('button');
+  btn.textContent = '✓ Abwerfen bestätigen';
+  btn.disabled = true;
+  btn.style.cssText = 'padding:8px 20px;background:#cc3333;color:#fff;border:none;border-radius:8px;font-size:1rem;cursor:not-allowed;opacity:0.4;font-family:"AiSpec",sans-serif;';
+  modal.appendChild(btn);
+
+  // Klick-Handler auf echte Handkarten
+  handCards.forEach(card => {
+    card._spuelClick = (e) => {
+      e.stopPropagation();
+      const uid = parseInt(card.dataset.uid);
+      if (selected.has(uid)) {
+        selected.delete(uid);
+        card.style.opacity = '1';
+        card.style.outline = '';
+      } else if (selected.size < toDiscard) {
+        selected.add(uid);
+        card.style.opacity = '0.55';
+        card.style.outline = '3px solid #cc3333';
+      }
+      counter.textContent = selected.size + ' / ' + toDiscard + ' ausgewählt';
+      const done = selected.size === toDiscard;
+      btn.disabled = !done;
+      btn.style.opacity = done ? '1' : '0.4';
+      btn.style.cursor = done ? 'pointer' : 'not-allowed';
+    };
+    card.addEventListener('pointerdown', card._spuelClick, true);
+  });
+
+  btn.onclick = () => {
+    // Cleanup
+    handCards.forEach(card => {
+      card.style.opacity = '1'; card.style.outline = '';
+      if (card._spuelClick) { card.removeEventListener('pointerdown', card._spuelClick, true); delete card._spuelClick; }
+    });
+    modal.remove();
+    // Karten abwerfen
+    const uidsToDiscard = Array.from(selected);
+    const pfx = 'p' + targetP;
+    uidsToDiscard.forEach(uid => {
+      const el2 = G.cards.find(c2 => parseInt(c2.dataset.uid) === uid);
+      if (!el2) return;
+      const cd2 = {name:el2.dataset.name,color:el2.dataset.color,type:el2.dataset.ctype||'eff',file:el2.dataset.file||''};
+      el2.remove(); G.cards = G.cards.filter(c2 => parseInt(c2.dataset.uid) !== uid);
+      if (cd2.type !== 'ereignis') {
+        if (is4) { G4.graves[pfx].push(cd2); updGrave4(pfx); }
+        else { G.graves[pfx].push(cd2); updGrave(pfx); }
+      }
+    });
+    const newHand = hand.filter(u => !uidsToDiscard.includes(u));
+    if (is4) { handOrderByPlayer4p[targetP] = newHand; layoutMyHand4(); }
+    else { handOrderByPlayer2p[targetP] = newHand; layoutMyHand(); }
+    if (NET.mode === 'multi') {
+      netSend({t:'spuelung_done', targetP, uidsToDiscard, is4});
+      is4 ? netSendState4() : netSendState();
+    }
+  };
+}
+
+// ── NEUE BESSERE KARTE ──
+let pendingNBK = null;
+
+function beginNeueBessereKarte(cardEl, ownerP, is4, slotId, cd) {
+  const activePlayers = is4 ? [1,2,3,4].filter(p => G4.active[p]) : [1,2];
+  const opponents = activePlayers.filter(p => p !== ownerP);
+
+  const startAgainst = (targetP) => {
+    beginAbilityActivation(cardEl, 'Neue BESSERE Karte', 'Neue BESSERE Karte', () => {
+      // Karte auf Friedhof
+      const pfx = 'p'+ownerP;
+      const bcd = {name:cd.name,color:cd.color,type:'eff',file:cd.file||''};
+      if (is4) { G4.graves[pfx].push(bcd); updGrave4(pfx); } else { G.graves[pfx].push(bcd); updGrave(pfx); }
+      if (NET.mode==='multi') { is4 ? netSendState4() : netSendState(); }
+      // Auflösung
+      resolveNBK(ownerP, targetP, is4);
+    });
+  };
+
+  if (opponents.length === 1) { startAgainst(opponents[0]); return; }
+
+  // Mehrere Gegner: Zielauswahl
+  pendingNBK = { cardEl, ownerP, is4, opponents, startAgainst };
+  const suf = is4 ? '-4' : '';
+  const toast = document.getElementById('abil-toast'+suf);
+  document.getElementById('abil-toast-title'+suf).innerHTML = '<b>Neue BESSERE Karte</b>';
+  document.getElementById('abil-toast-sub'+suf).textContent = 'Klicke auf die Handzone eines Gegners';
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = 'none';
+  const skipBtn = document.getElementById('abil-toast-skip'+suf);
+  skipBtn.textContent = 'Abbrechen'; skipBtn.style.display = 'inline-block';
+  skipBtn.onclick = () => { toast.classList.remove('open'); document.getElementById('abil-toast-bar-wrap'+suf).style.display=''; pendingNBK=null; };
+  toast.classList.add('open');
+}
+
+document.addEventListener('pointerdown', (e) => {
+  if (!pendingNBK || sandboxMode) return;
+  const { ownerP, is4, opponents, startAgainst } = pendingNBK;
+  const handEl = e.target.closest('[id$="-hand"],[id$="-hand-4"]');
+  if (!handEl) return;
+  const m = handEl.id.match(/^p(\d)/);
+  if (!m) return;
+  const logP = parseInt(toLogicalId('p'+parseInt(m[1])).replace('p',''));
+  if (!opponents.includes(logP)) return;
+  e.stopPropagation();
+  const suf = is4 ? '-4' : '';
+  document.getElementById('abil-toast'+suf).classList.remove('open');
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
+  const saved = pendingNBK; pendingNBK = null;
+  saved.startAgainst(logP);
+}, true);
+
+function resolveNBK(ownerP, targetP, is4) {
+  const targetHand = is4 ? (handOrderByPlayer4p[targetP]||[]) : (handOrderByPlayer2p[targetP]||[]);
+  const maxSelect = targetHand.length;
+  if (NET.mode === 'multi') {
+    netSend({t:'nbk_start', ownerP, targetP, maxSelect, is4});
+    const myL = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+    if (myL === ownerP) startNBKUI(ownerP, targetP, maxSelect, is4);
+    else showOutcomeToast(lpOptPlayerName(ownerP, is4) + ' wählt gerade Karten aus...', is4);
+  } else {
+    startNBKUI(ownerP, targetP, maxSelect, is4);
+  }
+}
+
+function startNBKUI(ownerP, targetP, maxSelect, is4) {
+  const myHand = is4 ? (handOrderByPlayer4p[ownerP]||[]) : (handOrderByPlayer2p[ownerP]||[]);
+  const selected = new Set();
+  const handCards = myHand.map(uid => G.cards.find(c => parseInt(c.dataset.uid) === uid)).filter(Boolean);
+
+  const modal = document.createElement('div');
+  modal.className = 'abil-toast';
+  modal.style.cssText = 'display:block;position:fixed;right:8px;top:50%;transform:translateY(-50%);width:220px;z-index:9500;';
+  document.body.appendChild(modal);
+
+  const title = document.createElement('div');
+  title.className = 'abil-toast-title';
+  title.innerHTML = '<b>Neue BESSERE Karte</b>';
+  modal.appendChild(title);
+
+  const counter = document.createElement('div');
+  counter.className = 'abil-toast-sub';
+  counter.textContent = 'Wähle bis zu ' + maxSelect + ' Karten (0 ausgewählt)';
+  modal.appendChild(counter);
+
+  const btn = document.createElement('button');
+  btn.textContent = '✓ Tausch bestätigen';
+  btn.disabled = true;
+  btn.style.cssText = 'margin-top:8px;padding:6px 14px;background:#2255cc;color:#fff;border:none;border-radius:6px;font-size:0.9rem;cursor:not-allowed;opacity:0.4;font-family:"AiSpec",sans-serif;width:100%;';
+  modal.appendChild(btn);
+
+  handCards.forEach(card => {
+    card._nbkClick = (e) => {
+      e.stopPropagation();
+      const uid = parseInt(card.dataset.uid);
+      if (selected.has(uid)) {
+        selected.delete(uid);
+        card.style.opacity = '1'; card.style.outline = '';
+      } else if (selected.size < maxSelect) {
+        selected.add(uid);
+        card.style.opacity = '0.55'; card.style.outline = '3px solid #2255cc';
+      }
+      const n = selected.size;
+      counter.textContent = 'Wähle bis zu ' + maxSelect + ' Karten (' + n + ' ausgewählt)';
+      const ready = n > 0;
+      btn.disabled = !ready;
+      btn.style.opacity = ready ? '1' : '0.4';
+      btn.style.cursor = ready ? 'pointer' : 'not-allowed';
+    };
+    card.addEventListener('pointerdown', card._nbkClick, true);
+  });
+
+  btn.onclick = () => {
+    handCards.forEach(card => {
+      card.style.opacity = '1'; card.style.outline = '';
+      if (card._nbkClick) { card.removeEventListener('pointerdown', card._nbkClick, true); delete card._nbkClick; }
+    });
+    modal.remove();
+    const myUids = Array.from(selected);
+    const count = myUids.length;
+    // Zufällige Karten vom Gegner
+    const targetHand = is4 ? (handOrderByPlayer4p[targetP]||[]) : (handOrderByPlayer2p[targetP]||[]);
+    const shuffled = [...targetHand].sort(() => Math.random()-0.5);
+    const theirUids = shuffled.slice(0, count);
+    if (NET.mode === 'multi') {
+      netSend({t:'nbk_done', ownerP, targetP, myUids, theirUids, is4});
+    }
+    applyNBKSwap(ownerP, targetP, myUids, theirUids, is4);
+  };
+}
+
+function applyNBKSwap(ownerP, targetP, myUids, theirUids, is4) {
+  // myUids: Karten von ownerP → gehen zu targetP
+  // theirUids: Karten von targetP → gehen zu ownerP
+  const myHand = is4 ? handOrderByPlayer4p[ownerP] : handOrderByPlayer2p[ownerP];
+  const theirHand = is4 ? handOrderByPlayer4p[targetP] : handOrderByPlayer2p[targetP];
+
+  // Karten aus Händen entfernen
+  const newMy = myHand.filter(u => !myUids.includes(u));
+  const newTheir = theirHand.filter(u => !theirUids.includes(u));
+
+  // Karten tauschen
+  theirUids.forEach(u => newMy.push(u));
+  myUids.forEach(u => newTheir.push(u));
+
+  if (is4) { handOrderByPlayer4p[ownerP] = newMy; handOrderByPlayer4p[targetP] = newTheir; }
+  else { handOrderByPlayer2p[ownerP] = newMy; handOrderByPlayer2p[targetP] = newTheir; }
+
+  const myL = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+  if (myL === ownerP) layoutMyHand();
+  else if (myL === targetP) layoutMyHand();
+  else {
+    renderSimulatedHand('p'+ownerP, handCardsFromUids(newMy), is4);
+    renderSimulatedHand('p'+targetP, handCardsFromUids(newTheir), is4);
+  }
+
+  showOutcomeToast('Kartentausch abgeschlossen!', is4);
+  if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
+}
+
 // ── ANTIKA – Quit livin' on dreams ──
 let pendingAntika = null;
 
@@ -4647,6 +4950,7 @@ const SPECIAL_ABILITY_HANDLERS = {
   "Quit livin' on dreams": (btn, el) => beginAntika(btn, el),
   'Marie hat recht': (btn, el) => beginMarie(btn, el),
   'Döner schneiden': (btn, el) => beginDoenerSchneiden(btn, el),
+  'Spülung': (btn, el) => beginSpuelung(btn, el),
   'Bett abbauen': (btn, el) => beginVerbotAbility(btn, el, 'Eine Runde noch Verbot', 'Bett abbauen'),
   'Ein Problem mit Alkohol': (btn, el) => beginVerbotAbility(btn, el, 'Nachschlag Verbot', 'Ein Problem mit Alkohol'),
 };
@@ -4689,7 +4993,6 @@ const ABILITY_EFFECTS = {
   'Mecces Völlerei': () => {
     const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
     const ownerP = parseInt((_lastActivatorSlotId||'p1').match(/^p(\d)/)[1]||'1');
-    showOutcomeToast('DEBUG ownerP='+ownerP+' myP='+myLogicalPlayer2p()+' slot='+_lastActivatorSlotId, false);
     for (let i = 0; i < 2; i++) {
       const uid = G.nid++;
       const cardEl2 = spawnCard({name:'Mecces Ereignis',color:'#888888',type:'eff',uid,file:'Mecces_Ereignis.png'},0,0,false);
@@ -6026,6 +6329,17 @@ function onCardDockedToEffSlot(player, slotId, cd) {
       if (is4) { G4.graves[pfx].push(bcd); updGrave4(pfx); } else { G.graves[pfx].push(bcd); updGrave(pfx); }
       if (NET.mode==='multi') { is4 ? netSendState4() : netSendState(); }
     });
+    return;
+  }
+
+  // Neue BESSERE Karte: Gegner auswählen, Kampfsituation, Kartentausch
+  if (cd.name === 'Neue BESSERE Karte') {
+    const ownerP = parseInt(player.replace('p',''));
+    const fake = document.createElement('div');
+    fake.dataset.name = cd.name; fake.dataset.color = cd.color;
+    fake.dataset.ctype = cd.type || 'eff'; fake.dataset.uid = cd.uid || 0;
+    fake.dataset.slotId = slotId;
+    beginNeueBessereKarte(fake, ownerP, is4, slotId, cd);
     return;
   }
 
@@ -8967,7 +9281,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v46c
+    v46l
   </div>
 </div>
 
@@ -9777,6 +10091,36 @@ if (d.t === 'state4') {
         handOrderByPlayer2p[d.targetP] = (handOrderByPlayer2p[d.targetP]||[]).slice(0, d.cardIdx).concat((handOrderByPlayer2p[d.targetP]||[]).slice(d.cardIdx+1));
         renderSimulatedHand('p'+d.targetP, handCardsFromUids(handOrderByPlayer2p[d.targetP]), false);
       }
+    }
+  }
+  if (d.t === 'nbk_start') {
+    const myL = d.is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+    if (myL === d.ownerP) startNBKUI(d.ownerP, d.targetP, d.maxSelect, d.is4);
+    else showOutcomeToast(lpOptPlayerName(d.ownerP, d.is4) + ' wählt gerade Karten aus...', d.is4);
+  }
+  if (d.t === 'nbk_done') {
+    const myL = d.is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+    if (myL !== d.ownerP) applyNBKSwap(d.ownerP, d.targetP, d.myUids, d.theirUids, d.is4);
+  }
+  if (d.t === 'spuelung_start') {
+    const myL = d.is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+    if (myL === d.targetP) {
+      startSpuelungUI(d.targetP, d.toDiscard, d.is4);
+    } else {
+      showOutcomeToast(lpOptPlayerName(d.targetP, d.is4) + ' wählt gerade Karten aus...', d.is4);
+    }
+  }
+  if (d.t === 'spuelung_done') {
+    // Andere Clients: Karten aus der Hand des Ziels entfernen
+    const myL = d.is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+    if (myL !== d.targetP) {
+      d.uidsToDiscard.forEach(uid => {
+        const el2 = G.cards.find(c => parseInt(c.dataset.uid) === uid);
+        if (el2) { el2.remove(); G.cards = G.cards.filter(c => parseInt(c.dataset.uid) !== uid); }
+      });
+      if (d.is4) handOrderByPlayer4p[d.targetP] = (handOrderByPlayer4p[d.targetP]||[]).filter(u => !d.uidsToDiscard.includes(u));
+      else handOrderByPlayer2p[d.targetP] = (handOrderByPlayer2p[d.targetP]||[]).filter(u => !d.uidsToDiscard.includes(u));
+      renderSimulatedHand('p'+d.targetP, handCardsFromUids(d.is4 ? handOrderByPlayer4p[d.targetP] : handOrderByPlayer2p[d.targetP]), d.is4);
     }
   }
   if (d.t === 'glibbern') {
