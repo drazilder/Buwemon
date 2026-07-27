@@ -500,6 +500,8 @@ body {
 .abil-btn.pressed{outline:3px solid #000;outline-offset:-3px;}
 .abil-btn-white.pressed{outline:3px solid #fff;outline-offset:-3px;}
 .effekt-slot.verboten,.buw4-slot.verboten{border:6px solid #cc3333 !important;box-shadow:0 0 8px rgba(204,51,51,0.7);}
+
+
 </style>
 </head>
 <body>
@@ -2446,7 +2448,8 @@ document.getElementById('color-remove-modal').addEventListener('click',e=>{if(e.
 let pendingAbility = null;
 let _pendingOutcomeText = null; // sammelt Toast-Texte während resolveFn läuft
 const FOURACEFOUR_NAME = 'FourAceFour-Feuer-Reverse-Blöff';
-let _fourAceHandledInCombat = false; // verhindert Eigenzug-Handler nach Kampf-FourAceFour
+let _fourAceHandledInCombat = false;
+let _lastActivatorSlotId = null; // verhindert Eigenzug-Handler nach Kampf-FourAceFour
 const ABILITY_FIRST_RESPONSE_NAMES = ['Dinkelmehl', FOURACEFOUR_NAME];
 const ABILITY_CHAIN_RESPONSE_NAMES = ['Ablehnt', FOURACEFOUR_NAME];
 
@@ -2472,6 +2475,7 @@ function beginAbilityActivation(el, abilityKey, abilityName, resolveFn, defender
   const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
   const slotId = el.dataset.slotId;
   if (!slotId) return;
+  _lastActivatorSlotId = toLogicalId(slotId);
   // Zug-Regel: Buwemon-Fähigkeiten (nicht Effektkarten) nur einmal pro Zug
   const isBuwAbility = (el.dataset.ctype === 'buw' || el.dataset.ctype === 'spec') && abilityKey !== 'angriff';
   if (isBuwAbility && !sandboxMode && !debugMode) {
@@ -3189,6 +3193,7 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
     if (sel.isDrogen || (sel.attackName && sel.attackName.includes('Drogen'))) applyDrogenNacheffekt(toLogicalId(sel.slotId), false);
     clearCombatEquipAfterFight([sel.slotId].filter(Boolean), is4);
     if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
+    if (sel.cardEl && sel.cardEl._afterFn && G.slots[sel.slotId]) { const fn=sel.cardEl._afterFn; sel.cardEl._afterFn=null; setTimeout(()=>fn(),800); }
     return;
   }
 
@@ -3246,7 +3251,6 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
     clearCombatEquipAfterFight([sel.slotId, defenderSlotId].filter(Boolean), is4);
     if (sel.isDrogen || (sel.attackName && sel.attackName.includes('Drogen'))) applyDrogenNacheffekt(toLogicalId(sel.slotId), false);
     if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
-    if (sel.cardEl && sel.cardEl._afterFn && G.slots[sel.slotId]) { const fn=sel.cardEl._afterFn; sel.cardEl._afterFn=null; setTimeout(()=>fn(),800); }
     return;
   }
 
@@ -3284,12 +3288,6 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
 
   if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
 
-  // Zwillingsattacke: zweiten Angriff starten falls vorhanden
-  if (sel.cardEl && sel.cardEl._afterFn && G.slots[sel.slotId]) {
-    const fn = sel.cardEl._afterFn;
-    sel.cardEl._afterFn = null;
-    setTimeout(() => fn(), 800);
-  }
 }
 
 // ── DAUERFÄHIGKEITEN ──
@@ -4658,8 +4656,18 @@ const SPECIAL_ABILITY_HANDLERS = {
 // Noch nicht implementierte Fähigkeiten stehen als null da - Button ist sichtbar, aber ohne
 // Funktion. Sobald hier eine echte Funktion eingetragen wird, funktioniert alles automatisch.
 const ABILITY_EFFECTS = {
-  'Glibbern': null,
-  'Mecces Pakt': null,
+  'Glibbern': () => {
+    const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+    const slotId = _lastActivatorSlotId || 'p1-buw1';
+    const physSlotEl = document.getElementById(physId(slotId));
+    if (!physSlotEl) return;
+    const img = physSlotEl.querySelector('img');
+    if (!img) return;
+    img.style.filter = 'url(#gli)';
+    showOutcomeToast('Gilip glibbert!', is4);
+    setTimeout(() => { img.style.filter = ''; }, 5000);
+  },
+    'Mecces Pakt': null,
   'Döner schneiden': null,
   'Schicksal': () => { if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) openOverview4(); else openOverview(); },
   'Drogen': null,
@@ -4677,7 +4685,26 @@ const ABILITY_EFFECTS = {
   'Recast': () => { if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) doRecast4(); else doRecast(); },
   'Hühnchen Spam': null,
   'Arsch anfassen': null,
-  'Mecces Völlerei': null,
+  'Mecces Völlerei': () => {
+    const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+    const ownerP = parseInt((_lastActivatorSlotId||'p1').match(/^p(\d)/)[1]||'1');
+    for (let i = 0; i < 2; i++) {
+      const uid = G.nid++;
+      const cardEl2 = spawnCard({name:'Mecces Ereignis',color:'#888888',type:'eff',uid,file:'Mecces_Ereignis.png'},0,0,false);
+      if (is4) {
+        if (!handOrderByPlayer4p[ownerP]) handOrderByPlayer4p[ownerP]=[];
+        handOrderByPlayer4p[ownerP].push(uid);
+      } else {
+        if (!handOrderByPlayer2p[ownerP]) handOrderByPlayer2p[ownerP]=[];
+        handOrderByPlayer2p[ownerP].push(uid);
+      }
+      if (NET.mode==='multi') netSend({t:'hand_add_card', ownerP, is4, cd:{name:'Mecces Ereignis',color:'#888888',type:'eff',file:'Mecces_Ereignis.png'}});
+    }
+    if (is4) { if (ownerP===myLogicalPlayer4p()) layoutMyHand4(); }
+    else { if (ownerP===myLogicalPlayer2p()) layoutMyHand(); }
+    showOutcomeToast('Alicia: 2x Mecces Ereignis auf die Hand!', is4);
+    if (NET.mode==='multi') { is4?netSendState4():netSendState(); }
+  },
   'Florianopolis Dominanz': null,
   'Bett abbauen': null,
   'Spülung': null,
@@ -4685,7 +4712,49 @@ const ABILITY_EFFECTS = {
   'Killsteal': null,
   'Münster': null,
   'Zwillingsattacke': null,
-  'Clubmate Hamsterung': null,
+  'Clubmate Hamsterung': () => {
+    const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+    const ownerP = parseInt((_lastActivatorSlotId||'p1').match(/^p(\d)/)[1]||'1');
+    const uid = G.nid++;
+    const cardEl2 = spawnCard({name:'Clubmate Ereignis',color:'#888888',type:'eff',uid,file:'Clubmate_Ereignis.png'},0,0,false);
+    if (is4) {
+      if (!handOrderByPlayer4p[ownerP]) handOrderByPlayer4p[ownerP]=[];
+      handOrderByPlayer4p[ownerP].push(uid);
+      if (ownerP===myLogicalPlayer4p()) layoutMyHand4();
+      else { cardEl2.style.display='none'; renderSimulatedHand('p'+ownerP,handCardsFromUids(handOrderByPlayer4p[ownerP]),true); }
+    } else {
+      if (!handOrderByPlayer2p[ownerP]) handOrderByPlayer2p[ownerP]=[];
+      handOrderByPlayer2p[ownerP].push(uid);
+      if (ownerP===myLogicalPlayer2p()) layoutMyHand();
+      else { cardEl2.style.display='none'; renderSimulatedHand('p'+ownerP,handCardsFromUids(handOrderByPlayer2p[ownerP]),false); }
+    }
+    showOutcomeToast('Fabio: Clubmate Ereignis auf die Hand!', is4);
+    if (NET.mode==='multi') {
+      netSend({t:'hand_add_card', ownerP, is4, cd:{name:'Clubmate Ereignis',color:'#888888',type:'eff',file:'Clubmate_Ereignis.png'}});
+      is4?netSendState4():netSendState();
+    }
+  },
+  'Ein Drink zu viel': () => {
+    const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+    const ownerP = parseInt((_lastActivatorSlotId||'p1').match(/^p(\d)/)[1]||'1');
+    if (!G.deck.length) { showOutcomeToast('Kein Karte mehr im Stapel!', is4); return; }
+    const cd = G.deck.shift(); updDeck();
+    const uid = G.nid++;
+    const cardEl2 = spawnCard({name:cd.name,color:cd.color,type:cd.type,uid,file:cd.file||''},0,0,false);
+    if (is4) {
+      if (!handOrderByPlayer4p[ownerP]) handOrderByPlayer4p[ownerP]=[];
+      handOrderByPlayer4p[ownerP].push(uid);
+      if (ownerP===myLogicalPlayer4p()) layoutMyHand4();
+      else { cardEl2.style.display='none'; renderSimulatedHand('p'+ownerP,handCardsFromUids(handOrderByPlayer4p[ownerP]),true); }
+    } else {
+      if (!handOrderByPlayer2p[ownerP]) handOrderByPlayer2p[ownerP]=[];
+      handOrderByPlayer2p[ownerP].push(uid);
+      if (ownerP===myLogicalPlayer2p()) layoutMyHand();
+      else { cardEl2.style.display='none'; renderSimulatedHand('p'+ownerP,handCardsFromUids(handOrderByPlayer2p[ownerP]),false); }
+    }
+    showOutcomeToast('Hoffi zieht eine Karte!', is4);
+    if (NET.mode==='multi') { is4?netSendState4():netSendState(); }
+  },
   'Liiinks': () => { if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) doLiiinks4(); else doLiiinks(); },
   'Gossip': () => { if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) openBrowser4('top4'); else openBrowser('deck','top4'); },
   'Legilimens': null,
@@ -8889,7 +8958,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v44v
+    v45y
   </div>
 </div>
 
@@ -9701,6 +9770,23 @@ if (d.t === 'state4') {
       }
     }
   }
+  if (d.t === 'hand_add_card') {
+    const uid2 = G.nid++;
+    const el2 = spawnCard({name:d.cd.name,color:d.cd.color,type:d.cd.type,uid:uid2,file:d.cd.file||''},0,0,false);
+    if (d.is4) {
+      if (!handOrderByPlayer4p[d.ownerP]) handOrderByPlayer4p[d.ownerP]=[];
+      handOrderByPlayer4p[d.ownerP].push(uid2);
+      const myL4 = myLogicalPlayer4p();
+      if (d.ownerP===myL4) layoutMyHand4();
+      else { el2.style.display='none'; renderSimulatedHand('p'+d.ownerP,handCardsFromUids(handOrderByPlayer4p[d.ownerP]),true); }
+    } else {
+      if (!handOrderByPlayer2p[d.ownerP]) handOrderByPlayer2p[d.ownerP]=[];
+      handOrderByPlayer2p[d.ownerP].push(uid2);
+      const myL2 = myLogicalPlayer2p();
+      if (d.ownerP===myL2) layoutMyHand();
+      else { el2.style.display='none'; renderSimulatedHand('p'+d.ownerP,handCardsFromUids(handOrderByPlayer2p[d.ownerP]),false); }
+    }
+  }
   if (d.t === 'ragequit_block') { ragequitBlockedUids.add(d.uid); }
   if (d.t === 'wanze_reveal') {
     updateRevealStatus(d.targetP, d.open, d.is4);
@@ -10345,7 +10431,28 @@ function triggerExplosions() {
     </div>
   </div>
 </div>
-</body>
+<svg style="position:absolute;width:0;height:0">
+  <defs>
+    <filter id="glibbern-filter" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence id="glibbern-turb" type="turbulence" baseFrequency="0.008 0.015" numOctaves="2" seed="1" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" xChannelSelector="R" yChannelSelector="G">
+        <animate attributeName="scale" values="0;12;-12;10;-10;12;-8;10;0" dur="1.2s" repeatCount="indefinite"/>
+      </feDisplacementMap>
+    </filter>
+  </defs>
+</svg>
+<svg style="position:absolute;width:0;height:0">
+  <defs>
+    <filter id="gli" x="-15%" y="-15%" width="130%" height="130%">
+      <feTurbulence type="turbulence" baseFrequency="0.015 0.015" numOctaves="2" result="noise">
+        <animate attributeName="baseFrequency" values="0.01 0.02;0.013 0.025;0.01 0.02" dur="3s" repeatCount="indefinite"/>
+      </feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="noise" xChannelSelector="R" yChannelSelector="G">
+        <animate attributeName="scale" values="0;12;-12;10;-10;12;-8;10;0" dur="1.2s" repeatCount="indefinite"/>
+      </feDisplacementMap>
+    </filter>
+  </defs>
+</svg></body>
 </html>
 
 
