@@ -4109,6 +4109,30 @@ function clearMarieReveal() {
 }
 
 // ── BARISTA CLARISTA – Hühnchen Spam ──
+// ── BARISTA CLARISTA – Hühnchen Spam ──
+document.addEventListener('pointerdown', (e) => {
+  if (!pendingBaristaTarget || !pendingBaristaTarget.targets || sandboxMode) return;
+  // Prüfen ob auf eine Karte oder einen Slot geklickt wurde
+  const cardEl = e.target.closest('.card');
+  const slotEl = e.target.closest('[id]');
+  if (!cardEl && !slotEl) return;
+  // SlotId ermitteln
+  let lsid = null;
+  if (cardEl && cardEl.dataset.slotId) lsid = toLogicalId(cardEl.dataset.slotId);
+  else if (slotEl) lsid = toLogicalId(slotEl.id);
+  if (!lsid) return;
+  if (!pendingBaristaTarget.targets.includes(lsid)) return;
+  e.stopPropagation();
+  const {baristaSlotId, ownerP, is4, el} = pendingBaristaTarget;
+  pendingBaristaTarget = null;
+  const suf = is4 ? '-4' : '';
+  document.getElementById('abil-toast'+suf).classList.remove('open');
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
+  beginAbilityActivation(el, 'Hühnchen Spam', 'Hühnchen Spam', () => {
+    applyBaristaEffect(baristaSlotId, ownerP, lsid, is4);
+  });
+}, true);
+
 function beginHuehnchenSpam(btn, el) {
   closePopup();
   const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
@@ -4121,30 +4145,21 @@ function beginHuehnchenSpam(btn, el) {
   const targets = buwKeys.filter(s => G.slots[s]);
   if (!targets.length) { showOutcomeToast('Keine gegnerischen Buwemon!', is4); return; }
 
-  const startCombat = (targetLsid) => {
-    pendingBaristaTarget = targetLsid;
-    // Schritt 2: Kampfsituation (Gegner können abwehren)
-    beginAbilityActivation(el, 'Hühnchen Spam', 'Hühnchen Spam', () => {
-      // Schritt 3: Effekt
-      applyBaristaEffect(baristaSlotId, ownerP, pendingBaristaTarget, is4);
-      pendingBaristaTarget = null;
-    });
+  // Schritt 1: Toast öffnen, auf Klick eines gegnerischen Buwemon warten
+  pendingBaristaTarget = {targets, baristaSlotId, ownerP, is4, el};
+  const suf = is4 ? '-4' : '';
+  const toast = document.getElementById('abil-toast'+suf);
+  document.getElementById('abil-toast-title'+suf).innerHTML = '<b>Hühnchen Spam</b>';
+  document.getElementById('abil-toast-sub'+suf).textContent = 'Klicke auf ein gegnerisches Buwemon';
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = 'none';
+  const skipBtn = document.getElementById('abil-toast-skip'+suf);
+  skipBtn.textContent = 'Abbrechen'; skipBtn.style.display = 'inline-block';
+  skipBtn.onclick = () => {
+    toast.classList.remove('open');
+    document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
+    pendingBaristaTarget = null;
   };
-
-  if (targets.length === 1) { startCombat(targets[0]); return; }
-  const modal = document.getElementById('verbot-target-modal');
-  document.getElementById('verbot-target-title').textContent = 'Hühnchen Spam – Ziel wählen';
-  const btns = document.getElementById('verbot-target-btns');
-  btns.innerHTML = '';
-  targets.forEach(lsid => {
-    const cd = G.slots[lsid];
-    const b = document.createElement('button');
-    b.textContent = cd.name + ' (' + lpOptPlayerName(parseInt(lsid.match(/^p(\d)/)[1]), is4) + ')';
-    b.style.cssText = 'padding:10px 16px;border-radius:8px;border:1px solid rgba(0,0,0,0.15);font-family:"AiSpec",sans-serif;cursor:pointer;background:#f2f2f2;width:100%;margin-bottom:4px;';
-    b.onclick = () => { modal.classList.remove('open'); startCombat(lsid); };
-    btns.appendChild(b);
-  });
-  modal.classList.add('open');
+  toast.classList.add('open');
 }
 
 function applyBaristaEffect(baristaSlotId, ownerP, targetLsid, is4) {
@@ -7014,6 +7029,23 @@ function releaseSlot(slotId, x, y) {
         e.stopPropagation(); return;
       }
     }
+    // Barista Clarista Zielauswahl: Klick auf gegnerisches Buwemon
+    if (!sandboxMode && pendingBaristaTarget && pendingBaristaTarget.targets && cdNow) {
+      const isBuw = /-buw\d(-4)?$/.test(lsid);
+      if (isBuw && pendingBaristaTarget.targets.includes(lsid)) {
+        e.stopPropagation();
+        const {baristaSlotId, ownerP, is4, el} = pendingBaristaTarget;
+        const targetLsid = lsid;
+        pendingBaristaTarget = null;
+        const suf = is4 ? '-4' : '';
+        document.getElementById('abil-toast'+suf).classList.remove('open');
+        document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
+        beginAbilityActivation(el, 'Hühnchen Spam', 'Hühnchen Spam', () => {
+          applyBaristaEffect(baristaSlotId, ownerP, targetLsid, is4);
+        });
+        return;
+      }
+    }
     // Döner schneiden-Zielauswahl: Klick auf ein gegnerisches Buwemon
     if (!sandboxMode && pendingDoener && cdNow) {
       const isBuw = /-buw\d(-4)?$/.test(lsid);
@@ -9313,7 +9345,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v47i
+    v47k
   </div>
 </div>
 
