@@ -3348,8 +3348,10 @@ function clearDinkelmehlSuppression() {
     if (!glorianSuppressed.has(slotId)) setAbilityShimmer(slotId, true);
   });
   dinkelmehlSuppressed.clear();
-  // Glorian-Suppression bleibt über Züge hinweg aktiv
   glorianSuppressed.forEach(s => dinkelmehlSuppressed.add(s));
+  // Barista Fade wiederherstellen nach Zug-Ende
+  if (baristaTargetSlot) setBaristaFade(baristaTargetSlot, true);
+  if (baristaActiveSlot) setAbilityShimmer(baristaActiveSlot.slotId, true);
 }
 
 // ── ABLEHNT / DINKELMEHL / FOURACEFLOUR IM EIGENEN ZUG (ausserhalb Kampfsituation) ──
@@ -3519,9 +3521,12 @@ document.addEventListener('pointerdown', (e) => {
         if (activePermanentAbilities.has(lsid)) {
           dinkelmehlSuppressed.add(lsid);
           const g = abilityGlowEl(lsid); if (g) g.classList.remove('ability-shimmer');
-          // Overlay entfernen
           const slotEl2 = document.getElementById(physId(lsid));
-          if (slotEl2) { const ov = slotEl2.querySelector('.ability-shimmer-overlay'); if (ov) ov.remove(); }
+          if (slotEl2) {
+            const ov = slotEl2.querySelector('.ability-shimmer-overlay'); if (ov) ov.remove();
+            const sw = slotEl2.querySelector('.shimmer-img-wrap'); if (sw) { const img=sw.querySelector('img'); if(img) sw.parentNode.insertBefore(img,sw); sw.remove(); }
+          }
+          if (baristaActiveSlot && baristaActiveSlot.slotId === lsid) setBaristaFade(baristaTargetSlot, false);
           if (NET.mode==='multi') netSend({t:'dinkelmehl_suppress', slotId:lsid});
         }
         // Dinkelmehl selbst auf Friedhof
@@ -4144,7 +4149,7 @@ function tryConfirmBarista(lsid, cd) {
 
 function applyBaristaEffect(baristaSlotId, ownerP, targetLsid, is4) {
   baristaActiveSlot = {slotId: baristaSlotId, ownerP};
-  baristaTargetSlot = physId(targetLsid); // physische ID für Popup-Vergleich
+  baristaTargetSlot = targetLsid;
   setAbilityShimmer(baristaSlotId, true);
   setBaristaFade(targetLsid, true);
   const tName = (G.slots[targetLsid]||{}).name || '?';
@@ -5155,8 +5160,9 @@ function renderPopupActionButtons(el, fd) {
 
   const atkName = CARD_ATTACKS[name];
   const turnBlocked = !sandboxMode && !debugMode && (turnActionsUsed >= turnActionsAllowed);
+  const _baristaElSlotLog = toLogicalId(el.dataset.slotId);
   const baristaBlocksThis = !sandboxMode && !debugMode && baristaTargetSlot &&
-    el.dataset.slotId === baristaTargetSlot &&
+    (_baristaElSlotLog === baristaTargetSlot || el.dataset.slotId === baristaTargetSlot) &&
     baristaActiveSlot && !dinkelmehlSuppressed.has(baristaActiveSlot.slotId);
   if (atkName) {
     const atkBtn = makeBtn('Angriff_Icon.png', atkName, (btn, cardEl) => beginAttackSelection(btn, cardEl), totalPower);
@@ -9309,7 +9315,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v47r
+    v47v
   </div>
 </div>
 
@@ -9818,6 +9824,10 @@ function onNetData(d) {
   if (d.t === 'state') {
     // Full state snapshot from peer - apply directly, no mirroring
     G.deck = d.deck; updDeck();
+    // Barista Fade wiederherstellen nach State-Update
+    if (baristaTargetSlot && baristaActiveSlot && !dinkelmehlSuppressed.has(baristaActiveSlot.slotId)) {
+      setTimeout(() => setBaristaFade(baristaTargetSlot, true), 50);
+    }
     // Glorian-Slot aktualisieren: prüfen ob Glorian mit Shimmer noch im Slot
     if (glorianActiveSlot) {
       const buwSlots2p = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'];
@@ -10142,7 +10152,7 @@ if (d.t === 'state4') {
   }
   if (d.t === 'barista_activate') {
     baristaActiveSlot = {slotId: d.baristaSlotId, ownerP: d.ownerP};
-    baristaTargetSlot = physId(d.targetLsid);
+    baristaTargetSlot = d.targetLsid;
     setAbilityShimmer(d.baristaSlotId, true);
     setBaristaFade(d.targetLsid, true);
   }
@@ -10274,6 +10284,12 @@ if (d.t === 'state4') {
     dinkelmehlSuppressed.add(d.slotId);
     const slotEl3 = document.getElementById(physId(d.slotId));
     if (slotEl3) { const ov = slotEl3.querySelector('.ability-shimmer-overlay'); if (ov) ov.remove(); }
+    // Barista: Shimmer + Fade entfernen wenn Barista supprimiert
+    if (baristaActiveSlot && baristaActiveSlot.slotId === d.slotId) {
+      const bEl = document.getElementById(physId(d.slotId));
+      if (bEl) { const sw = bEl.querySelector('.shimmer-img-wrap'); if (sw) { const img = sw.querySelector('img'); if(img) sw.parentNode.insertBefore(img,sw); sw.remove(); } }
+      setBaristaFade(baristaTargetSlot, false);
+    }
   }
   if (d.t === 'ability_decline') {
     if (pendingAbility) {
