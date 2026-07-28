@@ -3337,8 +3337,12 @@ function setAbilityShimmer(slotId, active) {
 }
 
 function clearDinkelmehlSuppression() {
-  dinkelmehlSuppressed.forEach(slotId => setAbilityShimmer(slotId, true));
+  dinkelmehlSuppressed.forEach(slotId => {
+    if (!glorianSuppressed.has(slotId)) setAbilityShimmer(slotId, true);
+  });
   dinkelmehlSuppressed.clear();
+  // Glorian-Suppression bleibt über Züge hinweg aktiv
+  glorianSuppressed.forEach(s => dinkelmehlSuppressed.add(s));
 }
 
 // ── ABLEHNT / DINKELMEHL / FOURACEFLOUR IM EIGENEN ZUG (ausserhalb Kampfsituation) ──
@@ -6309,6 +6313,7 @@ function hasSummonCard(player, buwemonName, suffix) {
 
 function onCardDockedToEffSlot(player, slotId, cd) {
   const is4 = slotId.endsWith('-4');
+  if (sandboxMode) return; // Im Sandbox-Modus keine Effekte auslösen
 
   // RGB: Reaktionsfenster starten, bei Erfolg 2 Karten ziehen + Karte auf Friedhof
   if (cd.name === 'RGB') {
@@ -9284,7 +9289,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v47c
+    v47f
   </div>
 </div>
 
@@ -9490,9 +9495,18 @@ function updateHandLabels() {
     if (!zoneEl) return;
     const lbl = zoneEl.querySelector('.zlbl');
     if (!lbl) return;
-    // Logischer Spieler für dieses physische Feld
     const logP = parseInt(toLogicalId(physP).replace('p',''));
-    const count = (handOrderByPlayer2p[logP]||[]).length;
+    let count;
+    if (sandboxMode) {
+      const r = zoneEl.getBoundingClientRect();
+      count = G.cards.filter(c => {
+        const cr = c.getBoundingClientRect();
+        const cx = cr.left+cr.width/2, cy = cr.top+cr.height/2;
+        return cx>=r.left && cx<=r.right && cy>=r.top && cy<=r.bottom;
+      }).length;
+    } else {
+      count = (handOrderByPlayer2p[logP]||[]).length;
+    }
     let name = 'Spieler ' + logP;
     if (NET.mode === 'multi') {
       name = (logP === NET.myPlayer) ? (NET.myName||name) : (NET.enemyName||name);
@@ -10452,6 +10466,18 @@ function toggleErweiterung() {
 }
 
 let sandboxMode = true;
+// LP im Sandbox-Modus direkt editierbar machen
+window.addEventListener('DOMContentLoaded', () => {
+  if (sandboxMode) {
+    ['p1-lp','p2-lp'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.contentEditable = 'true'; el.style.cursor = 'text';
+      el.onblur = () => lpDirectEdit(parseInt(id.replace('p','').replace('-lp','')));
+      el.onkeydown = (e) => lpDirectKey(e, parseInt(id.replace('p','').replace('-lp','')));
+    });
+  }
+});
 let debugMode = false; // Debug-Modus: Zug-Regeln deaktiviert
 
 // Zug-Status
@@ -10649,6 +10675,22 @@ function toggleSandbox() {
   }
   document.body.classList.toggle('automatik-mode', !sandboxMode);
   updatePerspectiveBtnVisibility();
+  // LP contenteditable im Sandbox-Modus
+  ['p1-lp','p2-lp'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (sandboxMode) {
+      el.contentEditable = 'true';
+      el.style.cursor = 'text';
+      el.onblur = () => lpDirectEdit(parseInt(id.replace('p','').replace('-lp','')));
+      el.onkeydown = (e) => lpDirectKey(e, parseInt(id.replace('p','').replace('-lp','')));
+    } else {
+      el.contentEditable = 'false';
+      el.style.cursor = '';
+      el.onblur = null;
+      el.onkeydown = null;
+    }
+  });
 }
 
 // ── PERSPEKTIVEN-WECHSEL (nur Debug/Solo + Automatik-Modus) ──
