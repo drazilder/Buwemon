@@ -4710,6 +4710,82 @@ function tryConfirmDoener(lsid, cd) {
   return true;
 }
 
+let pendingMemeBel = null;
+function beginMemeBelästigung(btn, el) {
+  closePopup();
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const activatorP = parseInt((_lastActivatorSlotId||'p1').match(/^p(\d)/)[1]||'1');
+  pendingMemeBel = { cardEl: el, activatorP, is4 };
+  const suf = is4 ? '-4' : '';
+  const toast = document.getElementById('abil-toast'+suf);
+  document.getElementById('abil-toast-title'+suf).innerHTML = '<b>Meme Belästigung</b>';
+  document.getElementById('abil-toast-sub'+suf).textContent = 'Klicke auf ein Buwemon (kein Spezial/EX)';
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = 'none';
+  const skipBtn = document.getElementById('abil-toast-skip'+suf);
+  skipBtn.textContent = 'Abbrechen'; skipBtn.style.display = 'inline-block';
+  skipBtn.onclick = () => { toast.classList.remove('open'); document.getElementById('abil-toast-bar-wrap'+suf).style.display=''; pendingMemeBel=null; };
+  toast.classList.add('open');
+}
+function tryConfirmMemeBel(lsid, cd) {
+  if (!pendingMemeBel) return false;
+  if (cd.type === 'spec' || cd.type === 'ex-auto') return false;
+  const { cardEl, activatorP, is4 } = pendingMemeBel;
+  const suf = is4 ? '-4' : '';
+  document.getElementById('abil-toast'+suf).classList.remove('open');
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
+  pendingMemeBel = null;
+  beginAbilityActivation(cardEl, 'Meme Belästigung', 'Meme Belästigung – ' + cd.name, () => {
+    const roll = Math.random() < 0.5;
+    const txt = roll ? cd.name + ' stirbt! (50%)' : cd.name + ' überlebt! (50%)';
+    setTimeout(() => { showOutcomeToast(txt, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:txt, is4}); }, 600);
+    if (roll) {
+      const cdNow = G.slots[lsid];
+      if (cdNow) moveToGraveLogical(lsid, cdNow, is4);
+    }
+    if (NET.mode==='multi') { is4 ? netSendState4() : netSendState(); }
+  }, lsid, { defenderName: cd.name, defenderColor: cd.color });
+  return true;
+}
+
+let pendingTreue = null;
+function beginTreue(btn, el) {
+  closePopup();
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const activatorP = parseInt((_lastActivatorSlotId||'p1').match(/^p(\d)/)[1]||'1');
+  pendingTreue = { cardEl: el, activatorP, is4 };
+  const suf = is4 ? '-4' : '';
+  const toast = document.getElementById('abil-toast'+suf);
+  document.getElementById('abil-toast-title'+suf).innerHTML = '<b>Treue</b>';
+  document.getElementById('abil-toast-sub'+suf).textContent = 'Klicke auf ein Buwemon (kein EX)';
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = 'none';
+  const skipBtn = document.getElementById('abil-toast-skip'+suf);
+  skipBtn.textContent = 'Abbrechen'; skipBtn.style.display = 'inline-block';
+  skipBtn.onclick = () => { toast.classList.remove('open'); document.getElementById('abil-toast-bar-wrap'+suf).style.display=''; pendingTreue=null; };
+  toast.classList.add('open');
+}
+function tryConfirmTreue(lsid, cd) {
+  if (!pendingTreue) return false;
+  if (cd.type === 'ex-auto') return false;
+  const { cardEl, activatorP, is4 } = pendingTreue;
+  const marcoSlotId = toLogicalId(cardEl.dataset.slotId||'');
+  const suf = is4 ? '-4' : '';
+  document.getElementById('abil-toast'+suf).classList.remove('open');
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
+  pendingTreue = null;
+  beginAbilityActivation(cardEl, 'Treue', 'Treue – ' + cd.name, () => {
+    const roll = Math.random() < 4/6;
+    const txt = roll ? cd.name + ' stirbt mit Marco! (4/6)' : cd.name + ' überlebt – aber Marco stirbt trotzdem! (2/6)';
+    setTimeout(() => { showOutcomeToast(txt, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:txt, is4}); }, 600);
+    if (roll) { const cdT = G.slots[lsid]; if (cdT) moveToGraveLogical(lsid, cdT, is4); }
+    // Marco stirbt immer
+    const marcoSlotNow = marcoSlotId || _lastActivatorSlotId;
+    const marcoCd = G.slots[marcoSlotNow];
+    if (marcoCd) moveToGraveLogical(marcoSlotNow, marcoCd, is4);
+    if (NET.mode==='multi') { is4 ? netSendState4() : netSendState(); }
+  }, lsid, { defenderName: cd.name, defenderColor: cd.color });
+  return true;
+}
+
 let pendingGottkomplex = null; // {cardEl, activatorP, is4}
 
 function beginGottkomplex(btn, cardEl) {
@@ -4982,6 +5058,8 @@ const SPECIAL_ABILITY_HANDLERS = {
   "Quit livin' on dreams": (btn, el) => beginAntika(btn, el),
   'Marie hat recht': (btn, el) => beginMarie(btn, el),
   'Döner schneiden': (btn, el) => beginDoenerSchneiden(btn, el),
+  'Meme Belästigung': (btn, el) => beginMemeBelästigung(btn, el),
+  'Treue': (btn, el) => beginTreue(btn, el),
   'Spülung': (btn, el) => beginSpuelung(btn, el),
   'Hühnchen Spam': (btn, el) => beginHuehnchenSpam(btn, el),
   'Bett abbauen': (btn, el) => beginVerbotAbility(btn, el, 'Eine Runde noch Verbot', 'Bett abbauen'),
@@ -5016,7 +5094,7 @@ const ABILITY_EFFECTS = {
   'Rotation': null,
   'Treue': null,
   'Toxische Männlichkeit': () => doToxMaennlichkeit(),
-  'Meme Belästigung': null,
+  'Meme Belästigung': null, // handled via SPECIAL_ABILITY_HANDLERS
   "Würd' mir stinken": () => doWuerdMirStinken(),
   'Ein Problem mit Alkohol': null,
   'Ein Drink zu viel': null,
@@ -7016,6 +7094,14 @@ function releaseSlot(slotId, x, y) {
       const isBuw = /-buw\d(-4)?$/.test(lsid);
       if (isBuw) { const ok = tryConfirmBarista(lsid, cdNow); if (ok) { e.stopPropagation(); return; } }
     }
+    if (!sandboxMode && pendingTreue && cdNow) {
+      const isBuw = /-buw\d(-4)?$/.test(lsid);
+      if (isBuw) { const ok = tryConfirmTreue(lsid, cdNow); if (ok) { e.stopPropagation(); return; } }
+    }
+    if (!sandboxMode && pendingMemeBel && cdNow) {
+      const isBuw = /-buw\d(-4)?$/.test(lsid);
+      if (isBuw) { const ok = tryConfirmMemeBel(lsid, cdNow); if (ok) { e.stopPropagation(); return; } }
+    }
     // Döner schneiden-Zielauswahl: Klick auf ein gegnerisches Buwemon
     if (!sandboxMode && pendingDoener && cdNow) {
       const isBuw = /-buw\d(-4)?$/.test(lsid);
@@ -8031,6 +8117,7 @@ function doLiiinks() {
   checkExBuwemon('p1');
   checkExBuwemon('p2');
   checkPermanentAbilitiesAfterMove();
+  checkPermanentAbilitiesAfterMove();
   if (NET.mode === 'multi') netSendState();
 }
 
@@ -8101,6 +8188,40 @@ function checkPermanentAbilitiesAfterMove() {
       baristaActiveSlot = null; baristaTargetSlot = null;
     }
   }
+}
+
+
+function checkPermanentAbilitiesAfterMove() {
+  const allBuw = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'];
+  // Glorian
+  if (glorianActiveSlot) {
+    const origOwner = glorianActiveSlot.ownerP;
+    const gs = allBuw.find(s => G.slots[s] && G.slots[s].name === 'Glorian' && activePermanentAbilities.has(s));
+    if (!gs || parseInt((gs.match(/^p(\d)/)||[])[1]) !== origOwner) {
+      glorianActiveSlot = null;
+      glorianSuppressed.forEach(s => { dinkelmehlSuppressed.delete(s); if(activePermanentAbilities.has(s)&&G.slots[s]) setAbilityShimmer(s,true); });
+      glorianSuppressed.clear();
+    }
+  }
+  // Barista
+  if (baristaActiveSlot) {
+    const origOwner = baristaActiveSlot.ownerP;
+    const bs = allBuw.find(s => G.slots[s] && G.slots[s].name === 'Barista Clarista der Mister-Fister' && activePermanentAbilities.has(s));
+    if (!bs || parseInt((bs.match(/^p(\d)/)||[])[1]) !== origOwner) {
+      setBaristaFade(baristaTargetSlot, false);
+      baristaActiveSlot = null; baristaTargetSlot = null;
+    }
+  }
+  // Luis/Lisa/Alexerus etc: prüfe ob noch beim selben Spieler
+  [...activePermanentAbilities].forEach(slotId => {
+    const cd = G.slots[slotId];
+    if (!cd) return; // wird von setAbilityShimmer(false) behandelt
+    const origOwner = parseInt((slotId.match(/^p(\d)/)||[])[1]||'0');
+    const nowSlot = allBuw.find(s => G.slots[s] && G.slots[s].name === cd.name);
+    if (!nowSlot) return;
+    const nowOwner = parseInt((nowSlot.match(/^p(\d)/)||[])[1]||'0');
+    if (nowOwner !== origOwner) setAbilityShimmer(slotId, false);
+  });
 }
 
 function confirmLiiinks4(btnEl) {
@@ -9349,7 +9470,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v47x
+    v48a
   </div>
 </div>
 
