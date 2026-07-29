@@ -2488,12 +2488,16 @@ function openColorRemove(btnEl){
         G.banish.push(bcd);
       });
       G.deck=G.deck.filter(c=>c.color!==cg.hex);updDeck();
-      // Add field cards to banish and remove them
+      // Add field cards to banish and remove them (inkl. Handkarten die lokal als DOM existieren)
       G.cards.filter(c=>c.dataset.color===cg.hex).forEach(c=>{
         const bcd={name:c.dataset.name,color:c.dataset.color,type:c.dataset.ctype,file:c.dataset.file||''};
         G.banish.push(bcd);
+        const uid = parseInt(c.dataset.uid);
+        ['p1','p2'].forEach(p=>{ if(handOrderByPlayer2p[p]) handOrderByPlayer2p[p]=handOrderByPlayer2p[p].filter(u=>u!==uid); });
         removeCardSynced(c);
       });
+      // Handkarten der Gegner (nicht lokal als DOM) aus handOrderByPlayer2p entfernen - via netSendState sync
+      layoutMyHand();
       // Add grave cards to banish
       [...G.graves.p1.filter(c=>c.color===cg.hex), ...G.graves.p2.filter(c=>c.color===cg.hex)].forEach(c=>{
         const bcd={name:c.name,color:c.color,type:c.type,file:c.file||''};
@@ -2519,6 +2523,7 @@ function openColorRemove(btnEl){
       const txt = 'Raum-Zeit-Genozid: Alle ' + cg.label + '-Karten wurden entfernt!';
       showOutcomeToast(txt, false);
       netSend({t:'outcome_toast', text:txt, is4:false});
+      netSend({t:'color_hand_remove', hex:cg.hex, is4:false, sender:NET.myPlayer});
       netSendState();
     };
     sw.appendChild(btn);
@@ -7063,6 +7068,21 @@ function onCardDockedToEffSlot(player, slotId, cd) {
   }
 }
 
+function applyColorHandRemove(hex, is4) {
+  const arr = is4 ? handOrderByPlayer4p : handOrderByPlayer2p;
+  const myL = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+  const toRemove = (arr[myL]||[]).filter(uid => {
+    const el = G.cards.find(c=>parseInt(c.dataset.uid)===uid);
+    return el && el.dataset.color === hex && el.dataset.ctype !== 'spec';
+  });
+  toRemove.forEach(uid => {
+    const el = G.cards.find(c=>parseInt(c.dataset.uid)===uid);
+    if (el) { el.remove(); G.cards = G.cards.filter(c=>parseInt(c.dataset.uid)!==uid); }
+    arr[myL] = (arr[myL]||[]).filter(u=>u!==uid);
+  });
+  if (is4) layoutMyHand4(); else layoutMyHand();
+}
+
 function checkVerbote(player, suffix) {
   suffix = suffix || '';
   const is4 = suffix === '-4';
@@ -8320,21 +8340,17 @@ function confirmPickyEating(btnEl, cardEl) {
 }
 
 function doPickyEating(hex, label, is4) {
-  // Betroffen: alle freien Karten auf dem Spielfeld (Handzonen + Spielfeld) + Buwemon-Slots
-  // NICHT betroffen: Friedhöfe, Ziehstapel
   if (is4) {
-    // Freie Karten (G.cards) dieser Farbe → Entfernt
+    // Eigene Handkarten entfernen
+    applyColorHandRemove(hex, true);
+    // Freie Karten auf Spielfeld
     G.cards.filter(c => c.dataset.color === hex && c.dataset.ctype !== 'spec').forEach(c => {
-      const bcd = {name:c.dataset.name,color:c.dataset.color,type:c.dataset.ctype,file:c.dataset.file||''};
-      G4.banish.push(bcd);
-      c.remove(); G.cards = G.cards.filter(x => x !== c);
-      if (NET.mode === 'multi') netSend({t:'card_remove', uid:c.dataset.uid});
+      G4.banish.push({name:c.dataset.name,color:c.dataset.color,type:c.dataset.ctype,file:c.dataset.file||''});
+      c.remove(); G.cards = G.cards.filter(x=>x!==c);
     });
-    // Buwemon-Slots aller Spieler
     ['p1','p2','p3','p4'].forEach(p => {
       ['buw1','buw2','buw3'].forEach(s => {
-        const sid = p+'-'+s+'-4';
-        const cd = G.slots[sid];
+        const sid = p+'-'+s+'-4'; const cd = G.slots[sid];
         if (!cd || cd.color !== hex || cd.type === 'spec') return;
         G.slots[sid] = null; renderSlot(sid);
         G4.banish.push({name:cd.name,color:cd.color,type:cd.type,file:cd.file||''});
@@ -8343,17 +8359,18 @@ function doPickyEating(hex, label, is4) {
       checkExBuwemon(p, '-4');
     });
     updBanish4();
-    if (NET.mode === 'multi') { netSend({t:'banish4_update', banish:G4.banish}); netSendState4(); }
+    if (NET.mode === 'multi') { netSend({t:'color_hand_remove', hex, is4:true, sender:NET.myPlayer}); netSend({t:'banish4_update', banish:G4.banish}); netSendState4(); }
   } else {
+    // Eigene Handkarten entfernen (gleiche Logik wie Gegner-Client)
+    applyColorHandRemove(hex, false);
+    // Freie Karten auf Spielfeld
     G.cards.filter(c => c.dataset.color === hex && c.dataset.ctype !== 'spec').forEach(c => {
-      const bcd = {name:c.dataset.name,color:c.dataset.color,type:c.dataset.ctype,file:c.dataset.file||''};
-      G.banish.push(bcd);
+      G.banish.push({name:c.dataset.name,color:c.dataset.color,type:c.dataset.ctype,file:c.dataset.file||''});
       removeCardSynced(c);
     });
     ['p1','p2'].forEach(p => {
       ['buw1','buw2','buw3'].forEach(s => {
-        const sid = p+'-'+s;
-        const cd = G.slots[sid];
+        const sid = p+'-'+s; const cd = G.slots[sid];
         if (!cd || cd.color !== hex || cd.type === 'spec') return;
         G.slots[sid] = null; renderSlot(sid);
         G.banish.push({name:cd.name,color:cd.color,type:cd.type,file:cd.file||''});
@@ -8362,7 +8379,7 @@ function doPickyEating(hex, label, is4) {
       checkExBuwemon(p);
     });
     updBanish();
-    if (NET.mode === 'multi') netSendState();
+    if (NET.mode === 'multi') { netSend({t:'color_hand_remove', hex, is4:false, sender:NET.myPlayer}); netSendState(); }
   }
 }
 
@@ -9863,7 +9880,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v49d
+    v49h
   </div>
 </div>
 
@@ -10697,6 +10714,10 @@ if (d.t === 'state4') {
         renderSimulatedHand('p'+d.targetP, handCardsFromUids(handOrderByPlayer2p[d.targetP]), false);
       }
     }
+  }
+  if (d.t === 'color_hand_remove') {
+    if (d.sender === NET.myPlayer) return;
+    applyColorHandRemove(d.hex, d.is4);
   }
   if (d.t === 'schicksal_start') {
     if (d.sender === NET.myPlayer) return;
