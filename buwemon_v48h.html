@@ -3085,6 +3085,10 @@ function moveToGraveLogical(slotId, cd, is4) {
     if (NET.mode === 'multi') netSend({t:'ability_shimmer', slotId, active: false});
   }
   dinkelmehlSuppressed.delete(slotId);
+  // Schwammika-State zurücksetzen
+  // Schwammika-State via uid zurücksetzen
+  const _sCd = G.slots[slotId];
+  if (_sCd && schwammikaState[_sCd.uid]) delete schwammikaState[_sCd.uid];
   const p = parseInt((slotId.match(/^p(\d)/)||[])[1] || '0');
   const pfx = 'p'+p;
   G.slots[slotId] = null;
@@ -4747,6 +4751,103 @@ function tryConfirmMemeBel(lsid, cd) {
   return true;
 }
 
+let pendingTreue = null;
+let pendingSaugkraft = null;
+let schwammikaState = {}; // {slotId: {copiedAbility, copiedBuwemon}}
+
+function beginSaugkraft(btn, el) {
+  closePopup();
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const schwSlotId = toLogicalId(el.dataset.slotId || '') || _lastActivatorSlotId;
+  // Alle Buwemon auf dem Spielfeld (auch eigene, kein EX)
+  const allBuw = is4 ?
+    [1,2,3,4].flatMap(p=>['buw1','buw2','buw3'].map(b=>'p'+p+'-'+b+'-4')) :
+    [1,2].flatMap(p=>['buw1','buw2','buw3'].map(b=>'p'+p+'-'+b));
+  const targets = allBuw.filter(s => {
+    const cd = G.slots[s];
+    return cd && cd.type !== 'ex-auto' && cd.name !== 'Schwammika' && CARD_ABILITIES[cd.name];
+  });
+  if (!targets.length) { showOutcomeToast('Kein Buwemon mit Fähigkeit!', is4); return; }
+
+  // pendingDoener-ähnliches System
+  pendingSaugkraft = { schwSlotId, el, is4, targets };
+  const suf = is4 ? '-4' : '';
+  const toast = document.getElementById('abil-toast'+suf);
+  document.getElementById('abil-toast-title'+suf).innerHTML = '<b>Saugkraft</b>';
+  document.getElementById('abil-toast-sub'+suf).textContent = 'Klicke auf ein Buwemon zum Kopieren';
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = 'none';
+  const skipBtn = document.getElementById('abil-toast-skip'+suf);
+  skipBtn.textContent = 'Abbrechen'; skipBtn.style.display = 'inline-block';
+  skipBtn.onclick = () => { toast.classList.remove('open'); document.getElementById('abil-toast-bar-wrap'+suf).style.display=''; pendingSaugkraft=null; };
+  toast.classList.add('open');
+}
+function tryConfirmSaugkraft(lsid, cd) {
+  if (!pendingSaugkraft) return false;
+  if (cd.type === 'ex-auto' || cd.name === 'Schwammika' || !CARD_ABILITIES[cd.name]) return false;
+  const { schwSlotId, el, is4 } = pendingSaugkraft;
+  const suf = is4 ? '-4' : '';
+  document.getElementById('abil-toast'+suf).classList.remove('open');
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
+  pendingSaugkraft = null;
+  const abilName = CARD_ABILITIES[cd.name];
+  const schwCd = G.slots[schwSlotId];
+  const schwUid = schwCd ? schwCd.uid : schwSlotId;
+  schwammikaState[schwUid] = { copiedAbility: abilName, copiedBuwemon: cd.name, ownerSlotId: schwSlotId };
+  // _lastActivatorSlotId auf Schwammikas Slot setzen damit Fähigkeiten korrekt activatorP berechnen
+  _lastActivatorSlotId = schwSlotId;
+  const fakeEl = document.createElement('div');
+  fakeEl.dataset.name = 'Schwammika';
+  fakeEl.dataset.slotId = schwSlotId;
+  fakeEl.dataset.color = '#aaaaaa';
+  fakeEl.dataset.ctype = 'buw';
+  fakeEl.dataset.uid = '0';
+  if (SPECIAL_ABILITY_HANDLERS[abilName]) {
+    SPECIAL_ABILITY_HANDLERS[abilName](null, fakeEl);
+  } else if (ABILITY_EFFECTS[abilName]) {
+    beginAbilityActivation(fakeEl, abilName, abilName, ABILITY_EFFECTS[abilName]);
+  }
+  return true;
+}
+
+function beginTreue(btn, el) {
+  closePopup();
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const activatorP = parseInt((_lastActivatorSlotId||'p1').match(/^p(\d)/)[1]||'1');
+  pendingTreue = { cardEl: el, activatorP, is4, marcoSlotId: toLogicalId(el.dataset.slotId || '') || _lastActivatorSlotId };
+  const suf = is4 ? '-4' : '';
+  const toast = document.getElementById('abil-toast'+suf);
+  document.getElementById('abil-toast-title'+suf).innerHTML = '<b>Treue</b>';
+  document.getElementById('abil-toast-sub'+suf).textContent = 'Klicke auf ein Buwemon (kein EX)';
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = 'none';
+  const skipBtn = document.getElementById('abil-toast-skip'+suf);
+  skipBtn.textContent = 'Abbrechen'; skipBtn.style.display = 'inline-block';
+  skipBtn.onclick = () => { toast.classList.remove('open'); document.getElementById('abil-toast-bar-wrap'+suf).style.display=''; pendingTreue=null; };
+  toast.classList.add('open');
+}
+function tryConfirmTreue(lsid, cd) {
+  if (!pendingTreue) return false;
+  if (cd.type === 'ex-auto') return false;
+  const { cardEl, activatorP, is4, marcoSlotId } = pendingTreue;
+  const suf = is4 ? '-4' : '';
+  document.getElementById('abil-toast'+suf).classList.remove('open');
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
+  pendingTreue = null;
+  beginAbilityActivation(cardEl, 'Treue', 'Treue – ' + cd.name, () => {
+    const roll = Math.random() < 4/6;
+    const txt = roll ? cd.name + ' stirbt mit Marco! (4/6)' : cd.name + ' überlebt – aber Marco stirbt trotzdem! (2/6)';
+    setTimeout(() => { showOutcomeToast(txt, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:txt, is4}); }, 600);
+    if (roll) { const cdT = G.slots[lsid]; if (cdT) moveToGraveLogical(lsid, cdT, is4); }
+    // Marco stirbt immer - auf allen Clients
+    const marcoCdNow = G.slots[marcoSlotId];
+    if (marcoCdNow) moveToGraveLogical(marcoSlotId, marcoCdNow, is4);
+    if (NET.mode==='multi') {
+      netSend({t:'marco_dies', slotId: marcoSlotId, is4});
+      is4 ? netSendState4() : netSendState();
+    }
+  }, lsid, { defenderName: cd.name, defenderColor: cd.color });
+  return true;
+}
+
 let pendingGottkomplex = null; // {cardEl, activatorP, is4}
 
 function beginGottkomplex(btn, cardEl) {
@@ -5020,8 +5121,10 @@ const SPECIAL_ABILITY_HANDLERS = {
   'Marie hat recht': (btn, el) => beginMarie(btn, el),
   'Döner schneiden': (btn, el) => beginDoenerSchneiden(btn, el),
   'Meme Belästigung': (btn, el) => beginMemeBelästigung(btn, el),
+  'Treue': (btn, el) => beginTreue(btn, el),
   'Spülung': (btn, el) => beginSpuelung(btn, el),
   'Hühnchen Spam': (btn, el) => beginHuehnchenSpam(btn, el),
+  'Saugkraft': (btn, el) => beginSaugkraft(btn, el),
   'Bett abbauen': (btn, el) => beginVerbotAbility(btn, el, 'Eine Runde noch Verbot', 'Bett abbauen'),
   'Ein Problem mit Alkohol': (btn, el) => beginVerbotAbility(btn, el, 'Nachschlag Verbot', 'Ein Problem mit Alkohol'),
 };
@@ -5208,7 +5311,11 @@ function renderPopupActionButtons(el, fd) {
     wrap.appendChild(atkBtn);
   }
   if (!isEx) {
-    const abName = CARD_ABILITIES[name];
+    const _schwSlotId = el.dataset.slotId ? toLogicalId(el.dataset.slotId) : null;
+    const _schwCd = _schwSlotId ? G.slots[_schwSlotId] : null;
+    const _schwUid = _schwCd ? _schwCd.uid : null;
+    const _schwState = (_schwUid && schwammikaState[_schwUid]) ? schwammikaState[_schwUid] : null;
+    const abName = (_schwState && name === 'Schwammika') ? _schwState.copiedAbility : CARD_ABILITIES[name];
     if (abName) {
       let handler = null;
       if (SPECIAL_ABILITY_HANDLERS[abName]) {
@@ -7054,6 +7161,14 @@ function releaseSlot(slotId, x, y) {
       const isBuw = /-buw\d(-4)?$/.test(lsid);
       if (isBuw) { const ok = tryConfirmBarista(lsid, cdNow); if (ok) { e.stopPropagation(); return; } }
     }
+    if (!sandboxMode && pendingSaugkraft && cdNow) {
+      const isBuw = /-buw\d(-4)?$/.test(lsid);
+      if (isBuw) { const ok = tryConfirmSaugkraft(lsid, cdNow); if (ok) { e.stopPropagation(); return; } }
+    }
+    if (!sandboxMode && pendingTreue && cdNow) {
+      const isBuw = /-buw\d(-4)?$/.test(lsid);
+      if (isBuw) { const ok = tryConfirmTreue(lsid, cdNow); if (ok) { e.stopPropagation(); return; } }
+    }
     if (!sandboxMode && pendingMemeBel && cdNow) {
       const isBuw = /-buw\d(-4)?$/.test(lsid);
       if (isBuw) { const ok = tryConfirmMemeBel(lsid, cdNow); if (ok) { e.stopPropagation(); return; } }
@@ -8136,6 +8251,14 @@ function checkPermanentAbilitiesAfterMove() {
       glorianSuppressed.clear();
     }
   }
+  // Schwammika: prüfe ob noch beim selben Spieler
+  Object.entries(schwammikaState).forEach(([uid, st]) => {
+    const ownerP = parseInt((st.ownerSlotId.match(/^p(\d)/)||[])[1]||'0');
+    const nowSlot = allBuw.find(s => G.slots[s] && String(G.slots[s].uid) === String(uid));
+    if (!nowSlot || parseInt((nowSlot.match(/^p(\d)/)||[])[1]||'0') !== ownerP) {
+      delete schwammikaState[uid];
+    }
+  });
   // Barista
   if (baristaActiveSlot) {
     const bs = allBuw.find(s => G.slots[s] && G.slots[s].name === 'Barista Clarista der Mister-Fister' && activePermanentAbilities.has(s));
@@ -8146,39 +8269,6 @@ function checkPermanentAbilitiesAfterMove() {
   }
 }
 
-
-function checkPermanentAbilitiesAfterMove() {
-  const allBuw = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'];
-  // Glorian
-  if (glorianActiveSlot) {
-    const origOwner = glorianActiveSlot.ownerP;
-    const gs = allBuw.find(s => G.slots[s] && G.slots[s].name === 'Glorian' && activePermanentAbilities.has(s));
-    if (!gs || parseInt((gs.match(/^p(\d)/)||[])[1]) !== origOwner) {
-      glorianActiveSlot = null;
-      glorianSuppressed.forEach(s => { dinkelmehlSuppressed.delete(s); if(activePermanentAbilities.has(s)&&G.slots[s]) setAbilityShimmer(s,true); });
-      glorianSuppressed.clear();
-    }
-  }
-  // Barista
-  if (baristaActiveSlot) {
-    const origOwner = baristaActiveSlot.ownerP;
-    const bs = allBuw.find(s => G.slots[s] && G.slots[s].name === 'Barista Clarista der Mister-Fister' && activePermanentAbilities.has(s));
-    if (!bs || parseInt((bs.match(/^p(\d)/)||[])[1]) !== origOwner) {
-      setBaristaFade(baristaTargetSlot, false);
-      baristaActiveSlot = null; baristaTargetSlot = null;
-    }
-  }
-  // Luis/Lisa/Alexerus etc: prüfe ob noch beim selben Spieler
-  [...activePermanentAbilities].forEach(slotId => {
-    const cd = G.slots[slotId];
-    if (!cd) return; // wird von setAbilityShimmer(false) behandelt
-    const origOwner = parseInt((slotId.match(/^p(\d)/)||[])[1]||'0');
-    const nowSlot = allBuw.find(s => G.slots[s] && G.slots[s].name === cd.name);
-    if (!nowSlot) return;
-    const nowOwner = parseInt((nowSlot.match(/^p(\d)/)||[])[1]||'0');
-    if (nowOwner !== origOwner) setAbilityShimmer(slotId, false);
-  });
-}
 
 function confirmLiiinks4(btnEl) {
   pressAbilityBtn(btnEl);
@@ -9426,7 +9516,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v47z
+    v48h
   </div>
 </div>
 
@@ -10260,6 +10350,10 @@ if (d.t === 'state4') {
         renderSimulatedHand('p'+d.targetP, handCardsFromUids(handOrderByPlayer2p[d.targetP]), false);
       }
     }
+  }
+  if (d.t === 'marco_dies') {
+    const cd = G.slots[d.slotId];
+    if (cd) moveToGraveLogical(d.slotId, cd, d.is4);
   }
   if (d.t === 'barista_activate') {
     baristaActiveSlot = {slotId: d.baristaSlotId, ownerP: d.ownerP};
