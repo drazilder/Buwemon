@@ -457,6 +457,8 @@ body {
 .turn-btn:disabled{opacity:0.32;cursor:default;}
 .my-turn{border-color:#000000 !important;border-width:3px !important;box-shadow:0 0 4px rgba(0,0,0,0.5);}
 .automatik-mode .sandbox-only{display:none !important;}
+.automatik-mode #dice-outer{display:none !important;}
+.automatik-mode #ereignis-panel{display:none !important;}
 .automatik-only{display:none !important;}
 @keyframes abilGlowPulse {
   0%,100% { box-shadow: 0 0 10px 4px rgba(255,255,255,0.95), 0 0 22px 10px rgba(255,255,255,0.7), 0 0 36px 16px rgba(255,255,255,0.4); }
@@ -1529,7 +1531,12 @@ function removeFromMyHand(el) {
 
 function setTurn2p(p) {
   TURN_2P = p; _turnSeq2p++; updateTurnUI2p(); autoDrawIfMyTurn2p(p, _turnSeq2p);
-  // Glaskuppel verschwindet, sobald ihr Besitzer wieder am Zug ist
+  // Glaskuppel verschwindet, sobald ihr Besitzer wieder am Zug ist (egal wie sie gelegt wurde)
+  const _gkSlot = getGlaskuppelSlot(p, false);
+  if (_gkSlot) {
+    const _gkCd = G.slots[_gkSlot];
+    if (_gkCd) { G.slots[_gkSlot]=null; renderSlot(_gkSlot); G.graves['p'+p].push({name:'Glaskuppel',color:_gkCd.color,type:'eff',file:_gkCd.file||''}); updGrave('p'+p); }
+  }
   if (activeGlaskuppel2p[p]) {
     const sid = activeGlaskuppel2p[p];
     const cd = G.slots[sid];
@@ -1995,8 +2002,13 @@ function broadcastGhostCreate(uid, name, color, ctype, file, fd, x, y, originSlo
 function makeDraggable(el){
   el.addEventListener('pointerdown',e=>{
     if(e.button===2)return;
+    // Im Automatik-Modus: Karten in Slots/Feldern nicht ziehbar (außer Debug)
+    if(!sandboxMode && !debugMode) {
+      // Prüfe ob Karte innerhalb eines Slot-Elements liegt
+      const _slotParent = el.closest('[id$="-buw1"],[id$="-buw2"],[id$="-buw3"],[id$="-eff1"],[id$="-eff2"],[id$="-eff3"],[id$="-eff4"],[id$="-buw1-4"],[id$="-buw2-4"],[id$="-buw3-4"],[id$="-eff1-4"],[id$="-eff2-4"],[id$="-eff3-4"],[id$="-eff4-4"]');
+      if(_slotParent) return;
+    }
     e.preventDefault();e.stopPropagation();
-    // Take ownership when dragging enemy card
     if(el.dataset.netEnemy) delete el.dataset.netEnemy;
     const gp=clientToGame(e.clientX,e.clientY);
     drag={el,ox:gp.x-parseFloat(el.style.left),oy:gp.y-parseFloat(el.style.top)};
@@ -2100,6 +2112,7 @@ function makeDraggable(el){
 }
 
 function checkDropOnGrave(el){
+  if (!sandboxMode && !debugMode) return false; // Im Automatik-Modus kein manuelles Auf-Friedhof-Ziehen
   const r=el.getBoundingClientRect();
   const cx=r.left+r.width/2,cy=r.top+r.height/2;
   if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) {
@@ -3165,7 +3178,31 @@ document.addEventListener('pointerdown', (e) => {
   confirmAttackTargetLP(targetP, is4);
 }, true);
 
-function applyLpDamage(p, amount, is4) {
+function getGlaskuppelSlot(p, is4) {
+  const suf = is4 ? '-4' : '';
+  const pfx = 'p'+p;
+  return ['eff1','eff2','eff3','eff4'].map(e=>pfx+'-'+e+suf).find(s => G.slots[s] && G.slots[s].name === 'Glaskuppel') || null;
+}
+
+function applyLpDamage(p, amount, is4, attackerColor) {
+  // Glaskuppel-Check: LP-Schutz außerhalb Kampfsituation
+  const gSlot = getGlaskuppelSlot(p, is4);
+  if (gSlot) {
+    const isYellowAttacker = attackerColor === '#aa9900';
+    if (isYellowAttacker) {
+      if (Math.random() < 0.5) {
+        const _t = '<b>Glaskuppel</b> wurde von gelbem Buwemon durchbrochen! (50%)';
+        showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast',text:_t,is4});
+        // Schaden wird trotzdem angewendet (kein return)
+      } else {
+        const _t = '<b>Glaskuppel</b> hält stand gegen gelbes Buwemon! (50%)';
+        showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast',text:_t,is4});
+        return; // kein Schaden
+      }
+    } else {
+      return; // Glaskuppel schützt vollständig
+    }
+  }
   if (is4) {
     G4.lp[p] = Math.max(0, G4.lp[p] - amount);
     const lpEl = document.getElementById(physId('p'+p)+'-lp-4');
@@ -3295,7 +3332,7 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
       } else if (directDefense.name === 'Glaskuppel') {
         // Glaskuppel schützt LP außer bei gelbem Angreifer (50%)
         const attackerCd = G.slots[toLogicalId(sel.slotId)];
-        const isYellow = attackerCd && attackerCd.color === '#f5c518';
+        const isYellow = attackerCd && attackerCd.color === '#aa9900';
         if (isYellow) {
           directFails = Math.random() < 0.5;
           const _t = directFails ? '<b>Glaskuppel</b> hat den Angriff abgewehrt! (50%)' : '<b>Glaskuppel</b> hat NICHT gewirkt - Angriff wird durchgeführt. (50%)';
@@ -3312,7 +3349,7 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
         setTimeout(() => { showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t, is4}); }, 600);
       }
     }
-    if (!directFails) applyLpDamage(defenderP, sel.attackPower, is4);
+    const _atkCd = G.slots[toLogicalId(sel.slotId)]; if (!directFails) applyLpDamage(defenderP, sel.attackPower, is4, _atkCd ? _atkCd.color : null);
     if (sel.isDrogen || (sel.attackName && sel.attackName.includes('Drogen'))) applyDrogenNacheffekt(toLogicalId(sel.slotId), false);
     clearCombatEquipAfterFight([sel.slotId].filter(Boolean), is4);
     if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
@@ -3383,7 +3420,7 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
 
   if (diff > 0) {
     moveToGraveLogical(defenderSlotId, defCd, is4);
-    if (!lpProtected) applyLpDamage(defenderP, diff, is4);
+    if (!lpProtected) applyLpDamage(defenderP, diff, is4, atkColor);
   } else if (diff < 0) {
     moveToGraveLogical(sel.slotId, G.slots[sel.slotId], is4);
     applyLpDamage(sel.attackerP, -diff, is4);
@@ -5928,6 +5965,8 @@ function onCarryDrop(e) {
       if (isEffSlot || isVerbotSlot) checkVerbote(player, zoneSuffix2);
       if (isEffSlot) onCardDockedToEffSlot(player, lsid, cd);
       if (isExSlot && (cd.color === '#111111' || cd.name === 'Darkschah EX')) checkDarkschahWin(player);
+      // Originale Karte aus DOM entfernen (sie ist jetzt als docked-card im Slot)
+      el.remove(); G.cards = G.cards.filter(c => c !== el);
       if (NET.mode==='multi') { zoneSuffix2 ? netSendState4() : netSendState(); }
       return;
     }
@@ -6396,7 +6435,20 @@ function showAddCardMenu() {
     wrap.appendChild(img); wrap.appendChild(nm);
     wrap.addEventListener('click', () => {
       closeAllDebugModals();
-      startCarry({name: def.name, color: def.color, type: def.type, uid: G.nid++});
+      const _cd = {name: def.name, color: def.color, type: def.type, uid: G.nid++, file: def.file||''};
+      if (!sandboxMode) {
+        // Automatik: direkt in eigene Hand
+        const _is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+        const _ownerP = _is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+        const _el2 = spawnCard(_cd, 0, 0, false);
+        const _arr = _is4 ? handOrderByPlayer4p : handOrderByPlayer2p;
+        if(!_arr[_ownerP])_arr[_ownerP]=[];
+        _arr[_ownerP].push(_cd.uid);
+        if(_is4) layoutMyHand4(); else layoutMyHand();
+        if(NET.mode==='multi') { netSend({t:'hand_add_card',ownerP:_ownerP,is4:_is4,sender:NET.myPlayer,cd:{name:_cd.name,color:_cd.color,type:_cd.type,file:_cd.file||''}}); _is4?netSendState4():netSendState(); }
+      } else {
+        startCarry(_cd);
+      }
     });
     return wrap;
   };
@@ -7364,7 +7416,14 @@ function tryDockCard(el) {
       // sid = physische Bildschirmposition, lsid = logischer Slot (welchem Spieler er wirklich gehört).
       // Im Sandbox-Modus und bei 4p (noch) identisch; im 2p-Automatik-Modus ggf. vertauscht (physId ist selbstinvers).
       const lsid = toLogicalId(sid);
-      // check type compatibility
+      // Im Automatik-Modus: Nur eigene Buwemon- und Effektfelder
+      if (!sandboxMode && !debugMode) {
+        const is4x = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+        const myL = is4x ? myLogicalPlayer4p() : myLogicalPlayer2p();
+        const slotOwner = parseInt((lsid.match(/^p(\d)/)||[])[1]||'0');
+        const isEffOrBuw = /-buw\d|-eff\d|-verbot\d/.test(lsid) || lsid.endsWith('-ex') || lsid.endsWith('-ex-4');
+        if (isEffOrBuw && slotOwner !== myL) continue; // Fremde Slots sperren
+      }
       const ctype = el.dataset.ctype;
       const cname = el.dataset.name;
       const isExSlot = sid.endsWith('-ex') || sid.endsWith('-ex-4');
@@ -7743,6 +7802,8 @@ function releaseSlot(slotId, x, y) {
       clickCount = 0; clickTimer = null;
       if (!G.slots[lsid]) return;
       if (G.slots[lsid].type === 'ex-auto') return;
+      // Im Automatik-Modus: keine manuellen Karten aus Slots ziehen (außer Debug)
+      if (!sandboxMode && !debugMode) return;
       const cd = G.slots[lsid];
       G.slots[lsid] = null;
       renderSlot(lsid);
@@ -7986,6 +8047,7 @@ function openBanishBrowser() {
 }
 
 function checkDropOnBanish(el){
+  if (!sandboxMode && !debugMode) return false;
   const r=el.getBoundingClientRect();
   const cx=r.left+r.width/2,cy=r.top+r.height/2;
   if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) {
@@ -9971,7 +10033,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v49u
+    v50a
   </div>
 </div>
 
