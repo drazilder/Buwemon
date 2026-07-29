@@ -3408,6 +3408,8 @@ const dinkelmehlSuppressed = new Set();
 // Glorian: welcher Slot hat aktive Fähigkeit + welche Slots wurden dadurch pausiert
 let glorianActiveSlot = null; // {slotId, ownerP}
 const glorianSuppressed = new Set();
+const ragequitBlockedUids = new Set();
+let pendingClariSSIO = null;
 let baristaActiveSlot = null; // {slotId, ownerP}
 let baristaTargetSlot = null; // logische SlotId des betäubten Buwemon
 let pendingBaristaTarget = null; // Zielauswahl pending // SlotIDs von pausierten Dauerfähigkeiten
@@ -4027,6 +4029,16 @@ function resolveWanze(activatorP, targetP, is4, wanzeSlot) {
   }
   updateRevealStatus(targetP, true, is4);
   if (NET.mode === 'multi') netSend({t:'wanze_reveal', targetP, is4, open: true});
+}
+
+function applyGlibbern(slotId) {
+  const physSlotEl = document.getElementById(physId(slotId));
+  if (!physSlotEl) return;
+  // Karten-Bild: erstes img das kein Icon/Label ist
+  const img = physSlotEl.querySelector('.shimmer-img-wrap img') || physSlotEl.querySelector('.docked-card img') || physSlotEl.querySelector('img');
+  if (!img) return;
+  img.style.filter = 'url(#gli)';
+  setTimeout(() => { img.style.filter = ''; }, 5000);
 }
 
 function clearWanzeReveal() {
@@ -5425,14 +5437,10 @@ const ABILITY_EFFECTS = {
   'Glibbern': () => {
     const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
     const slotId = _lastActivatorSlotId || 'p1-buw1';
-    const physSlotEl = document.getElementById(physId(slotId));
-    if (!physSlotEl) return;
-    const img = physSlotEl.querySelector('img');
-    if (!img) return;
-    img.style.filter = 'url(#gli)';
+    // Animation via gemeinsamen Handler
+    applyGlibbern(slotId);
     showOutcomeToast('Gilip glibbert!', is4);
-    if (NET.mode==='multi') netSend({t:'glibbern', slotId, is4});
-    setTimeout(() => { img.style.filter = ''; }, 5000);
+    if (NET.mode==='multi') netSend({t:'glibbern', slotId, is4, sender: NET.myPlayer});
   },
     'Mecces Pakt': null,
   'Döner schneiden': null,
@@ -8638,22 +8646,27 @@ function doRecast() {
     for (let i = cards.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [cards[i],cards[j]]=[cards[j],cards[i]]; }
     cards.forEach((cd, i) => { G.slots[allSlots[i]] = cd; renderSlot(allSlots[i]); });
   } else {
-    // Automatik: nur normale Buwemon mischen, Spezial bleiben in ihren Slots
+    // Automatik: alle Buwemon (inkl. Spezial) zufällig auf ALLE Slots verteilen
     const allSlots = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'];
-    const specSlots = {}; // slotId → card für Spezial-Buwemon
-    allSlots.forEach(s => { if (G.slots[s] && G.slots[s].type === 'spec') specSlots[s] = G.slots[s]; });
-    const normalCards = allSlots.filter(s => !specSlots[s]).map(s => G.slots[s]).filter(Boolean);
-    const normalSlots = allSlots.filter(s => !specSlots[s]);
-    normalSlots.forEach(s => { G.slots[s] = null; renderSlot(s); });
-    for (let i = normalCards.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [normalCards[i],normalCards[j]]=[normalCards[j],normalCards[i]]; }
-    const freeSlots = normalSlots.filter(s => !G.slots[s]);
-    for (let i = freeSlots.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [freeSlots[i],freeSlots[j]]=[freeSlots[j],freeSlots[i]]; }
-    normalCards.forEach((cd, i) => { if (i < freeSlots.length) { G.slots[freeSlots[i]] = cd; renderSlot(freeSlots[i]); } });
+    const cards = allSlots.map(s => G.slots[s]).filter(Boolean);
+    allSlots.forEach(s => { G.slots[s] = null; renderSlot(s); });
+    // Fisher-Yates shuffle
+    for (let i = cards.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [cards[i],cards[j]]=[cards[j],cards[i]]; }
+    // Zufällige Slots auswählen
+    const shuffledSlots = [...allSlots].sort(() => Math.random()-0.5);
+    cards.forEach((cd, i) => { G.slots[shuffledSlots[i]] = cd; renderSlot(shuffledSlots[i]); });
   }
   checkExBuwemon('p1'); checkExBuwemon('p2');
   checkZoneColor('p1'); checkZoneColor('p2');
   checkPermanentAbilitiesAfterMove();
-  if (NET.mode === 'multi') netSendState();
+  if (NET.mode === 'multi') {
+    // Alle Buwemon-Slots explizit senden (nicht nur eigene)
+    const allBuwSlots = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'];
+    const recastSlots = {};
+    allBuwSlots.forEach(s => { recastSlots[s] = G.slots[s] || null; });
+    netSend({t:'recast_slots', slots: recastSlots});
+    netSendState();
+  }
 }
 
 
@@ -9945,7 +9958,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v49n
+    v49s
   </div>
 </div>
 
@@ -10907,12 +10920,18 @@ if (d.t === 'state4') {
       renderSimulatedHand('p'+d.targetP, handCardsFromUids(d.is4 ? handOrderByPlayer4p[d.targetP] : handOrderByPlayer2p[d.targetP]), d.is4);
     }
   }
+  if (d.t === 'recast_slots') {
+    Object.keys(d.slots).forEach(slot => {
+      G.slots[slot] = d.slots[slot] || null;
+      renderSlot(slot);
+    });
+    checkExBuwemon('p1'); checkExBuwemon('p2');
+    checkZoneColor('p1'); checkZoneColor('p2');
+    checkPermanentAbilitiesAfterMove();
+  }
   if (d.t === 'glibbern') {
-    const _physSlot = document.getElementById(physId(d.slotId));
-    if (_physSlot) {
-      const _img = _physSlot.querySelector('img');
-      if (_img) { _img.style.filter = 'url(#gli)'; setTimeout(() => { _img.style.filter = ''; }, 5000); }
-    }
+    if (d.sender === NET.myPlayer) return;
+    applyGlibbern(d.slotId);
   }
   if (d.t === 'hand_add_card') {
     if (d.sender === NET.myPlayer) return; // Echo ignorieren
