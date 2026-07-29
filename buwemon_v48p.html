@@ -4193,7 +4193,7 @@ function setBaristaFade(lsid, fade) {
 }
 
 // ── BESCHWÖRUNGSKARTEN ──
-function beginSummonSelection(ownerP, cfg, is4) {
+function beginSummonSelection(ownerP, cfg, summonCardSlotId, is4) {
   const myL = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
   if (myL !== ownerP) {
     // Andere Spieler: Info-Toast
@@ -4308,10 +4308,10 @@ function beginSummonSelection(ownerP, cfg, is4) {
       }
     });
     if(is4){layoutMyHand4();}else{layoutMyHand();}
-    allowedSummons[ownerP] = cfg.specName;
+    allowedSummons[ownerP] = { specName: cfg.specName, cardSlotId: summonCardSlotId };
     showOutcomeToast('Beschwöre jetzt ' + cfg.specName + '!', is4);
     if (NET.mode==='multi') {
-      netSend({t:'summon_done', ownerP, specName:cfg.specName, is4});
+      netSend({t:'summon_done', ownerP, specName:cfg.specName, cardSlotId:summonCardSlotId, is4, sender:NET.myPlayer});
       is4?netSendState4():netSendState();
     }
   };
@@ -5425,7 +5425,7 @@ const ABILITY_EFFECTS = {
       const cd = G.slots[slotId];
       if (cd) {
         if (!cd.equipped) cd.equipped = [];
-        cd.equipped.push({name:'Plus10 Ereignis',color:'#888888',ctype:'ereignis',file:'Plus10.png'});
+        cd.equipped.push({name:'Plus10 Ereignis',color:'#888888',ctype:'ereignis',file:'Plus_10.png'});
         renderSlot(slotId);
         if (NET.mode==='multi') netSend({t:'equip_update', slotId, equipped: cd.equipped});
       }
@@ -5746,7 +5746,20 @@ function onCarryDrop(e) {
       if (isBuwSlot) {
         // Beschwörungserlaubnis löschen nach erfolgreichem Docking
         const ownerPDock = parseInt((player.match(/p(\d)/)||[])[1]||'0');
-        if (allowedSummons[ownerPDock] === cd.name) delete allowedSummons[ownerPDock];
+        const _aS = allowedSummons[ownerPDock];
+        if (_aS && (_aS === cd.name || _aS.specName === cd.name)) {
+          const _cSlot = _aS.cardSlotId;
+          delete allowedSummons[ownerPDock];
+          if (_cSlot) {
+            const _cCd = G.slots[_cSlot];
+            if (_cCd) {
+              const _pfx = 'p'+ownerPDock;
+              G.slots[_cSlot] = null; renderSlot(_cSlot);
+              const _bcd = {name:_cCd.name,color:_cCd.color,type:'eff',file:_cCd.file||''};
+              if (is4){G4.graves[_pfx].push(_bcd);updGrave4(_pfx);}else{G.graves[_pfx].push(_bcd);updGrave(_pfx);}
+            }
+          }
+        }
         checkExBuwemon(player, zoneSuffix2); checkZoneColor(player, zoneSuffix2);
       }
       if (isEffSlot || isVerbotSlot) checkVerbote(player, zoneSuffix2);
@@ -6707,7 +6720,7 @@ function hasSummonCard(player, buwemonName, suffix) {
   if (!required) return true;
   const ownerP = parseInt(player.replace('p',''));
   // Nach Beschwörungsritual erlaubt
-  if (allowedSummons[ownerP] === buwemonName) return true;
+  if (allowedSummons[ownerP] && (allowedSummons[ownerP] === buwemonName || allowedSummons[ownerP].specName === buwemonName)) return true;
   return ['eff1','eff2','eff3','eff4'].some(es => {
     const cd = G.slots[player+'-'+es+suffix];
     return cd && cd.name === required;
@@ -6723,14 +6736,10 @@ function onCardDockedToEffSlot(player, slotId, cd) {
   if (SUMMON_CARDS[cd.name]) {
     const cfg = SUMMON_CARDS[cd.name];
     const ownerP = parseInt(player.replace('p',''));
-    // Karte auf Friedhof (wird verbraucht)
-    const pfx = 'p'+ownerP;
-    G.slots[slotId] = null; renderSlot(slotId);
-    const bcd = {name:cd.name,color:cd.color,type:'eff',file:cd.file||''};
-    if (is4) { G4.graves[pfx].push(bcd); updGrave4(pfx); } else { G.graves[pfx].push(bcd); updGrave(pfx); }
-    beginSummonSelection(ownerP, cfg, is4);
+    // Karte bleibt im Slot bis Spezial-Buwemon gedockt wird
+    beginSummonSelection(ownerP, cfg, slotId, is4);
     if (NET.mode==='multi') {
-      netSend({t:'summon_start', ownerP, specName:cfg.specName, is4});
+      netSend({t:'summon_start', ownerP, specName:cfg.specName, is4, sender:NET.myPlayer});
       is4?netSendState4():netSendState();
     }
     return;
@@ -9777,7 +9786,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v48m
+    v48p
   </div>
 </div>
 
@@ -10614,15 +10623,16 @@ if (d.t === 'state4') {
   }
   if (d.t === 'summon_start') {
     const myL = d.is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+    if (d.sender === NET.myPlayer) return;
     if (myL !== d.ownerP) showOutcomeToast(lpOptPlayerName(d.ownerP, d.is4) + ' wählt Opferkarten für ' + d.specName + '...', d.is4);
   }
   if (d.t === 'summon_done') {
-    const myL = d.is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
-    if (myL === d.ownerP) {
-      showOutcomeToast('Beschwöre jetzt ' + d.specName + '!', d.is4);
-    } else {
-      showOutcomeToast(lpOptPlayerName(d.ownerP, d.is4) + ' beschwört ' + d.specName + '!', d.is4);
+    if (d.sender !== NET.myPlayer) {
+      allowedSummons[d.ownerP] = { specName: d.specName, cardSlotId: d.cardSlotId };
     }
+    const myL10 = d.is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+    if (myL10 === d.ownerP) showOutcomeToast('Beschwöre jetzt ' + d.specName + '!', d.is4);
+    else showOutcomeToast(lpOptPlayerName(d.ownerP, d.is4) + ' beschwört ' + d.specName + '!', d.is4);
   }
   if (d.t === 'marco_dies') {
     const cd = G.slots[d.slotId];
