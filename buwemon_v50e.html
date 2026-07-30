@@ -6289,6 +6289,8 @@ function resetLocalState(){
   handOrderByPlayer2p = {1:[],2:[]};
   firstRoundOver = false; firstRoundSeenPlayers.clear();
   handOrderByPlayer4p = {1:[],2:[],3:[],4:[]};
+  ['p1','p2'].forEach(p => renderSimulatedHand(p, [], false));
+  ['p1','p2','p3','p4'].forEach(p => renderSimulatedHand(p, [], true));
   layoutMyHand(); if (typeof layoutMyHand4 === 'function') layoutMyHand4();
   G.nid=1;G.deck=buildDeck();updDeck();
   G.graves={p1:[],p2:[]};updGrave('p1');updGrave('p2');G.banish=[];updBanish();
@@ -10067,7 +10069,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v50d
+    v50e
   </div>
 </div>
 
