@@ -459,6 +459,8 @@ body {
 .automatik-mode .sandbox-only{display:none !important;}
 .automatik-mode #dice-outer{display:none !important;}
 .automatik-mode #ereignis-panel{display:none !important;}
+.automatik-mode #board4 #dice-btn-4{display:none !important;}
+.automatik-mode #ereignis-panel-4{display:none !important;}
 .automatik-only{display:none !important;}
 @keyframes abilGlowPulse {
   0%,100% { box-shadow: 0 0 10px 4px rgba(255,255,255,0.95), 0 0 22px 10px rgba(255,255,255,0.7), 0 0 36px 16px rgba(255,255,255,0.4); }
@@ -862,12 +864,12 @@ body {
   </div>
 
   <!-- EREIGNISSTAPEL: weit rechts vom Ziehstapel, vertikal zentriert, genug Abstand zu P4 -->
-  <div style="position:absolute;left:1370px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;" onclick="openEreignis()">
+  <div id="ereignis-panel-4" style="position:absolute;left:1370px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;" onclick="openEreignis()">
     <img id="ereignis-back-4" src="karten/Rueckseite_Ereigniskarten.png" style="width:47px;height:66px;border-radius:6px;object-fit:cover;">
     <span style="font-size:.5rem;color:rgba(0,0,0,0.4);font-family:'Kievit',sans-serif;">Ereignis</span>
   </div>
 
-  <div id="abil-toast-4" class="abil-toast" style="position:absolute;left:1350px;top:50%;transform:translateY(-50%);width:220px;">
+  <div id="abil-toast-4" class="abil-toast" style="position:absolute;left:1283px;top:50%;transform:translateY(-50%);width:220px;">
     <div class="abil-toast-title" id="abil-toast-title-4"></div>
     <div class="abil-toast-sub" id="abil-toast-sub-4"></div>
     <div class="abil-toast-bar-wrap" id="abil-toast-bar-wrap-4">
@@ -5542,6 +5544,28 @@ const ABILITY_EFFECTS = {
   'Bett abbauen': null,
   'Spülung': null,
   'Vollrauchen': null,
+  'Florianopolis Dominanz': () => {
+    const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+    const slotId = _lastActivatorSlotId || 'p1-buw1';
+    const ownerP = parseInt((slotId.match(/^p(\d)/)||[])[1]||'1');
+    glorianActiveSlot = {slotId, ownerP};
+    setAbilityShimmer(slotId, true);
+    glorianSuppressed.clear();
+    [...activePermanentAbilities].forEach(s => {
+      const sP = parseInt((s.match(/^p(\d)/)||[])[1]||'1');
+      if (sP !== ownerP && s !== slotId) {
+        glorianSuppressed.add(s);
+        dinkelmehlSuppressed.add(s);
+        setAbilityShimmer(s, false);
+        activePermanentAbilities.add(s);
+      }
+    });
+    showOutcomeToast('Glorian pausiert gegnerische Dauerfähigkeiten!', is4);
+    if (NET.mode==='multi') {
+      netSend({t:'glorian_activate', slotId, ownerP, glorianSuppressedSlots: [...glorianSuppressed], is4});
+      is4 ? netSendState4() : netSendState();
+    }
+  },
   'Killsteal': () => {
     const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
     const ownerP = parseInt((_lastActivatorSlotId||'p1').match(/^p(\d)/)[1]||'1');
@@ -10072,7 +10096,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v50h
+    v50j
   </div>
 </div>
 
