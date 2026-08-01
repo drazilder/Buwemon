@@ -2527,16 +2527,16 @@ function openColorRemove(btnEl){
         G.banish.push(bcd);
       });
       G.deck=G.deck.filter(c=>c.color!==cg.hex);updDeck();
+      // Handkarten entfernen (eigene + Gegner via netSend)
+      applyColorHandRemove(cg.hex, false);
+      layoutMyHand();
       // Add field cards to banish and remove them (inkl. Handkarten die lokal als DOM existieren)
       G.cards.filter(c=>c.dataset.color===cg.hex).forEach(c=>{
         const bcd={name:c.dataset.name,color:c.dataset.color,type:c.dataset.ctype,file:c.dataset.file||''};
         G.banish.push(bcd);
-        const uid = parseInt(c.dataset.uid);
-        ['p1','p2'].forEach(p=>{ if(handOrderByPlayer2p[p]) handOrderByPlayer2p[p]=handOrderByPlayer2p[p].filter(u=>u!==uid); });
         removeCardSynced(c);
       });
-      // Handkarten der Gegner (nicht lokal als DOM) aus handOrderByPlayer2p entfernen - via netSendState sync
-      layoutMyHand();
+      if (NET.mode==='multi') netSend({t:'color_hand_remove', hex:cg.hex, is4:false, sender:NET.myPlayer});
       // Add grave cards to banish
       [...G.graves.p1.filter(c=>c.color===cg.hex), ...G.graves.p2.filter(c=>c.color===cg.hex)].forEach(c=>{
         const bcd={name:c.name,color:c.color,type:c.type,file:c.file||''};
@@ -2559,6 +2559,15 @@ function openColorRemove(btnEl){
         checkExBuwemon(p);
       });
       updBanish();
+      // Simulierte Gegner-Hände sofort aktualisieren (UIDs der Gegner unbekannt → Array leeren)
+      const myL2p = myLogicalPlayer2p();
+      [1,2].forEach(p => {
+        if (p === myL2p) return;
+        // Zähle Karten dieser Farbe die der Gegner haben könnte (max handOrderByPlayer2p[p].length)
+        const enemyHand = handOrderByPlayer2p[p] || [];
+        // Wir wissen nicht welche davon diese Farbe haben - State-Update vom Gegner kommt via netSendState
+        // Aber für sofortige Anzeige: renderSimulatedHand wird durch State-Update getriggert
+      });
       const txt = 'Raum-Zeit-Genozid: Alle ' + cg.label + '-Karten wurden entfernt!';
       showOutcomeToast(txt, false);
       netSend({t:'outcome_toast', text:txt, is4:false});
@@ -3047,15 +3056,28 @@ function finalizeAbilityChain(killsBuwemon) {
     const tutEntry = playedCards.find(pc => pc.cardName === 'Tut mir leid\u2026');
     if (tutEntry) {
       tutMirLeidSlotId = tutEntry.slotId;
-      // Slot sofort leeren damit cleanUp ihn verarbeiten kann
       G.slots[tutEntry.slotId] = null;
       renderSlot(tutEntry.slotId);
     }
     playedCardsToClean = playedCards.filter(pc => pc.cardName !== 'Tut mir leid\u2026');
+    // Auch die Original-Angreifer-Karte zurück auf Hand (Calgon, UwU etc. die vorher gespielt wurden)
+    // Die sind bereits in playedCardsToClean
   }
   const combatSlotIds = (returnToHand && data.defenderSlotId) ? [data.slotId, data.defenderSlotId].filter(Boolean) : null;
 
-  cleanUpOwnAbilityCards(playedCardsToClean, killSlotId, killOwnerP, data.is4, data.isAttack, returnToHand, tutMirLeidSlotId, combatSlotIds);
+  // cleanAll: bei Angriffen immer, bei Fähigkeiten wenn Reaktionskarten (Ablehnt/FourAceFour) gespielt wurden
+  const hasReactionCards = playedCardsToClean && playedCardsToClean.some(pc => pc.cardName === 'Ablehnt' || pc.cardName === FOURACEFOUR_NAME);
+  cleanUpOwnAbilityCards(playedCardsToClean, killSlotId, killOwnerP, data.is4, data.isAttack || hasReactionCards, returnToHand, tutMirLeidSlotId, combatSlotIds);
+  // Wenn Fähigkeit geblockt wurde (Ablehnt/FourAceFour): Effektkarte auf Friedhof
+  if (!data.isAttack && wasBlocked && data.slotId) {
+    const blockedEffCd = G.slots[data.slotId];
+    if (blockedEffCd && (blockedEffCd.type === 'eff' || blockedEffCd.type === 'ereignis')) {
+      const bPfx = 'p' + data.activatorP;
+      G.slots[data.slotId] = null; renderSlot(data.slotId);
+      const bcd = {name:blockedEffCd.name,color:blockedEffCd.color,type:blockedEffCd.type,file:blockedEffCd.file||''};
+      if (data.is4) { G4.graves[bPfx].push(bcd); updGrave4(bPfx); } else { G.graves[bPfx].push(bcd); updGrave(bPfx); }
+    }
+  }
   // Friedhof nach cleanUp synchronisieren (FourAceFour etc. muss beim Empfänger ankommen)
   if (NET.mode === 'multi') { data.is4 ? netSendState4() : netSendState(); }
 
@@ -3356,6 +3378,7 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
   if (resolveInfo.fourAceFour) {
     moveToGraveLogical(sel.slotId, G.slots[sel.slotId], is4);
     clearCombatEquipAfterFight([sel.slotId, defenderSlotId].filter(Boolean), is4);
+    if (NET.mode === 'multi') netSend({t:'clear_combat_equip', slotIds:[sel.slotId, defenderSlotId].filter(Boolean), is4});
     return;
   }
 
@@ -3391,6 +3414,7 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
     const _atkCd = G.slots[toLogicalId(sel.slotId)]; if (!directFails) applyLpDamage(defenderP, sel.attackPower, is4, _atkCd ? _atkCd.color : null);
     if (sel.isDrogen || (sel.attackName && sel.attackName.includes('Drogen'))) applyDrogenNacheffekt(sel.slotId, false);
     clearCombatEquipAfterFight([sel.slotId].filter(Boolean), is4);
+    if (NET.mode === 'multi') netSend({t:'clear_combat_equip', slotIds:[sel.slotId, defenderSlotId].filter(Boolean), is4});
     if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
     if (sel.cardEl && sel.cardEl._afterFn && G.slots[sel.slotId]) { const fn=sel.cardEl._afterFn; sel.cardEl._afterFn=null; setTimeout(()=>fn(),800); }
     return;
@@ -3448,6 +3472,7 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
     if (attackerDiesInstead) moveToGraveLogical(sel.slotId, G.slots[sel.slotId], is4);
     moveCombatEquipToGrave(defenderSlotId, preEquipCount, is4);
     clearCombatEquipAfterFight([sel.slotId, defenderSlotId].filter(Boolean), is4);
+    if (NET.mode === 'multi') netSend({t:'clear_combat_equip', slotIds:[sel.slotId, defenderSlotId].filter(Boolean), is4});
     if (sel.isDrogen || (sel.attackName && sel.attackName.includes('Drogen'))) applyDrogenNacheffekt(sel.slotId, false);
     if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
     return;
@@ -4988,38 +5013,36 @@ function beginZwillingsattacke(btn, cardEl) {
   closePopup();
   const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
   const slotId = toLogicalId(cardEl.dataset.slotId);
+
+  // Kampfsituation für Abwehr, dann Zielauswahl (wie Grünika)
   beginAbilityActivation(cardEl, 'Zwillingsattacke', 'Zwillingsattacke', () => {
-    setTimeout(() => {
-      // Erster Angriff: genau wie normaler Angriff
-      const afterFirst = () => {
-        setTimeout(() => {
-          // Zweiter Angriff
-          const slotData = G.slots[slotId];
-          if (!slotData) return;
-          const fakeEl = document.createElement('div');
-          fakeEl.dataset.name = slotData.name;
-          fakeEl.dataset.color = slotData.color;
-          fakeEl.dataset.ctype = slotData.type || 'buw';
-          fakeEl.dataset.uid = 0;
-          fakeEl.dataset.slotId = slotId;
-          turnActionsUsed = 0;
-          beginAttackSelection(null, fakeEl);
-        }, 800);
-      };
-      const slotData = G.slots[slotId];
-      if (!slotData) return;
-      const fakeEl = document.createElement('div');
-      fakeEl.dataset.name = slotData.name;
-      fakeEl.dataset.color = slotData.color;
-      fakeEl.dataset.ctype = slotData.type || 'buw';
-      fakeEl.dataset.uid = 0;
-      fakeEl.dataset.slotId = slotId;
-      // Merken dass nach Angriff zweiter folgt
-      fakeEl._afterFn = afterFirst;
-      turnActionsUsed = 0; // Zwillingsattacke-Angriffe umgehen Zugsperre
-      beginAttackSelection(null, fakeEl);
-    }, 300);
+    setTimeout(() => { _startZwillingsZiel(slotId, is4, false); }, 300);
   });
+}
+
+function _startZwillingsZiel(slotId, is4, isSecond) {
+  const slotData = G.slots[slotId];
+  if (!slotData) return;
+  const attackPower = (CARD_ATTACK_POWER[slotData.name] || 0) + computeEquipBonus(slotData.color, slotData.equipped);
+  const afterFn = isSecond ? null : () => {
+    setTimeout(() => { _startZwillingsZiel(slotId, is4, true); }, 800);
+  };
+  const fakeEl = document.createElement('div');
+  fakeEl.dataset.name = slotData.name;
+  fakeEl.dataset.color = slotData.color;
+  fakeEl.dataset.ctype = slotData.type || 'buw';
+  fakeEl.dataset.uid = 0;
+  fakeEl.dataset.slotId = slotId;
+  turnActionsUsed = 0;
+  // Direkt pendingAttackSelection setzen wie Grünika (kein turnActionsUsed Check)
+  pendingAttackSelection = {
+    cardEl: fakeEl, slotId, is4,
+    attackerP: parseInt((slotId.match(/^p(\d)/)||[])[1]||'1'),
+    attackPower,
+    attackName: 'Zwillingsattacke (' + attackPower + ' AP)',
+    afterFn,
+  };
+  showTargetSelectToast(is4);
 }
 
 function startZwillingsAngriff(cardEl, slotId, is4, afterFn) {
@@ -7217,6 +7240,22 @@ function onCardDockedToEffSlot(player, slotId, cd) {
   }
 
   // Eine Runde noch: prüfen ob nicht durch Verbotskarte geblockt, dann Reaktionsfenster, dann Friedhof-Auswahl
+  if (cd.name === 'Random Vote') {
+    const ownerP = parseInt(player.replace('p',''));
+    const fake = document.createElement('div');
+    fake.dataset.name = cd.name; fake.dataset.color = cd.color;
+    fake.dataset.ctype = cd.type||'eff'; fake.dataset.uid = cd.uid||0;
+    fake.dataset.slotId = slotId;
+    beginAbilityActivation(fake, 'Random Vote', 'Random Vote', () => {
+      doRandomVote();
+      const pfx = 'p'+ownerP;
+      G.slots[slotId] = null; renderSlot(slotId);
+      const bcd = {name:cd.name,color:cd.color,type:'eff',file:cd.file||''};
+      if(is4){G4.graves[pfx].push(bcd);updGrave4(pfx);}else{G.graves[pfx].push(bcd);updGrave(pfx);}
+      if(NET.mode==='multi'){is4?netSendState4():netSendState();}
+    });
+    return;
+  }
   if (cd.name === 'Ragequit') {
     const ownerP = parseInt(player.replace('p',''));
     beginRagequit(ownerP, is4, slotId, cd);
@@ -7239,7 +7278,7 @@ function onCardDockedToEffSlot(player, slotId, cd) {
       fake.dataset.ctype = cd.type||'eff'; fake.dataset.uid = cd.uid||0; fake.dataset.slotId = slotId;
       beginAbilityActivation(fake, 'Nachschlag', 'Nachschlag', () => {
         if (!sandboxMode && !debugMode) {
-          turnActionsAllowed++; // Eine weitere Buwemonaktion erlaubt
+          turnActionsAllowed = Math.max(turnActionsAllowed, turnActionsUsed + 2); // max 2 weitere
         }
         showOutcomeToast('Nachschlag: Eine weitere Buwemonaktion erlaubt!', is4);
         // Karte bleibt im Effektfeld bis Zug-Ende (wird in endTurn auf Friedhof verschoben)
@@ -7322,6 +7361,7 @@ function onCardDockedToEffSlot(player, slotId, cd) {
 function applyColorHandRemove(hex, is4) {
   const arr = is4 ? handOrderByPlayer4p : handOrderByPlayer2p;
   const myL = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+  // Eigene Handkarten entfernen
   const toRemove = (arr[myL]||[]).filter(uid => {
     const el = G.cards.find(c=>parseInt(c.dataset.uid)===uid);
     return el && el.dataset.color === hex && el.dataset.ctype !== 'spec';
@@ -7332,6 +7372,11 @@ function applyColorHandRemove(hex, is4) {
     arr[myL] = (arr[myL]||[]).filter(u=>u!==uid);
   });
   if (is4) layoutMyHand4(); else layoutMyHand();
+  // Simulierte Gegner-Hände aktualisieren (Anzahl anpassen, da wir Farbe der Gegner-Karten nicht kennen)
+  // Der Gegner-Client wird via netSend seine eigenen Karten entfernen und State senden
+  // Aber wir können die sim-Anzeige sofort aktualisieren indem wir das Deck prüfen
+  // Zähle wie viele Karten dieser Farbe aus dem Deck/Banish/Graves verschwunden sind
+  // Einfachster Fix: renderSimulatedHand für Gegner wird nach netSendState vom Gegner aktualisiert
 }
 
 function checkVerbote(player, suffix) {
@@ -10171,7 +10216,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v50x
+    v51b
   </div>
 </div>
 
@@ -11016,6 +11061,8 @@ if (d.t === 'state4') {
   if (d.t === 'color_hand_remove') {
     if (d.sender === NET.myPlayer) return;
     applyColorHandRemove(d.hex, d.is4);
+    // State zurückschicken damit Aktivator die aktualisierte Hand sieht
+    if (d.is4) netSendState4(); else netSendState();
   }
   if (d.t === 'schicksal_start') {
     if (d.sender === NET.myPlayer) return;
@@ -11148,6 +11195,9 @@ if (d.t === 'state4') {
     checkExBuwemon('p1'); checkExBuwemon('p2');
     checkZoneColor('p1'); checkZoneColor('p2');
     checkPermanentAbilitiesAfterMove();
+  }
+  if (d.t === 'clear_combat_equip') {
+    (d.slotIds||[]).forEach(sid => clearCombatEquipAfterFight([sid], d.is4));
   }
   if (d.t === 'glibbern') {
     if (d.sender === NET.myPlayer) return;
