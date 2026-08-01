@@ -457,6 +457,8 @@ body {
 .turn-btn:disabled{opacity:0.32;cursor:default;}
 .my-turn{border-color:#000000 !important;border-width:3px !important;box-shadow:0 0 4px rgba(0,0,0,0.5);}
 .automatik-mode .sandbox-only{display:none !important;}
+.automatik-mode #bpopup-field-btn{display:none !important;}
+.automatik-mode #popup-remove-btn{display:none !important;}
 .automatik-mode #dice-outer{display:none !important;}
 .automatik-mode #ereignis-panel{display:none !important;}
 .automatik-mode #board4 #dice-btn-4{display:none !important;}
@@ -2791,6 +2793,10 @@ function clearAbilityUI() {
   }
   if (pendingAbility.timerId) clearInterval(pendingAbility.timerId);
   if (pendingAbility.resolveTimeoutId) clearTimeout(pendingAbility.resolveTimeoutId);
+  // Alle verbleibenden Glows entfernen
+  document.querySelectorAll('.abil-glow-fx,.abil-glow-fx-black').forEach(el => {
+    el.classList.remove('abil-glow-fx','abil-glow-fx-black');
+  });
   const t1 = document.getElementById('abil-toast'); if (t1) t1.classList.remove('open');
   const t2 = document.getElementById('abil-toast-4'); if (t2) t2.classList.remove('open');
 }
@@ -3498,6 +3504,7 @@ const firstRoundSeenPlayers = new Set(); // welche Spieler hatten schon einen Zu
 let pendingClariSSIO = null;
 let baristaActiveSlot = null; // {slotId, ownerP}
 let baristaTargetSlot = null; // logische SlotId des betäubten Buwemon
+let baristaTargetName = null; // Name der betäubten Karte (für Fix wenn Karte stirbt)
 let pendingBaristaTarget = null; // Zielauswahl pending // SlotIDs von pausierten Dauerfähigkeiten
 function setAbilityShimmer(slotId, active) {
   const slotEl = document.getElementById(physId(slotId));
@@ -3520,7 +3527,7 @@ function setAbilityShimmer(slotId, active) {
     }
     if (baristaActiveSlot && baristaActiveSlot.slotId === slotId) {
       setBaristaFade(baristaTargetSlot, false);
-      baristaActiveSlot = null; baristaTargetSlot = null;
+      baristaActiveSlot = null; baristaTargetSlot = null; baristaTargetName = null;
     }
     return;
   }
@@ -4373,8 +4380,9 @@ function clearMarieReveal() {
 // ── BARISTA CLARISTA – Hühnchen Spam ──
 function beginHuehnchenSpam(btn, el) {
   closePopup();
+  pendingBaristaTarget = null; // Reset vor neuem Einsatz
   const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
-  const activatorP = parseInt((_lastActivatorSlotId||'p1').match(/^p(\d)/)[1]||'1');
+  const activatorP = parseInt((toLogicalId(el.dataset.slotId || _lastActivatorSlotId || 'p1-buw1').match(/^p(\d)/)||[])[1]||'1');
   pendingBaristaTarget = { cardEl: el, activatorP, is4 };
   const suf = is4 ? '-4' : '';
   const toast = document.getElementById('abil-toast'+suf);
@@ -4405,6 +4413,7 @@ function tryConfirmBarista(lsid, cd) {
 function applyBaristaEffect(baristaSlotId, ownerP, targetLsid, is4) {
   baristaActiveSlot = {slotId: baristaSlotId, ownerP};
   baristaTargetSlot = targetLsid;
+  baristaTargetName = (G.slots[targetLsid]||{}).name || null;
   setAbilityShimmer(baristaSlotId, true);
   setBaristaFade(targetLsid, true);
   const tName = (G.slots[targetLsid]||{}).name || '?';
@@ -4423,7 +4432,6 @@ function setBaristaFade(lsid, fade) {
   if (img) img.style.opacity = fade ? '0.3' : '';
 }
 
-// ── BESCHWÖRUNGSKARTEN ──
 function beginSummonSelection(ownerP, cfg, is4) {
   const myL = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
   if (myL !== ownerP) {
@@ -5248,7 +5256,7 @@ function tryConfirmSaugkraft(lsid, cd) {
   pendingSaugkraft = null;
   const abilName = CARD_ABILITIES[cd.name];
   const schwCd = G.slots[schwSlotId];
-  const schwUid = schwCd ? schwCd.uid : schwSlotId;
+  const schwUid = schwCd ? (schwCd.uid !== undefined ? String(schwCd.uid) : schwSlotId) : schwSlotId;
   schwammikaState[schwUid] = { copiedAbility: abilName, copiedBuwemon: cd.name, ownerSlotId: schwSlotId };
   // _lastActivatorSlotId auf Schwammikas Slot setzen damit Fähigkeiten korrekt activatorP berechnen
   _lastActivatorSlotId = schwSlotId;
@@ -5875,9 +5883,15 @@ function renderPopupActionButtons(el, fd) {
   const turnBlocked = !sandboxMode && !debugMode && (turnActionsUsed >= turnActionsAllowed);
   const _baristaElSlotLog = toLogicalId(el.dataset.slotId);
   const firstRoundBlocksAtk = !sandboxMode && !debugMode && !firstRoundOver;
-  const baristaBlocksThis = !sandboxMode && !debugMode && baristaTargetSlot &&
-    (_baristaElSlotLog === baristaTargetSlot || el.dataset.slotId === baristaTargetSlot) &&
-    baristaActiveSlot && !dinkelmehlSuppressed.has(baristaActiveSlot.slotId);
+  const baristaBlocksThis = !sandboxMode && !debugMode && baristaTargetSlot && baristaActiveSlot &&
+    (() => {
+      // Prüfe ob die geblockte Karte noch im Ziel-Slot liegt
+      const targetCd = G.slots[baristaTargetSlot];
+      if (!targetCd || targetCd.name !== baristaTargetName) { baristaTargetSlot = null; baristaTargetName = null; return false; }
+      return (_baristaElSlotLog === baristaTargetSlot || el.dataset.slotId === baristaTargetSlot) &&
+        el.dataset.name === baristaTargetName &&
+        !dinkelmehlSuppressed.has(baristaActiveSlot.slotId);
+    })();
   if (atkName) {
     const atkBtn = makeBtn('Angriff_Icon.png', atkName, (btn, cardEl) => beginAttackSelection(btn, cardEl), totalPower);
     if (turnBlocked || baristaBlocksThis || firstRoundBlocksAtk) { atkBtn.style.opacity = '0.3'; atkBtn.style.pointerEvents = 'none'; }
@@ -5886,7 +5900,7 @@ function renderPopupActionButtons(el, fd) {
   if (!isEx) {
     const _schwSlotId = el.dataset.slotId ? toLogicalId(el.dataset.slotId) : null;
     const _schwCd = _schwSlotId ? G.slots[_schwSlotId] : null;
-    const _schwUid = _schwCd ? _schwCd.uid : null;
+    const _schwUid = _schwCd ? (_schwCd.uid !== undefined ? String(_schwCd.uid) : _schwSlotId) : null;
     const _schwState = (_schwUid && schwammikaState[_schwUid]) ? schwammikaState[_schwUid] : null;
     const abName = (_schwState && name === 'Schwammika') ? _schwState.copiedAbility : CARD_ABILITIES[name];
     if (abName) {
@@ -6084,8 +6098,19 @@ function onCarryDrop(e) {
       if (isBuwSlot && cd.type !== 'buw' && cd.type !== 'spec') break;
       const player = (lsid.match(/^p[1-4]/)||['p2'])[0];
       const zoneSuffix2 = lsid.endsWith('-4') ? '-4' : '';
-      if (isBuwSlot && SUMMON_MAP[cd.name] && !hasSummonCard(player, cd.name, zoneSuffix2)) break;
-      if (G.slots[lsid]) releaseSlot(lsid, sr.left+4, sr.top+4);
+      if (!debugMode && isBuwSlot && SUMMON_MAP[cd.name] && !hasSummonCard(player, cd.name, zoneSuffix2)) break;
+      if (G.slots[lsid]) {
+        if (!sandboxMode && !debugMode && isBuwSlot) {
+          // Im Automatik-Modus: belegte Buwemon-Slots sperren - Karte zurück in Hand
+          const myL2 = (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) ? myLogicalPlayer4p() : myLogicalPlayer2p();
+          const myArr2 = (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) ? handOrderByPlayer4p : handOrderByPlayer2p;
+          if(!myArr2[myL2])myArr2[myL2]=[];
+          if(!myArr2[myL2].includes(parseInt(el.dataset.uid)))myArr2[myL2].push(parseInt(el.dataset.uid));
+          if(typeof fourPlayerMode !== 'undefined' && fourPlayerMode)layoutMyHand4();else layoutMyHand();
+          break;
+        }
+        releaseSlot(lsid, sr.left+4, sr.top+4);
+      }
       G.slots[lsid] = {...cd, file: cd.file || imgFileFor(cd.name)};
       renderSlot(lsid);
       if (isBuwSlot) {
@@ -7725,7 +7750,7 @@ function tryDockCard(el) {
       if (!isExSlot && !isEffSlot && !isVerbotSlot && SUMMON_MAP[cname]) {
         const buwPlayer = (lsid.match(/^p[1-4]/)||['p2'])[0];
         const buwSuffix = lsid.endsWith('-4') ? '-4' : '';
-        if (!hasSummonCard(buwPlayer, cname, buwSuffix)) continue;
+        if (!debugMode && !hasSummonCard(buwPlayer, cname, buwSuffix)) continue;
       }
       // Zug-Regel: normales Buwemon nur einmal pro Zug legen
       if (!sandboxMode && !debugMode && isBuwOrExSlot && !isExSlot && ctype === 'buw') {
@@ -8247,12 +8272,18 @@ function openBPopup(cd, onField) {
   const _btypes={buw:'Buwemonkarte',spec:'Spezial-Buwemonkarte',eff:'Effektkarte',ereignis:'Ereigniskarte','ex-ereignis':'Ereignis-EX-Buwemonkarte'};
   document.getElementById('bpopup-type').textContent = _btypes[cd.type||cd.ctype] || cd.type || '';
   document.getElementById('browser-card-popup').classList.add('open');
-  document.getElementById('bpopup-field-btn').textContent = sandboxMode ? '🃏 Aufs Spielfeld' : '🤲 Auf die Hand nehmen';
-  document.getElementById('bpopup-field-btn').onclick = () => {
-    closeBPopup();
-    closeBrowser();
-    if (onField) onField();
-  };
+  const _fieldBtn = document.getElementById('bpopup-field-btn');
+  if (onField && !sandboxMode) {
+    _fieldBtn.textContent = '🤲 Auf die Hand nehmen';
+    _fieldBtn.style.display = '';
+    _fieldBtn.onclick = () => { closeBPopup(); closeBrowser(); onField(); };
+  } else if (onField && sandboxMode) {
+    _fieldBtn.textContent = '🃏 Aufs Spielfeld';
+    _fieldBtn.style.display = '';
+    _fieldBtn.onclick = () => { closeBPopup(); closeBrowser(); onField(); };
+  } else {
+    _fieldBtn.style.display = 'none';
+  }
 }
 
 function closeBPopup() {
@@ -8923,7 +8954,7 @@ function checkPermanentAbilitiesAfterMove() {
     const bs = allBuw.find(s => G.slots[s] && G.slots[s].name === 'Barista Clarista der Mister-Fister' && activePermanentAbilities.has(s));
     if (!bs || parseInt((bs.match(/^p(\d)/)||[])[1]) !== baristaActiveSlot.ownerP) {
       setBaristaFade(baristaTargetSlot, false);
-      baristaActiveSlot = null; baristaTargetSlot = null;
+      baristaActiveSlot = null; baristaTargetSlot = null; baristaTargetName = null;
     }
   }
 }
@@ -10175,7 +10206,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v50m
+    v50r
   </div>
 </div>
 
