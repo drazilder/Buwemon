@@ -457,7 +457,6 @@ body {
 .turn-btn:disabled{opacity:0.32;cursor:default;}
 .my-turn{border-color:#000000 !important;border-width:3px !important;box-shadow:0 0 4px rgba(0,0,0,0.5);}
 .automatik-mode .sandbox-only{display:none !important;}
-.automatik-mode #bpopup-field-btn{display:none !important;}
 .automatik-mode #popup-remove-btn{display:none !important;}
 .automatik-mode #dice-outer{display:none !important;}
 .automatik-mode #ereignis-panel{display:none !important;}
@@ -2590,7 +2589,7 @@ const allowedSummons = {}; // {ownerP: specName} - nach erfolgreichem Opfern
 const SPEC_BUW_NAMES = new Set(['Golop der Grobe','Die Pogofanten',"L'Enderdragon",'Der Zeitführer','BOOM Clan']);
 let _fourAceHandledInCombat = false;
 let _lastActivatorSlotId = null; // verhindert Eigenzug-Handler nach Kampf-FourAceFour
-const ABILITY_FIRST_RESPONSE_NAMES = ['Dinkelmehl', FOURACEFOUR_NAME];
+const ABILITY_FIRST_RESPONSE_NAMES = ['Dinkelmehl', 'Ablehnt', FOURACEFOUR_NAME];
 const ABILITY_CHAIN_RESPONSE_NAMES = ['Ablehnt', FOURACEFOUR_NAME];
 
 function abilityGlowEl(slotId) {
@@ -2793,6 +2792,10 @@ function clearAbilityUI() {
   }
   if (pendingAbility.timerId) clearInterval(pendingAbility.timerId);
   if (pendingAbility.resolveTimeoutId) clearTimeout(pendingAbility.resolveTimeoutId);
+  // Alle verbleibenden Glows entfernen
+  document.querySelectorAll('.abil-glow-fx,.abil-glow-fx-black').forEach(el => {
+    el.classList.remove('abil-glow-fx','abil-glow-fx-black');
+  });
   const t1 = document.getElementById('abil-toast'); if (t1) t1.classList.remove('open');
   const t2 = document.getElementById('abil-toast-4'); if (t2) t2.classList.remove('open');
 }
@@ -3259,6 +3262,7 @@ function moveToGraveLogical(slotId, cd, is4) {
   // Schwammika-State via uid zurücksetzen
   const _sCd = G.slots[slotId];
   if (_sCd && schwammikaState[_sCd.uid]) delete schwammikaState[_sCd.uid];
+  if (_sCd && _sCd.uid) selfMovedBlockedUids.delete(_sCd.uid);
   const p = parseInt((slotId.match(/^p(\d)/)||[])[1] || '0');
   const pfx = 'p'+p;
   G.slots[slotId] = null;
@@ -3494,6 +3498,8 @@ const dinkelmehlSuppressed = new Set();
 let glorianActiveSlot = null; // {slotId, ownerP}
 const glorianSuppressed = new Set();
 const ragequitBlockedUids = new Set();
+// Karten die durch ihre eigene Fähigkeit verschoben wurden → Fähigkeit bleibt geblockt
+const selfMovedBlockedUids = new Set();
 // Erste-Runde Sperre: Angriffe und bestimmte Fähigkeiten erst nach erstem vollständigem Zug aller
 let firstRoundOver = false; // wird true nachdem der erste Spieler zum zweiten Mal dran war
 const firstRoundSeenPlayers = new Set(); // welche Spieler hatten schon einen Zug
@@ -4428,6 +4434,137 @@ function setBaristaFade(lsid, fade) {
   if (img) img.style.opacity = fade ? '0.3' : '';
 }
 
+function beginSummonSelection(ownerP, cfg, is4) {
+  const myL = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+  if (myL !== ownerP) {
+    // Andere Spieler: Info-Toast
+    showOutcomeToast(lpOptPlayerName(ownerP, is4) + ' wählt Opferkarten...', is4);
+    return;
+  }
+
+  // Karten sammeln: Hand + eigene Buwemonfelder
+  const suf = is4 ? '-4' : '';
+  const myHand = is4 ? (handOrderByPlayer4p[ownerP]||[]) : (handOrderByPlayer2p[ownerP]||[]);
+  const handCards = myHand.map(uid => G.cards.find(c=>parseInt(c.dataset.uid)===uid)).filter(Boolean)
+    .filter(c => c.dataset.ctype==='buw' || c.dataset.ctype==='spec');
+  const fieldSlots = ['buw1','buw2','buw3'].map(b=>'p'+ownerP+'-'+b+(is4?'-4':'')).filter(s=>G.slots[s]);
+  const fieldCards = fieldSlots.map(s => ({slotId:s, cd:G.slots[s]})).filter(x=>x.cd.type!=='ex-auto' && x.cd.ctype!=='ex-auto');
+
+  const selected = new Set(); // uid für Handkarten, slotId für Feldkarten
+  const selectedData = {}; // key → {name, color, isField, uid, slotId}
+
+  // Modal
+  const modal = document.createElement('div');
+  modal.className = 'abil-toast';
+  modal.style.cssText = 'display:block;position:fixed;right:8px;top:50%;transform:translateY(-50%);width:240px;z-index:9500;max-height:80vh;overflow-y:auto;';
+  document.body.appendChild(modal);
+
+  const title = document.createElement('div');
+  title.className = 'abil-toast-title';
+  title.innerHTML = '<b>Beschwörung – Opfer wählen</b>';
+  modal.appendChild(title);
+
+  const counter = document.createElement('div');
+  counter.className = 'abil-toast-sub';
+  modal.appendChild(counter);
+  const reqText = cfg.needGilip ? cfg.count + ' Buwemon (mind. 1 Gilip der Glibbrige)' :
+    cfg.needAllColors ? cfg.count + ' Buwemon in verschiedenen Farben' :
+    cfg.count + ' Buwemon oder Spezial-Buwemon';
+  counter.textContent = '0 / ' + cfg.count + ' ausgewählt – ' + reqText;
+
+  const confirmBtn = document.createElement('button');
+  confirmBtn.textContent = '✓ Bestätigen';
+  confirmBtn.disabled = true;
+  confirmBtn.style.cssText = 'margin-top:8px;padding:6px 14px;background:#7a3db8;color:#fff;border:none;border-radius:6px;width:100%;cursor:not-allowed;opacity:0.4;font-family:"AiSpec",sans-serif;';
+  modal.appendChild(confirmBtn);
+
+  const updateCounter = () => {
+    counter.textContent = selected.size + ' / ' + cfg.count + ' ausgewählt – ' + reqText;
+    const ready = selected.size === cfg.count;
+    confirmBtn.disabled = !ready;
+    confirmBtn.style.opacity = ready ? '1' : '0.4';
+    confirmBtn.style.cursor = ready ? 'pointer' : 'not-allowed';
+  };
+
+  const toggleCard = (key, nameStr, colorStr, cardEl2) => {
+    if (selected.has(key)) {
+      selected.delete(key); delete selectedData[key];
+      if (cardEl2) { cardEl2.style.opacity='1'; cardEl2.style.outline=''; }
+    } else if (selected.size < cfg.count) {
+      selected.add(key); selectedData[key] = {name:nameStr, color:colorStr};
+      if (cardEl2) { cardEl2.style.opacity='0.4'; cardEl2.style.outline='3px solid #7a3db8'; }
+    }
+    updateCounter();
+  };
+
+  // Handkarten klickbar machen
+  handCards.forEach(cardEl2 => {
+    cardEl2._summonClick = (e) => { e.stopPropagation(); toggleCard('h:'+parseInt(cardEl2.dataset.uid), cardEl2.dataset.name, cardEl2.dataset.color, cardEl2); };
+    cardEl2.addEventListener('pointerdown', cardEl2._summonClick, true);
+  });
+
+  // Feldkarten: Klick via Slot-Handler-ähnlich
+  const fieldListeners = fieldCards.map(({slotId:fslotId, cd:fcd}) => {
+    const physEl = document.getElementById(physId(fslotId));
+    if (!physEl) return null;
+    const fn = (e) => { e.stopPropagation(); toggleCard('f:'+fslotId, fcd.name, fcd.color, physEl.querySelector('img')); };
+    physEl.addEventListener('pointerdown', fn, true);
+    return {physEl, fn};
+  });
+
+  const cleanup = () => {
+    handCards.forEach(cardEl2 => { cardEl2.style.opacity='1'; cardEl2.style.outline=''; if(cardEl2._summonClick){cardEl2.removeEventListener('pointerdown',cardEl2._summonClick,true);delete cardEl2._summonClick;} });
+    fieldListeners.forEach(x => { if(x){x.physEl.style.opacity=''; x.physEl.removeEventListener('pointerdown',x.fn,true);} });
+    modal.remove();
+  };
+
+  confirmBtn.onclick = () => {
+    // Validierung
+    const selArr = Object.values(selectedData);
+    if (selArr.length !== cfg.count) return;
+    const hasGilip = selArr.some(x=>x.name==='Gilip der Glibbrige');
+    if (cfg.needGilip && !hasGilip) { counter.textContent='Mind. 1 Gilip der Glibbrige benötigt!'; return; }
+    if (cfg.needAllColors) {
+      const colors = [...new Set(selArr.map(x=>x.color))];
+      if (colors.length < cfg.count) { counter.textContent='Alle Karten müssen verschiedene Farben haben!'; return; }
+    }
+    cleanup();
+    // Opfer auf Friedhof
+    const pfx = 'p'+ownerP;
+    [...selected].forEach(key => {
+      if (key.startsWith('h:')) {
+        const uid = parseInt(key.slice(2));
+        const el2 = G.cards.find(c=>parseInt(c.dataset.uid)===uid);
+        if (el2) {
+          const bcd={name:el2.dataset.name,color:el2.dataset.color,type:el2.dataset.ctype||'buw',file:el2.dataset.file||''};
+          el2.remove(); G.cards=G.cards.filter(c=>parseInt(c.dataset.uid)!==uid);
+          if(is4){G4.graves[pfx].push(bcd);updGrave4(pfx);}else{G.graves[pfx].push(bcd);updGrave(pfx);}
+          const arr = is4?handOrderByPlayer4p:handOrderByPlayer2p;
+          if(arr[ownerP])arr[ownerP]=arr[ownerP].filter(u=>u!==uid);
+        }
+      } else {
+        const fslotId = key.slice(2);
+        const fcd = G.slots[fslotId];
+        if (fcd) moveToGraveLogical(fslotId, fcd, is4);
+      }
+    });
+    if(is4){layoutMyHand4();}else{layoutMyHand();}
+    allowedSummons[ownerP] = cfg.specName;
+    showOutcomeToast('Beschwöre jetzt ' + cfg.specName + '!', is4);
+    if (NET.mode==='multi') {
+      netSend({t:'summon_done', ownerP, specName:cfg.specName, is4, sender:NET.myPlayer});
+      is4?netSendState4():netSendState();
+    }
+  };
+
+  // Abbrechen
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'Abbrechen';
+  cancelBtn.style.cssText = 'margin-top:4px;padding:4px;background:none;border:none;cursor:pointer;color:#888;font-family:"AiSpec",sans-serif;width:100%;';
+  cancelBtn.onclick = () => cleanup();
+  modal.appendChild(cancelBtn);
+}
+
 // ── SUFFIA – Killsteal ──
 function openKillstealPopup(ownerP, is4) {
   const myL = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
@@ -4577,8 +4714,21 @@ document.addEventListener('pointerdown', (e) => {
 }, true);
 
 function resolveSpuelung(activatorP, targetP, is4) {
-  const hand = is4 ? (handOrderByPlayer4p[targetP]||[]) : (handOrderByPlayer2p[targetP]||[]);
-  const toDiscard = Math.floor(hand.length / 2);
+  // Handkarten-Anzahl aus Label lesen (zuverlässig für alle Spieler)
+  const suf = is4 ? '-4' : '';
+  const physPfx = physId('p'+targetP);
+  const handZone = document.getElementById(physPfx+'-hand'+suf);
+  let handCount = 0;
+  if (handZone) {
+    const lbl = handZone.querySelector('.zlbl');
+    if (lbl) { const m = lbl.textContent.match(/(\d+)\s*Karten/); if (m) handCount = parseInt(m[1])||0; }
+  }
+  // Fallback: Array-Länge
+  if (!handCount) {
+    const hand = is4 ? (handOrderByPlayer4p[targetP]||[]) : (handOrderByPlayer2p[targetP]||[]);
+    handCount = hand.length;
+  }
+  const toDiscard = Math.floor(handCount / 2);
   if (NET.mode === 'multi') {
     netSend({t:'spuelung_start', targetP, toDiscard, is4});
     const myL = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
@@ -4892,77 +5042,6 @@ function startZwillingsAngriff(cardEl, slotId, is4, afterFn) {
 // Wir nutzen sel.afterFn
 // Funktioniert wie ein Angriff mit 220 AP. Danach (außer bei Dinkelmehl) bekommt Grünika
 // eine 100-Ereigniskarte ausgerüstet (reduziert AP auf 100).
-// ── CLARISSIO – Arsch anfassen ──
-function beginClariSSIO(btn, cardEl) {
-  closePopup();
-  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
-  const activatorP = parseInt((cardEl.dataset.slotId.match(/^p(\d)/)||[])[1]||'1');
-  const activePlayers = is4 ? [1,2,3,4].filter(p => G4.active[p]) : [1,2];
-  const opponents = activePlayers.filter(p => p !== activatorP);
-
-  const startAgainst = (targetP) => {
-    beginAbilityActivation(cardEl, 'clari_phase1', 'Arsch anfassen', () => {
-      const hit = Math.random() < 0.5;
-      const txt = hit ? 'ClariSSIO: Fähigkeitsangriff gelingt! (50%)' : 'ClariSSIO: Fähigkeitsangriff schlägt fehl! (50%)';
-      showOutcomeToast(txt, is4);
-      if (!hit) return;
-      setTimeout(() => {
-        const clariCd = G.slots[toLogicalId(cardEl.dataset.slotId)];
-        const clariPower = clariCd ? (CARD_ATTACK_POWER[clariCd.name] || 140) + computeEquipBonus(clariCd.color, clariCd.equipped) : 140;
-        const fakeAtk = {
-          cardEl, slotId: toLogicalId(cardEl.dataset.slotId), is4,
-          attackerP: activatorP, attackPower: clariPower,
-          attackName: 'Arsch anfassen – Direktangriff (' + clariPower + ' AP)',
-          isDirectLP: true, directLPTarget: targetP,
-        };
-        pendingAttackSelection = fakeAtk;
-        confirmAttackTargetLP(targetP, is4);
-      }, 1200);
-    });
-  };
-
-  if (opponents.length <= 1) { startAgainst(opponents[0]); return; }
-  pendingClariSSIO = { cardEl, activatorP, is4, opponents, startAgainst };
-  const suf = is4 ? '-4' : '';
-  const toast = document.getElementById('abil-toast'+suf);
-  document.getElementById('abil-toast-title'+suf).innerHTML = '<b>Arsch anfassen</b>';
-  document.getElementById('abil-toast-sub'+suf).textContent = 'Klicke auf einen Gegner (Buwemon, Handzone oder LP)';
-  document.getElementById('abil-toast-bar-wrap'+suf).style.display = 'none';
-  const skipBtn = document.getElementById('abil-toast-skip'+suf);
-  skipBtn.textContent = 'Abbrechen'; skipBtn.style.display = 'inline-block';
-  skipBtn.onclick = () => { toast.classList.remove('open'); document.getElementById('abil-toast-bar-wrap'+suf).style.display=''; pendingClariSSIO=null; };
-  toast.classList.add('open');
-}
-
-function tryConfirmClariSSIO(lsid) {
-  if (!pendingClariSSIO) return false;
-  const { activatorP, is4, opponents, startAgainst } = pendingClariSSIO;
-  const targetP = parseInt((lsid.match(/^p(\d)/)||[])[1]||'0');
-  if (!opponents.includes(targetP)) return false;
-  const suf = is4 ? '-4' : '';
-  document.getElementById('abil-toast'+suf).classList.remove('open');
-  document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
-  pendingClariSSIO = null;
-  startAgainst(targetP);
-  return true;
-}
-
-document.addEventListener('pointerdown', (e) => {
-  if (!pendingClariSSIO || sandboxMode) return;
-  const lpEl = e.target.closest('[id$="-lp"],[id$="-lp-4"]');
-  if (!lpEl) return;
-  const m = lpEl.id.match(/^p(\d)/);
-  if (!m) return;
-  const logP = parseInt(toLogicalId('p'+parseInt(m[1])).replace('p',''));
-  if (!pendingClariSSIO.opponents.includes(logP)) return;
-  e.stopPropagation();
-  const suf = pendingClariSSIO.is4 ? '-4' : '';
-  document.getElementById('abil-toast'+suf).classList.remove('open');
-  document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
-  const saved = pendingClariSSIO; pendingClariSSIO = null;
-  saved.startAgainst(logP);
-}, true);
-
 function beginGruenikaDrogen(btn, cardEl) {
   closePopup();
   if (!sandboxMode && !debugMode && turnActionsUsed >= turnActionsAllowed) {
@@ -5005,6 +5084,7 @@ function applyDrogenNacheffekt(grueSlotId, isDinkelmehled) {
   renderSlot(grueSlotId);
   if (NET.mode === 'multi') netSend({t:'equip_update', slotId: grueSlotId, equipped: cd.equipped});
 }
+
 
 // ── PHÜLÜGÜLÜM – Döner schneiden ──
 let pendingDoener = null;
@@ -5167,7 +5247,7 @@ function tryConfirmTreue(lsid, cd) {
     const txt = roll ? cd.name + ' stirbt mit Marco! (4/6)' : cd.name + ' überlebt – aber Marco stirbt trotzdem! (2/6)';
     setTimeout(() => { showOutcomeToast(txt, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:txt, is4}); }, 600);
     if (roll) { const cdT = G.slots[lsid]; if (cdT) moveToGraveLogical(lsid, cdT, is4); }
-    // Marco stirbt immer - auf allen Clients
+    // Marco stirbt immer
     const marcoCdNow = G.slots[marcoSlotId];
     if (marcoCdNow) moveToGraveLogical(marcoSlotId, marcoCdNow, is4);
     if (NET.mode==='multi') {
@@ -5305,7 +5385,7 @@ function openEineRundeNochGrave(ownerP, graveP, effSlotId, is4) {
   } else {
     [...graves].reverse().forEach((cd, i) => {
       const realIdx = graves.length - 1 - i;
-      const isGreen = cd.color === '#6fb62c';
+      const isGreen = cd.color === '#2e8a2e';
       const canSelect = isOwn || ((cd.type === 'buw' || cd.type === 'spec') && isGreen);
       const row = document.createElement('div');
       row.className = 'deck-row';
@@ -5456,6 +5536,7 @@ const SPECIAL_ABILITY_HANDLERS = {
   'Hühnchen Spam': (btn, el) => beginHuehnchenSpam(btn, el),
   'Saugkraft': (btn, el) => beginSaugkraft(btn, el),
   'Bett abbauen': (btn, el) => beginVerbotAbility(btn, el, 'Eine Runde noch Verbot', 'Bett abbauen'),
+  'Mecces Pakt': (btn, el) => beginVerbotAbility(btn, el, 'Mecces Verbot', 'Mecces Pakt'),
   'Ein Problem mit Alkohol': (btn, el) => beginVerbotAbility(btn, el, 'Nachschlag Verbot', 'Ein Problem mit Alkohol'),
 };
 
@@ -6280,7 +6361,7 @@ function resetLocalState(){
   G.cards.forEach(el=>el.remove());G.cards=[];
   // Hand-Arrays leeren
   handOrderByPlayer2p = {1:[],2:[]};
-  firstRoundOver = false; firstRoundSeenPlayers.clear();
+  firstRoundOver = false; firstRoundSeenPlayers.clear(); selfMovedBlockedUids.clear();
   handOrderByPlayer4p = {1:[],2:[],3:[],4:[]};
   ['p1','p2'].forEach(p => renderSimulatedHand(p, [], false));
   ['p1','p2','p3','p4'].forEach(p => renderSimulatedHand(p, [], true));
@@ -7454,7 +7535,7 @@ function tryDockCard(el) {
         const myL = is4x ? myLogicalPlayer4p() : myLogicalPlayer2p();
         const slotOwner = parseInt((lsid.match(/^p(\d)/)||[])[1]||'0');
         const isEffOrBuw = /-buw\d|-eff\d|-verbot\d/.test(lsid) || lsid.endsWith('-ex') || lsid.endsWith('-ex-4');
-        if (isEffOrBuw && slotOwner !== myL) continue; // Fremde Slots sperren
+        if (isEffOrBuw && slotOwner !== myL && !pendingAbility) continue; // Fremde Slots sperren (außer während Kampfsituation)
       }
       const ctype = el.dataset.ctype;
       const cname = el.dataset.name;
@@ -7661,6 +7742,8 @@ function releaseSlot(slotId, x, y) {
   const cd = G.slots[slotId];
   if (!cd || cd.type === 'ex-auto') { G.slots[slotId] = null; renderSlot(slotId); return; }
   resetAbilityUsesForSlot(slotId);
+  // Wenn eine gesperrte Karte durch externe Aktion verschoben wird → Sperre aufheben
+  if (cd.uid) selfMovedBlockedUids.delete(cd.uid);
   if (legilimensSlotId === slotId) clearLegilimens();
   G.slots[slotId] = null;
   renderSlot(slotId);
@@ -8137,12 +8220,18 @@ function openBPopup(cd, onField) {
   const _btypes={buw:'Buwemonkarte',spec:'Spezial-Buwemonkarte',eff:'Effektkarte',ereignis:'Ereigniskarte','ex-ereignis':'Ereignis-EX-Buwemonkarte'};
   document.getElementById('bpopup-type').textContent = _btypes[cd.type||cd.ctype] || cd.type || '';
   document.getElementById('browser-card-popup').classList.add('open');
-  document.getElementById('bpopup-field-btn').textContent = sandboxMode ? '🃏 Aufs Spielfeld' : '🤲 Auf die Hand nehmen';
-  document.getElementById('bpopup-field-btn').onclick = () => {
-    closeBPopup();
-    closeBrowser();
-    if (onField) onField();
-  };
+  const _fieldBtn = document.getElementById('bpopup-field-btn');
+  if (onField && !sandboxMode) {
+    _fieldBtn.textContent = '🤲 Auf die Hand nehmen';
+    _fieldBtn.style.display = '';
+    _fieldBtn.onclick = () => { closeBPopup(); closeBrowser(); onField(); };
+  } else if (onField && sandboxMode) {
+    _fieldBtn.textContent = '🃏 Aufs Spielfeld';
+    _fieldBtn.style.display = '';
+    _fieldBtn.onclick = () => { closeBPopup(); closeBrowser(); onField(); };
+  } else {
+    _fieldBtn.style.display = 'none';
+  }
 }
 
 function closeBPopup() {
@@ -8690,6 +8779,9 @@ function confirmLiiinks(btnEl) {
 }
 
 function doLiiinks() {
+  // Giraffael-Slot VOR dem Shuffle merken
+  const _giraffaelPreSlot = _lastActivatorSlotId;
+  const _giraffaelPreCd = _giraffaelPreSlot ? G.slots[_giraffaelPreSlot] : null;
   // p1 sends left-first, p2 sends right-first. Spec stays. Overflow stays with original player.
   const fillP1 = ['p1-buw3','p1-buw2','p1-buw1']; // right-to-left receive
   const fillP2 = ['p2-buw1','p2-buw2','p2-buw3']; // left-to-right receive
@@ -8729,11 +8821,19 @@ function doLiiinks() {
     renderSlot(s);
   });
 
+  // Giraffael die Liiinks ausgelöst hat → Fähigkeit bleibt geblockt nach Verschiebung
+  if (_giraffaelPreCd && _giraffaelPreCd.name === 'Giraffael' && _giraffaelPreCd.uid) selfMovedBlockedUids.add(_giraffaelPreCd.uid);
   checkExBuwemon('p1');
   checkExBuwemon('p2');
   checkPermanentAbilitiesAfterMove();
   checkPermanentAbilitiesAfterMove();
-  if (NET.mode === 'multi') netSendState();
+  if (NET.mode === 'multi') {
+    const allBuwSlots = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'];
+    const liiinksSlots = {};
+    allBuwSlots.forEach(s => { liiinksSlots[s] = G.slots[s] || null; });
+    netSend({t:'recast_slots', slots: liiinksSlots});
+    netSendState();
+  }
 }
 
 function confirmRecast(btnEl) {
@@ -8755,6 +8855,9 @@ function doRecast() {
   } else {
     // Automatik: alle Buwemon (inkl. Spezial) zufällig auf ALLE Slots verteilen
     const allSlots = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'];
+    // Clarry Pather VOR dem Shuffle merken
+    const _clarryPreSlot = _lastActivatorSlotId;
+    const _clarryPreCd = _clarryPreSlot ? G.slots[_clarryPreSlot] : null;
     const cards = allSlots.map(s => G.slots[s]).filter(Boolean);
     allSlots.forEach(s => { G.slots[s] = null; renderSlot(s); });
     // Fisher-Yates shuffle
@@ -8763,6 +8866,9 @@ function doRecast() {
     const shuffledSlots = [...allSlots].sort(() => Math.random()-0.5);
     cards.forEach((cd, i) => { G.slots[shuffledSlots[i]] = cd; renderSlot(shuffledSlots[i]); });
   }
+  const _recastActivatorSlot = _lastActivatorSlotId;
+  const _recastCd = _clarryPreCd; // bereits vor dem Shuffle gespeichert
+  if (_recastCd && _recastCd.name === 'Clarry Pather der Maincharacter' && _recastCd.uid) selfMovedBlockedUids.add(_recastCd.uid);
   checkExBuwemon('p1'); checkExBuwemon('p2');
   checkZoneColor('p1'); checkZoneColor('p2');
   checkPermanentAbilitiesAfterMove();
@@ -10065,7 +10171,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v50q
+    v50x
   </div>
 </div>
 
@@ -10682,7 +10788,14 @@ if (d.t === 'state4') {
     const senderPfx = 'p' + senderP;
     if (d.senderColor && G4.playerColors[senderP] !== d.senderColor) { G4.playerColors[senderP] = d.senderColor; applyPlayerBorderColor(senderP, true); }
     if (d.senderName && G4.names[senderP] !== d.senderName) { G4.names[senderP] = d.senderName; updateTopbarScore(); }
-    if (!sandboxMode && d.handCards !== undefined) renderSimulatedHand(senderPfx, d.handCards, true);
+    if (!sandboxMode && d.handCards !== undefined) {
+      // handOrderByPlayer4p mit korrekter Anzahl synchronisieren
+      if (!handOrderByPlayer4p[senderP]) handOrderByPlayer4p[senderP] = [];
+      while (handOrderByPlayer4p[senderP].length > d.handCards.length) handOrderByPlayer4p[senderP].pop();
+      while (handOrderByPlayer4p[senderP].length < d.handCards.length) handOrderByPlayer4p[senderP].push(-1 - Math.random());
+      renderSimulatedHand(senderPfx, d.handCards, true);
+      scheduleHandLabelUpdate();
+    }
 
     // Shared resources: deck, banish (last-write-wins)
     if (d.deck !== undefined) { G4.deck = d.deck; updDeck4(); }
@@ -11336,13 +11449,21 @@ const ABILITY_LIMITS = {
 
 function canUseAbility(slotId, abilityName) {
   if (debugMode || sandboxMode) return true;
+  // Giraffael/Clarry die durch eigene Fähigkeit verschoben wurden: Fähigkeit geblockt
+  const lsidCheck = toLogicalId(slotId);
+  const cdCheck = G.slots[lsidCheck];
+  if (cdCheck && cdCheck.uid && selfMovedBlockedUids.has(cdCheck.uid)) {
+    if ((cdCheck.name === 'Giraffael' && abilityName === 'Liiinks') ||
+        (cdCheck.name === 'Clarry Pather der Maincharacter' && abilityName === 'Recast')) return false;
+  }
   if (turnActionsUsed >= turnActionsAllowed) return false;
   const lsid = toLogicalId(slotId);
   const limit = ABILITY_LIMITS[abilityName];
   if (limit === null || limit === undefined) return true;
-  const used = abilityUsesThisLife[lsid] || 0;
-  // Wenn Nachschlag aktiv (mehr Aktionen erlaubt als Grundregel), Einzel-Limits ignorieren
-  if (turnActionsAllowed > 1) return true;
+  // UID-basiertes Tracking: Karte folgt der Karte, nicht dem Slot
+  const cd = G.slots[lsid];
+  const trackKey = (cd && cd.uid !== undefined) ? 'uid:'+cd.uid : 'slot:'+lsid;
+  const used = abilityUsesThisLife[trackKey] || 0;
   return used < limit;
 }
 
@@ -11352,14 +11473,20 @@ function markAbilityUsed(slotId, abilityName) {
   const lsid = toLogicalId(slotId);
   const limit = ABILITY_LIMITS[abilityName];
   if (limit !== null && limit !== undefined) {
-    abilityUsesThisLife[lsid] = (abilityUsesThisLife[lsid] || 0) + 1;
+    const cdM = G.slots[lsid];
+    const trackKeyM = (cdM && cdM.uid !== undefined) ? 'uid:'+cdM.uid : 'slot:'+lsid;
+    abilityUsesThisLife[trackKeyM] = (abilityUsesThisLife[trackKeyM] || 0) + 1;
   }
   updateAbilityButtonStates();
 }
 
 function resetAbilityUsesForSlot(slotId) {
   const lsid = toLogicalId(slotId);
-  delete abilityUsesThisLife[lsid];
+  // Slot-basierten Eintrag löschen
+  delete abilityUsesThisLife['slot:'+lsid];
+  // UID-basierten Eintrag löschen
+  const cd = G.slots[lsid];
+  if (cd && cd.uid !== undefined) delete abilityUsesThisLife['uid:'+cd.uid];
 }
 
 function updateAbilityButtonStates() {
@@ -11380,8 +11507,16 @@ function resetTurnFlags() {
   // Fähigkeits-Zähler pro Slot beim Zug-Ende leeren (nur Einmal-Fähigkeiten die noch aktiv sind bleiben gesetzt)
   // Aber wir leeren alle damit neue Buwemon im selben Slot keine Sperre erben
   Object.keys(abilityUsesThisLife).forEach(k => {
-    // Nur löschen wenn das Buwemon nicht mehr im Slot liegt (also Zähler ist Relikt)
-    if (!G.slots[k]) delete abilityUsesThisLife[k];
+    if (k.startsWith('slot:')) {
+      const slotK = k.slice(5);
+      if (!G.slots[slotK]) delete abilityUsesThisLife[k];
+    } else if (k.startsWith('uid:')) {
+      // uid-Einträge: prüfen ob Karte noch auf dem Feld
+      const uid = k.slice(4);
+      const allSlots = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'];
+      const stillOnField = allSlots.some(s => G.slots[s] && String(G.slots[s].uid) === uid);
+      if (!stillOnField) delete abilityUsesThisLife[k];
+    }
   });
 }
 
@@ -11407,7 +11542,7 @@ function renderSimulatedHand(logicalPfx, cards, is4) {
   const physPfx = physId(logicalPfx);
   if (physPfx === 'p1') return; // das wäre die eigene Hand - wird separat (echt) gerendert
   // Wenn diese Hand gerade durch Wanze aufgedeckt ist, nicht mit Rückseiten überschreiben
-  const logP = parseInt(logicalPfx.replace('p',''));
+  const logP = parseInt((logicalPfx.match(/^p(\d)/)||[])[1]||'0');
   if (wanzeRevealedPlayer === logP) return;
   if (marieRevealState && marieRevealState.targetP === logP) return;
   // Legilimens: nach renderSimulatedHand sofort wieder aufdecken
