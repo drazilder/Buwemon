@@ -2643,6 +2643,7 @@ function beginAbilityActivation(el, abilityKey, abilityName, resolveFn, defender
   const data = {
     is4, activatorP, activatorName,
     cardName: el.dataset.name, cardColor: el.dataset.color,
+    activatorUid: el.dataset.uid !== undefined ? parseInt(el.dataset.uid) : null,
     slotId, abilityKey, abilityName, defenderSlotId: defenderSlotId || null,
     defenderName: (extra && extra.defenderName) || null,
     defenderColor: (extra && extra.defenderColor) || null,
@@ -3084,6 +3085,7 @@ function finalizeAbilityChain(killsBuwemon) {
   if (isActivatorHere) {
     // _lastActivatorSlotId wiederherstellen (könnte durch Dinkelmehl/Ablehnt überschrieben worden sein)
     if (data.slotId) _lastActivatorSlotId = data.slotId;
+  if (data.activatorUid !== undefined) window._lastActivatorUid = data.activatorUid;
     if (data.isAttack) {
       // Bei Angriffen hat FourAceFour eine feste, unbedingte Wirkung (Angreifer stirbt, Angriff
       // schlägt fehl) - unabhängig vom sonstigen "blockiert/nicht blockiert"-Stand.
@@ -5727,7 +5729,7 @@ const ABILITY_EFFECTS = {
   },
   'Ohohoho': () => {
     const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
-    const ownerP = parseInt((_lastActivatorSlotId||'p1').match(/^p(\d)/)[1]||'1');
+    const ownerP = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
     const oldLp = is4 ? (G4.lp[ownerP]||0) : (G.lp[ownerP]||0);
     const newLp = Math.min(300, oldLp + 20);
     if (is4) { G4.lp[ownerP]=newLp; } else { G.lp[ownerP]=newLp; }
@@ -5739,16 +5741,19 @@ const ABILITY_EFFECTS = {
   },
   'Pumpen': () => {
     const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
-    const slotId = _lastActivatorSlotId || 'p1-buw1';
+    // UID-basiert: finde die Karte die Pumpen ausgelöst hat
+    const _pUid = window._lastActivatorUid;
+    const allBuwS = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3','p1-buw1-4','p1-buw2-4','p1-buw3-4','p2-buw1-4','p2-buw2-4','p2-buw3-4','p3-buw1-4','p3-buw2-4','p3-buw3-4','p4-buw1-4','p4-buw2-4','p4-buw3-4'];
+    const lsid = (_pUid != null && allBuwS.find(s => G.slots[s] && G.slots[s].uid == _pUid)) || _lastActivatorSlotId || 'p1-buw1';
     const roll = Math.random() < 0.5;
     const txt = roll ? 'Golop pumpt! +10 AP (Plus10 Ereignis)' : 'Golop hat versagt... Keine Verstärkung. (50%)';
     if (roll) {
-      const cd = G.slots[slotId];
+      const cd = G.slots[lsid];
       if (cd) {
         if (!cd.equipped) cd.equipped = [];
         cd.equipped.push({name:'Plus10 Ereignis',color:'#888888',ctype:'ereignis',file:'Plus_10.png'});
-        renderSlot(slotId);
-        if (NET.mode==='multi') netSend({t:'equip_update', slotId, equipped: cd.equipped});
+        renderSlot(lsid);
+        if (NET.mode==='multi') netSend({t:'equip_update', slotId:lsid, equipped: cd.equipped});
       }
     }
     setTimeout(() => { showOutcomeToast(txt, is4); if(NET.mode==='multi') netSend({t:'outcome_toast',text:txt,is4}); }, 400);
@@ -5854,6 +5859,12 @@ function renderPopupActionButtons(el, fd) {
   const turnBlocked = !sandboxMode && !debugMode && (turnActionsUsed >= turnActionsAllowed);
   const _baristaElSlotLog = toLogicalId(el.dataset.slotId);
   const firstRoundBlocksAtk = !sandboxMode && !debugMode && !firstRoundOver;
+  // Im Automatik-Modus: Buttons fremder Buwemon komplett sperren
+  const _buwSlotLog = el.dataset.slotId ? toLogicalId(el.dataset.slotId) : null;
+  const _buwOwner = _buwSlotLog ? parseInt((_buwSlotLog.match(/^p(\d)/)||[])[1]||'0') : 0;
+  const _is4fb = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const _isMyCard = !_buwOwner || _buwOwner === (_is4fb ? myLogicalPlayer4p() : myLogicalPlayer2p());
+  const foreignCardBlock = !sandboxMode && !debugMode && !_isMyCard;
   const baristaBlocksThis = !sandboxMode && !debugMode && baristaTargetSlot && baristaActiveSlot &&
     (() => {
       // Prüfe ob die geblockte Karte noch im Ziel-Slot liegt
@@ -5865,7 +5876,7 @@ function renderPopupActionButtons(el, fd) {
     })();
   if (atkName) {
     const atkBtn = makeBtn('Angriff_Icon.png', atkName, (btn, cardEl) => beginAttackSelection(btn, cardEl), totalPower);
-    if (turnBlocked || baristaBlocksThis || firstRoundBlocksAtk) { atkBtn.style.opacity = '0.3'; atkBtn.style.pointerEvents = 'none'; }
+    if (turnBlocked || baristaBlocksThis || firstRoundBlocksAtk || foreignCardBlock) { atkBtn.style.opacity = '0.3'; atkBtn.style.pointerEvents = 'none'; }
     wrap.appendChild(atkBtn);
   }
   if (!isEx) {
@@ -5900,7 +5911,7 @@ function renderPopupActionButtons(el, fd) {
         })();
       const firstRoundBlocksAbil = !sandboxMode && !debugMode && !firstRoundOver &&
         ['Drogen','Arsch anfassen','Zwillingsattacke','Überspringen'].includes(abName);
-      const abilityBlocked = turnBlocked || glorianBlocks || baristaBlocksThis || firstRoundBlocksAbil || (!sandboxMode && !debugMode && !canUseAbility(slotIdForLimit, abName));
+      const abilityBlocked = turnBlocked || glorianBlocks || baristaBlocksThis || firstRoundBlocksAbil || foreignCardBlock || (!sandboxMode && !debugMode && !canUseAbility(slotIdForLimit, abName));
       if (abilityBlocked) { abBtn.style.opacity = '0.3'; abBtn.style.pointerEvents = 'none'; }
       wrap.appendChild(abBtn);
     }
@@ -6072,13 +6083,14 @@ function onCarryDrop(e) {
       if (!debugMode && isBuwSlot && SUMMON_MAP[cd.name] && !hasSummonCard(player, cd.name, zoneSuffix2)) break;
       if (G.slots[lsid]) {
         if (!sandboxMode && !debugMode && isBuwSlot) {
-          // Im Automatik-Modus: belegte Buwemon-Slots sperren - Karte zurück in Hand
-          const myL2 = (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) ? myLogicalPlayer4p() : myLogicalPlayer2p();
-          const myArr2 = (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) ? handOrderByPlayer4p : handOrderByPlayer2p;
-          if(!myArr2[myL2])myArr2[myL2]=[];
-          if(!myArr2[myL2].includes(parseInt(el.dataset.uid)))myArr2[myL2].push(parseInt(el.dataset.uid));
-          if(typeof fourPlayerMode !== 'undefined' && fourPlayerMode)layoutMyHand4();else layoutMyHand();
-          break;
+          // Belegtes Buwemonfeld: Karte zurück in Hand, feld bleibt gesperrt
+          const _is4buw = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+          const _myLbuw = _is4buw ? myLogicalPlayer4p() : myLogicalPlayer2p();
+          const _arrBuw = _is4buw ? handOrderByPlayer4p : handOrderByPlayer2p;
+          if(!_arrBuw[_myLbuw])_arrBuw[_myLbuw]=[];
+          if(!_arrBuw[_myLbuw].includes(parseInt(el.dataset.uid)))_arrBuw[_myLbuw].push(parseInt(el.dataset.uid));
+          if(_is4buw)layoutMyHand4();else layoutMyHand();
+          return false; // Kein Docking möglich
         }
         releaseSlot(lsid, sr.left+4, sr.top+4);
       }
@@ -7582,7 +7594,14 @@ function tryDockCard(el) {
         const myL = is4x ? myLogicalPlayer4p() : myLogicalPlayer2p();
         const slotOwner = parseInt((lsid.match(/^p(\d)/)||[])[1]||'0');
         const isEffOrBuw = /-buw\d|-eff\d|-verbot\d/.test(lsid) || lsid.endsWith('-ex') || lsid.endsWith('-ex-4');
-        if (isEffOrBuw && slotOwner !== myL && !pendingAbility) continue; // Fremde Slots sperren (außer während Kampfsituation)
+        if (isEffOrBuw && slotOwner !== myL && !pendingAbility) {
+          // Karte zurück in Hand statt continue
+          const myArr3 = is4x ? handOrderByPlayer4p : handOrderByPlayer2p;
+          if(!myArr3[myL])myArr3[myL]=[];
+          if(!myArr3[myL].includes(parseInt(el.dataset.uid)))myArr3[myL].push(parseInt(el.dataset.uid));
+          if(is4x)layoutMyHand4();else layoutMyHand();
+          return false;
+        }
       }
       const ctype = el.dataset.ctype;
       const cname = el.dataset.name;
@@ -10218,7 +10237,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v51c
+    v51g
   </div>
 </div>
 
