@@ -1534,14 +1534,14 @@ function removeFromMyHand(el) {
 
 function setTurn2p(p) {
   TURN_2P = p; _turnSeq2p++; updateTurnUI2p(); autoDrawIfMyTurn2p(p, _turnSeq2p);
-  // Reset turn flags wenn der eigene Zug beginnt (wichtig für Multiplayer)
   if (p === myLogicalPlayer2p()) resetTurnFlags();
   if (!firstRoundOver) {
     if (firstRoundSeenPlayers.has(p)) {
       firstRoundOver = true;
       const _t = 'Ab jetzt darf auch angegriffen werden!';
-      showOutcomeToast(_t, false);
-      if (NET.mode==='multi') netSend({t:'firstRoundOver'});
+      const _is4fr = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+      showOutcomeToast(_t, _is4fr);
+      if (NET.mode==='multi') netSend({t:'firstRoundOver', sender: NET.myPlayer});
     } else {
       firstRoundSeenPlayers.add(p);
     }
@@ -3289,6 +3289,10 @@ function moveToGraveLogical(slotId, cd, is4) {
   const _sCd = G.slots[slotId];
   if (_sCd && schwammikaState[_sCd.uid]) delete schwammikaState[_sCd.uid];
   if (_sCd && _sCd.uid) selfMovedBlockedUids.delete(_sCd.uid);
+  if (_sCd && _sCd.uid) {
+    permanentAbilityUsed.delete(String(_sCd.uid));
+    if (NET.mode === 'multi') netSend({t:'perm_ability_reset', uid: String(_sCd.uid)});
+  }
   const p = parseInt((slotId.match(/^p(\d)/)||[])[1] || '0');
   const pfx = 'p'+p;
   G.slots[slotId] = null;
@@ -5274,11 +5278,15 @@ function tryConfirmTreue(lsid, cd) {
     const txt = roll ? cd.name + ' stirbt mit Marco! (4/6)' : cd.name + ' überlebt – aber Marco stirbt trotzdem! (2/6)';
     setTimeout(() => { showOutcomeToast(txt, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:txt, is4}); }, 600);
     if (roll) { const cdT = G.slots[lsid]; if (cdT) moveToGraveLogical(lsid, cdT, is4); }
-    // Marco stirbt immer
-    const marcoCdNow = G.slots[marcoSlotId];
-    if (marcoCdNow) moveToGraveLogical(marcoSlotId, marcoCdNow, is4);
+    // Marco stirbt immer - per UID finden da Slot sich geändert haben könnte
+    const _marcoUid = cardEl.dataset.uid;
+    const _marcoCurrentSlot = _marcoUid
+      ? Object.keys(G.slots).find(s => G.slots[s] && String(G.slots[s].uid) === String(_marcoUid))
+      : marcoSlotId;
+    const marcoCdNow = _marcoCurrentSlot ? G.slots[_marcoCurrentSlot] : null;
+    if (marcoCdNow && _marcoCurrentSlot) moveToGraveLogical(_marcoCurrentSlot, marcoCdNow, is4);
     if (NET.mode==='multi') {
-      netSend({t:'marco_dies', slotId: marcoSlotId, is4});
+      netSend({t:'marco_dies', slotId: _marcoCurrentSlot || marcoSlotId, is4});
       is4 ? netSendState4() : netSendState();
     }
   }, lsid, { defenderName: cd.name, defenderColor: cd.color });
@@ -5743,8 +5751,8 @@ const ABILITY_EFFECTS = {
     const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
     // UID-basiert: finde die Karte die Pumpen ausgelöst hat
     const _pUid = window._lastActivatorUid;
-    const allBuwS = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3','p1-buw1-4','p1-buw2-4','p1-buw3-4','p2-buw1-4','p2-buw2-4','p2-buw3-4','p3-buw1-4','p3-buw2-4','p3-buw3-4','p4-buw1-4','p4-buw2-4','p4-buw3-4'];
-    const lsid = (_pUid != null && allBuwS.find(s => G.slots[s] && G.slots[s].uid == _pUid)) || _lastActivatorSlotId || 'p1-buw1';
+    const _allBuwS2 = Object.keys(G.slots);
+    const lsid = (_pUid != null && _allBuwS2.find(s => G.slots[s] && G.slots[s].uid == _pUid)) || _lastActivatorSlotId || 'p1-buw1';
     const roll = Math.random() < 0.5;
     const txt = roll ? 'Golop pumpt! +10 AP (Plus10 Ereignis)' : 'Golop hat versagt... Keine Verstärkung. (50%)';
     if (roll) {
@@ -5860,7 +5868,7 @@ function renderPopupActionButtons(el, fd) {
   const _baristaElSlotLog = toLogicalId(el.dataset.slotId);
   const firstRoundBlocksAtk = !sandboxMode && !debugMode && !firstRoundOver;
   // Im Automatik-Modus: Buttons fremder Buwemon komplett sperren
-  const _buwSlotLog = el.dataset.slotId ? toLogicalId(el.dataset.slotId) : null;
+  const _buwSlotLog = el.dataset.slotId || null;
   const _buwOwner = _buwSlotLog ? parseInt((_buwSlotLog.match(/^p(\d)/)||[])[1]||'0') : 0;
   const _is4fb = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
   const _isMyCard = !_buwOwner || _buwOwner === (_is4fb ? myLogicalPlayer4p() : myLogicalPlayer2p());
@@ -5893,7 +5901,14 @@ function renderPopupActionButtons(el, fd) {
         const effectFn = ABILITY_EFFECTS[abName];
         if (effectFn) {
           // Automatisch übers Reaktionsfenster-System: Glow, Toast, Dinkelmehl/Ablehnt/FourAceFour-Kette
-          handler = (btn, cardEl) => { closePopup(); beginAbilityActivation(cardEl, abName, abName, effectFn); };
+          handler = (btn, cardEl) => {
+            closePopup();
+            const _capturedUid = parseInt(cardEl.dataset.uid);
+            beginAbilityActivation(cardEl, abName, abName, () => {
+              window._lastActivatorUid = _capturedUid;
+              effectFn();
+            });
+          };
         }
         // effectFn === null: Fähigkeit noch nicht implementiert -> Button bleibt ohne Funktion
       }
@@ -6081,17 +6096,17 @@ function onCarryDrop(e) {
       const player = (lsid.match(/^p[1-4]/)||['p2'])[0];
       const zoneSuffix2 = lsid.endsWith('-4') ? '-4' : '';
       if (!debugMode && isBuwSlot && SUMMON_MAP[cd.name] && !hasSummonCard(player, cd.name, zoneSuffix2)) break;
+      // Im Automatik-Modus: belegte Buwemon-Slots sind NICHT dockbar
+      if (!sandboxMode && !debugMode && isBuwSlot && G.slots[lsid]) {
+        const _is4buw = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+        const _myLbuw = _is4buw ? myLogicalPlayer4p() : myLogicalPlayer2p();
+        const _arrBuw = _is4buw ? handOrderByPlayer4p : handOrderByPlayer2p;
+        if(!_arrBuw[_myLbuw])_arrBuw[_myLbuw]=[];
+        if(!_arrBuw[_myLbuw].includes(parseInt(el.dataset.uid)))_arrBuw[_myLbuw].push(parseInt(el.dataset.uid));
+        if(_is4buw)layoutMyHand4();else layoutMyHand();
+        return false;
+      }
       if (G.slots[lsid]) {
-        if (!sandboxMode && !debugMode && isBuwSlot) {
-          // Belegtes Buwemonfeld: Karte zurück in Hand, feld bleibt gesperrt
-          const _is4buw = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
-          const _myLbuw = _is4buw ? myLogicalPlayer4p() : myLogicalPlayer2p();
-          const _arrBuw = _is4buw ? handOrderByPlayer4p : handOrderByPlayer2p;
-          if(!_arrBuw[_myLbuw])_arrBuw[_myLbuw]=[];
-          if(!_arrBuw[_myLbuw].includes(parseInt(el.dataset.uid)))_arrBuw[_myLbuw].push(parseInt(el.dataset.uid));
-          if(_is4buw)layoutMyHand4();else layoutMyHand();
-          return false; // Kein Docking möglich
-        }
         releaseSlot(lsid, sr.left+4, sr.top+4);
       }
       G.slots[lsid] = {...cd, file: cd.file || imgFileFor(cd.name)};
@@ -6398,7 +6413,7 @@ function resetLocalState(){
   G.cards.forEach(el=>el.remove());G.cards=[];
   // Hand-Arrays leeren
   handOrderByPlayer2p = {1:[],2:[]};
-  firstRoundOver = false; firstRoundSeenPlayers.clear(); selfMovedBlockedUids.clear();
+  firstRoundOver = false; firstRoundSeenPlayers.clear(); selfMovedBlockedUids.clear(); permanentAbilityUsed.clear();
   handOrderByPlayer4p = {1:[],2:[],3:[],4:[]};
   ['p1','p2'].forEach(p => renderSimulatedHand(p, [], false));
   ['p1','p2','p3','p4'].forEach(p => renderSimulatedHand(p, [], true));
@@ -10237,7 +10252,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v51g
+    v51m
   </div>
 </div>
 
@@ -11344,7 +11359,19 @@ if (d.t === 'state4') {
       });
     }
   }
-  if (d.t === 'firstRoundOver') { firstRoundOver = true; showOutcomeToast('Ab jetzt darf auch angegriffen werden!', false); }
+  if (d.t === 'perm_ability_used') {
+    permanentAbilityUsed.add(d.uid);
+  }
+  if (d.t === 'perm_ability_reset') {
+    permanentAbilityUsed.delete(d.uid);
+  }
+  if (d.t === 'firstRoundOver') {
+    if (!firstRoundOver) {
+      firstRoundOver = true;
+      const _is4fo = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+      showOutcomeToast('Ab jetzt darf auch angegriffen werden!', _is4fo);
+    }
+  }
   if (d.t === 'turn2') {
     if (d.myColor && NET.enemyColor !== d.myColor) { NET.enemyColor = d.myColor; applyAllPlayerBorderColors(false); applyAllPlayerBorderColors(true); }
     if (d.myName && NET.enemyName !== d.myName) { NET.enemyName = d.myName; updateHandLabels(); updateTopbarScore(); }
@@ -11499,7 +11526,8 @@ let turnActionsAllowed = 1; // Grundregel: 1 pro Zug (erhöht durch Nachschlag)
 let turnBuwemonPlaced = false; // wurde in diesem Zug schon ein normales Buwemon gelegt?
 
 // Fähigkeits-Nutzungs-Zähler: slotId -> Anzahl genutzter Fähigkeiten
-const abilityUsesThisLife = {};
+const abilityUsesThisLife = {}; // Zähler pro Slot/UID (wird bei Zugwechsel zurückgesetzt für unendliche)
+const permanentAbilityUsed = new Set(); // UIDs von Karten die ihre einmalige Fähigkeit verbraucht haben - NIEMALS automatisch zurückgesetzt
 
 // Fähigkeits-Limits pro Karte (Unendlich = null, Einmal = 1)
 const ABILITY_LIMITS = {
@@ -11533,6 +11561,10 @@ function canUseAbility(slotId, abilityName) {
   if (limit === null || limit === undefined) return true;
   // UID-basiertes Tracking: Karte folgt der Karte, nicht dem Slot
   const cd = G.slots[lsid];
+  if (limit === 1 && cd && cd.uid !== undefined) {
+    // Einmalige Fähigkeit: permanentAbilityUsed prüfen
+    return !permanentAbilityUsed.has(String(cd.uid));
+  }
   const trackKey = (cd && cd.uid !== undefined) ? 'uid:'+cd.uid : 'slot:'+lsid;
   const used = abilityUsesThisLife[trackKey] || 0;
   return used < limit;
@@ -11545,19 +11577,26 @@ function markAbilityUsed(slotId, abilityName) {
   const limit = ABILITY_LIMITS[abilityName];
   if (limit !== null && limit !== undefined) {
     const cdM = G.slots[lsid];
-    const trackKeyM = (cdM && cdM.uid !== undefined) ? 'uid:'+cdM.uid : 'slot:'+lsid;
-    abilityUsesThisLife[trackKeyM] = (abilityUsesThisLife[trackKeyM] || 0) + 1;
+    if (limit === 1 && cdM && cdM.uid !== undefined) {
+      permanentAbilityUsed.add(String(cdM.uid));
+      if (NET.mode === 'multi') netSend({t:'perm_ability_used', uid: String(cdM.uid)});
+    } else {
+      const trackKeyM = (cdM && cdM.uid !== undefined) ? 'uid:'+cdM.uid : 'slot:'+lsid;
+      abilityUsesThisLife[trackKeyM] = (abilityUsesThisLife[trackKeyM] || 0) + 1;
+    }
   }
   updateAbilityButtonStates();
 }
 
 function resetAbilityUsesForSlot(slotId) {
   const lsid = toLogicalId(slotId);
-  // Slot-basierten Eintrag löschen
   delete abilityUsesThisLife['slot:'+lsid];
-  // UID-basierten Eintrag löschen
   const cd = G.slots[lsid];
-  if (cd && cd.uid !== undefined) delete abilityUsesThisLife['uid:'+cd.uid];
+  if (cd && cd.uid !== undefined) {
+    delete abilityUsesThisLife['uid:'+cd.uid];
+    permanentAbilityUsed.delete(String(cd.uid));
+    if (NET.mode === 'multi') netSend({t:'perm_ability_reset', uid: String(cd.uid)});
+  }
 }
 
 function updateAbilityButtonStates() {
@@ -11577,16 +11616,18 @@ function resetTurnFlags() {
   turnBuwemonPlaced = false;
   // Fähigkeits-Zähler pro Slot beim Zug-Ende leeren (nur Einmal-Fähigkeiten die noch aktiv sind bleiben gesetzt)
   // Aber wir leeren alle damit neue Buwemon im selben Slot keine Sperre erben
+  // Nur unendliche Fähigkeiten zurücksetzen (einmalige sind in permanentAbilityUsed)
   Object.keys(abilityUsesThisLife).forEach(k => {
     if (k.startsWith('slot:')) {
       const slotK = k.slice(5);
       if (!G.slots[slotK]) delete abilityUsesThisLife[k];
     } else if (k.startsWith('uid:')) {
-      // uid-Einträge: prüfen ob Karte noch auf dem Feld
       const uid = k.slice(4);
-      const allSlots = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'];
+      const allSlots = Object.keys(G.slots);
       const stillOnField = allSlots.some(s => G.slots[s] && String(G.slots[s].uid) === uid);
       if (!stillOnField) delete abilityUsesThisLife[k];
+      // Wenn noch auf Feld: immer löschen (unendliche Fähigkeiten) - einmalige sind in permanentAbilityUsed
+      else delete abilityUsesThisLife[k];
     }
   });
 }
