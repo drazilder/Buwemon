@@ -3106,6 +3106,11 @@ function finalizeAbilityChain(killsBuwemon) {
   cleanUpOwnAbilityCards(playedCardsToClean, killSlotId, killOwnerP, data.is4, data.isAttack, returnToHand, tutMirLeidSlotId, combatSlotIds);
 
   if (isActivatorHere) {
+    // _lastActivatorSlotId wiederherstellen (könnte durch Dinkelmehl/Ablehnt-Aktivierungen in der
+    // Kampfsituation überschrieben worden sein). data.slotId ist PHYSISCH aus Sicht des Aktivators -
+    // muss über toLogicalId zurück in die logische Form gewandelt werden, sonst korrekt nur für
+    // Spieler 1/Host (bei dem physisch==logisch zufällig übereinstimmt).
+    if (data.slotId) _lastActivatorSlotId = toLogicalId(data.slotId);
     if (data.isAttack) {
       // Bei Angriffen hat FourAceFour eine feste, unbedingte Wirkung (Angreifer stirbt, Angriff
       // schlägt fehl) - unabhängig vom sonstigen "blockiert/nicht blockiert"-Stand.
@@ -5577,7 +5582,10 @@ const SPECIAL_ABILITY_HANDLERS = {
 const ABILITY_EFFECTS = {
   'Glibbern': () => {
     const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
-    const slotId = _lastActivatorSlotId || 'p1-buw1';
+    // UID-basiert: finde die Karte die Glibbern ausgelöst hat (robust gegen Dinkelmehl/Ablehnt in der Kampfsituation)
+    const _gUid = window._lastActivatorUid;
+    const _allSlotsG = Object.keys(G.slots);
+    const slotId = (_gUid != null && _allSlotsG.find(s => G.slots[s] && G.slots[s].uid == _gUid)) || _lastActivatorSlotId || 'p1-buw1';
     // Animation via gemeinsamen Handler
     applyGlibbern(slotId, is4);
     showOutcomeToast('Gilip glibbert!', is4);
@@ -10270,7 +10278,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v52l
+    v52n
   </div>
 </div>
 
