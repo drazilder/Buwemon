@@ -227,17 +227,17 @@ body.carrying * { cursor: grabbing !important; }
 }
 
 /* EREIGNIS POPUP */
-#ereignis-modal .modal-box { width: min(820px,96vw); }
+#ereignis-modal .modal-box { width: min(1200px,98vw); }
 #ereignis-modal h3 { font-size: 1rem; font-weight: 700; }
 #ereignis-modal .sub { font-size: .78rem; color: #888; }
-#ereignis-grid {
+#ereignis-grid { white-space:nowrap; overflow-x:auto; display:flex; flex-wrap:nowrap; gap:8px; //
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   overflow-y: auto;
   flex: 1;
   padding: 4px;
-}
+  display:flex; flex-wrap:nowrap; overflow-x:auto; gap:8px;}
 .er-card {
   display: flex;
   flex-direction: column;
@@ -1835,44 +1835,44 @@ const CARD_DB=[
   {name:"Lord Phillipp of Glencoe",count:3,color:"#cc3333",type:"buw"},
   {name:"Phülügülüm",count:3,color:"#cc3333",type:"buw"},
   {name:"Baby Niko",count:3,color:"#cc3333",type:"buw"},
-  {name:"Grünika",count:3,color:"#2e8a2e",type:"buw"},
-  {name:"Schwammika",count:3,color:"#2e8a2e",type:"buw"},
-  {name:"Antika",count:3,color:"#2e8a2e",type:"buw"},
-  {name:"Marie die Königsgardistin",count:3,color:"#2e8a2e",type:"buw"},
+  {name:"Big Mama die Buwemon-Trainerin",count:3,color:"#e52421",type:"buw",file:"BigMama.png"},
   {name:"Marzo der Gott",count:3,color:"#cc5500",type:"buw"},
   {name:"Marcopter",count:3,color:"#cc5500",type:"buw"},
   {name:"Marco der Hund",count:3,color:"#cc5500",type:"buw"},
   {name:"Leo Norris",count:3,color:"#cc5500",type:"buw"},
-  {name:"Kax Maufmann",count:3,color:"#1a44bb",type:"buw"},
-  {name:"Maxodia der Verbotene",count:3,color:"#1a44bb",type:"buw"},
-  {name:"Maxibu",count:3,color:"#1a44bb",type:"buw"},
-  {name:"Hoffi der rasierte Karnevalsprinz",count:3,color:"#1a44bb",type:"buw"},
-  {name:"Clarry Pather der Maincharacter",count:3,color:"#008899",type:"buw"},
-  {name:"Barista Clarista der Mister-Fister",count:3,color:"#008899",type:"buw"},
-  {name:"ClariSSIO",count:3,color:"#008899",type:"buw"},
-  {name:"Alicia die ehrenlose Fettsau",count:3,color:"#008899",type:"buw"},
-  {name:"Big Mama die Buwemon-Trainerin",count:3,color:"#e52421",type:"buw",file:"BigMama.png"},
   {name:"Leonie die Schäferin",count:3,color:"#f58819",type:"buw",file:"Leonie_Die_Schaeferin.png"},
-  {name:"Finn der Peniskopf",count:3,color:"#f7e821",type:"buw",file:"Finn.png"},
-  {name:"AnniKKKa",count:3,color:"#2e8a2e",type:"buw",file:"AnniKKKa.png"},
-  {name:"Bierre",count:3,color:"#2e519f",type:"buw",file:"Bierre.png"},
-  {name:"Ramon der Schinken",count:3,color:"#6c4394",type:"buw",file:"Ramon.png"},
-  {name:"Cediboy",count:3,color:"#a7a7a7",type:"buw",file:"Cediboy.png"},
-  {name:"Dr. Stirli",count:3,color:"#00c8d4",type:"buw",file:"DrStirli.png"},
   {name:"Glorian",count:3,color:"#aa9900",type:"buw"},
   {name:"Flosama",count:3,color:"#aa9900",type:"buw"},
   {name:"Klorian",count:3,color:"#aa9900",type:"buw"},
   {name:"Lisa aus Australien",count:3,color:"#aa9900",type:"buw"},
-  {name:"Suffia",count:3,color:"#666666",type:"buw"},
-  {name:"Luis Münsters",count:3,color:"#666666",type:"buw"},
-  {name:"Cedzilla",count:3,color:"#666666",type:"buw"},
-  {name:"Griechischer ApoRed",count:3,color:"#666666",type:"buw"},
+  {name:"Finn der Peniskopf",count:3,color:"#f7e821",type:"buw",file:"Finn.png"},
+  {name:"Grünika",count:3,color:"#2e8a2e",type:"buw"},
+  {name:"Schwammika",count:3,color:"#2e8a2e",type:"buw"},
+  {name:"Antika",count:3,color:"#2e8a2e",type:"buw"},
+  {name:"Marie die Königsgardistin",count:3,color:"#2e8a2e",type:"buw"},
+  {name:"AnniKKKa",count:3,color:"#2e8a2e",type:"buw",file:"AnniKKKa.png"},
+  {name:"Kax Maufmann",count:3,color:"#1a44bb",type:"buw"},
+  {name:"Maxodia der Verbotene",count:3,color:"#1a44bb",type:"buw"},
+  {name:"Maxibu",count:3,color:"#1a44bb",type:"buw"},
+  {name:"Hoffi der rasierte Karnevalsprinz",count:3,color:"#1a44bb",type:"buw"},
+  {name:"Bierre",count:3,color:"#2e519f",type:"buw",file:"Bierre.png"},
   {name:"Fabio das Berlin-City-Girl",count:3,color:"#6622aa",type:"buw"},
   {name:"Giraffael",count:3,color:"#6622aa",type:"buw"},
   {name:"Hannah im Bach",count:3,color:"#6622aa",type:"buw"},
   {name:"Alexerus Snape",count:3,color:"#6622aa",type:"buw"},
-  {name:"L'Enderdragon",count:1,color:"#111111",type:"spec"},
+  {name:"Ramon der Schinken",count:3,color:"#6c4394",type:"buw",file:"Ramon.png"},
+  {name:"Suffia",count:3,color:"#666666",type:"buw"},
+  {name:"Luis Münsters",count:3,color:"#666666",type:"buw"},
+  {name:"Cedzilla",count:3,color:"#666666",type:"buw"},
+  {name:"Griechischer ApoRed",count:3,color:"#666666",type:"buw"},
+  {name:"Cediboy",count:3,color:"#a7a7a7",type:"buw",file:"Cediboy.png"},
+  {name:"Clarry Pather der Maincharacter",count:3,color:"#008899",type:"buw"},
+  {name:"Barista Clarista der Mister-Fister",count:3,color:"#008899",type:"buw"},
+  {name:"ClariSSIO",count:3,color:"#008899",type:"buw"},
+  {name:"Alicia die ehrenlose Fettsau",count:3,color:"#008899",type:"buw"},
+  {name:"Dr. Stirli",count:3,color:"#00c8d4",type:"buw",file:"DrStirli.png"},
   {name:"Die Pogofanten",count:1,color:"#111111",type:"spec"},
+  {name:"L'Enderdragon",count:1,color:"#111111",type:"spec"},
   {name:"Golop der Grobe",count:1,color:"#111111",type:"spec"},
   {name:"Der Zeitführer",count:1,color:"#111111",type:"spec"},
   {name:"BOOM Clan",count:1,color:"#111111",type:"spec"},
@@ -1899,8 +1899,9 @@ const CARD_DB=[
   {name:"Stein",count:2,color:"#aaaaaa",type:"eff"},
   {name:"13er Bogen",count:2,color:"#aaaaaa",type:"eff"},
   {name:"Vertragsbruch",count:2,color:"#aaaaaa",type:"eff"},
-  {name:"FourAceFour-Feuer-Reverse-Blöff",count:1,color:"#aaaaaa",type:"eff"},
+  {name:"FourAceFour-Feuer-Reverse-Blöff",count:1,color:"#aaaaaa",type:"eff"}
 ];
+
 
 const COLOR_ORDER=["#cc3333","#cc5500","#aa9900","#2e8a2e","#1a44bb","#6622aa","#666666","#008899","#111111","#aaaaaa"];
 // EX-Buwemon: nicht mehr im Ereignisstapel, sondern hier in "Karte hinzufügen" einsortiert
@@ -1917,8 +1918,9 @@ const EX_CARDS_LIST = [
 ];
 const seen=new Set();
 const UNIQUE_CARDS=[];
+// Reihenfolge direkt aus CARD_DB (Excel-Reihenfolge), dann EX-Karten nach COLOR_ORDER
+CARD_DB.forEach(c=>{if(!seen.has(c.name)){seen.add(c.name);UNIQUE_CARDS.push(c);}});
 COLOR_ORDER.forEach(col=>{
-  CARD_DB.forEach(c=>{if(c.color===col&&!seen.has(c.name)){seen.add(c.name);UNIQUE_CARDS.push(c);}});
   EX_CARDS_LIST.forEach(c=>{if(c.color===col&&!seen.has(c.name)){seen.add(c.name);UNIQUE_CARDS.push(c);}});
 });
 
@@ -1947,10 +1949,10 @@ let erweiterungAN = true;   // Erweiterung #1
 let erweiterung2AN = false; // Erweiterung #2
 let buwemonDeckAN = false;  // Buwemon-Deck
 // Deck-Konfigurationen (Spalten B/C/D/E aus Excel)
-const DECK_BASIS = {'Gilip der Glibbrige':3,'Lord Phillipp of Glencoe':3,'Phülügülüm':3,'Baby Niko':0,'Big Mama die Buwemon-Trainerin':0,'Marzo der Gott':3,'Marcopter':3,'Marco der Hund':3,'Leo Norris':0,'Leonie die Schäferin':0,'Glorian':3,'Flosama':3,'Klorian':3,'Lisa aus Australien':0,'Finn der Peniskopf':0,'Grünika':3,'Schwammika':3,'Antika':3,'Marie die Königsgardistin':0,'AnniKKKa':0,'Kax Maufmann':3,'Maxodia der Verbotene':3,'Maxibu':3,'Hoffi der rasierte Karnevalsprinz':0,'Bierre':0,'Fabio das Berlin-City-Girl':3,'Giraffael':3,'Hannah im Bach':3,'Alexerus Snape':0,'Ramon der Schinken':0,'Suffia':3,'Luis Münsters':3,'Cedzilla':3,'Griechischer Apored':0,'Cediboy':0,'Clarry Pather der Maincharacter':3,'Barista Clarista der Mister-Fister':3,'ClariSSIO':3,'Alicia die ehrenlose Fettsau':0,'Dr. Stirli':0,'Die Pogofanten':1,"L'Enderdragon":1,'Golop der Grobe':0,'Der Zeitführer':1,'BOOM Clan':1,'Glaskuppel':6,'Calgon':6,'Clubmate':5,'Eine Runde noch':5,'RGB':5,'Nachschlag':5,'Mecces':5,'Ablehnt':5,'Dinkelmehl':5,'Wanze':2,'UwU ':2,'Tut mir leid…':2,'Ragequit':2,'Random Vote':2,'Neue BESSERE Karte':2,'Discord Meeting':2,'Zeitmaschinen Veruntreuung':2,'Sigma Transformation':0,'Tristanverbot':2,'Elefanten Aufstand':2,'Stein':2,'13er Bogen':2,'Vertragsbruch':2,'FourAceFour-Feuer-Reverse-Blöff':1};
-const DECK_ERW1 = {'Gilip der Glibbrige':3,'Lord Phillipp of Glencoe':3,'Phülügülüm':3,'Baby Niko':3,'Big Mama die Buwemon-Trainerin':0,'Marzo der Gott':3,'Marcopter':3,'Marco der Hund':3,'Leo Norris':3,'Leonie die Schäferin':0,'Glorian':3,'Flosama':3,'Klorian':3,'Lisa aus Australien':3,'Finn der Peniskopf':0,'Grünika':3,'Schwammika':3,'Antika':3,'Marie die Königsgardistin':3,'AnniKKKa':0,'Kax Maufmann':3,'Maxodia der Verbotene':3,'Maxibu':3,'Hoffi der rasierte Karnevalsprinz':3,'Bierre':0,'Fabio das Berlin-City-Girl':3,'Giraffael':3,'Hannah im Bach':3,'Alexerus Snape':3,'Ramon der Schinken':0,'Suffia':3,'Luis Münsters':3,'Cedzilla':3,'Griechischer Apored':3,'Cediboy':0,'Clarry Pather der Maincharacter':3,'Barista Clarista der Mister-Fister':3,'ClariSSIO':3,'Alicia die ehrenlose Fettsau':3,'Dr. Stirli':0,'Die Pogofanten':1,"L'Enderdragon":1,'Golop der Grobe':1,'Der Zeitführer':1,'BOOM Clan':1,'Glaskuppel':7,'Calgon':7,'Clubmate':6,'Eine Runde noch':6,'RGB':6,'Nachschlag':6,'Mecces':6,'Ablehnt':6,'Dinkelmehl':6,'Wanze':4,'UwU ':4,'Tut mir leid…':4,'Ragequit':3,'Random Vote':3,'Neue BESSERE Karte':3,'Discord Meeting':3,'Zeitmaschinen Veruntreuung':3,'Sigma Transformation':3,'Tristanverbot':3,'Elefanten Aufstand':3,'Stein':2,'13er Bogen':2,'Vertragsbruch':2,'FourAceFour-Feuer-Reverse-Blöff':1};
-const DECK_ERW2 = {'Gilip der Glibbrige':3,'Lord Phillipp of Glencoe':3,'Phülügülüm':3,'Baby Niko':0,'Big Mama die Buwemon-Trainerin':3,'Marzo der Gott':3,'Marcopter':3,'Marco der Hund':3,'Leo Norris':0,'Leonie die Schäferin':3,'Glorian':3,'Flosama':3,'Klorian':3,'Lisa aus Australien':0,'Finn der Peniskopf':3,'Grünika':3,'Schwammika':3,'Antika':3,'Marie die Königsgardistin':0,'AnniKKKa':3,'Kax Maufmann':3,'Maxodia der Verbotene':3,'Maxibu':3,'Hoffi der rasierte Karnevalsprinz':0,'Bierre':3,'Fabio das Berlin-City-Girl':3,'Giraffael':3,'Hannah im Bach':3,'Alexerus Snape':0,'Ramon der Schinken':3,'Suffia':3,'Luis Münsters':3,'Cedzilla':3,'Griechischer Apored':0,'Cediboy':3,'Clarry Pather der Maincharacter':3,'Barista Clarista der Mister-Fister':3,'ClariSSIO':3,'Alicia die ehrenlose Fettsau':0,'Dr. Stirli':3,'Die Pogofanten':1,"L'Enderdragon":1,'Golop der Grobe':1,'Der Zeitführer':1,'BOOM Clan':1,'Glaskuppel':7,'Calgon':7,'Clubmate':6,'Eine Runde noch':6,'RGB':6,'Nachschlag':6,'Mecces':6,'Ablehnt':6,'Dinkelmehl':6,'Wanze':4,'UwU ':4,'Tut mir leid…':4,'Ragequit':3,'Random Vote':3,'Neue BESSERE Karte':3,'Discord Meeting':3,'Zeitmaschinen Veruntreuung':3,'Sigma Transformation':3,'Tristanverbot':3,'Elefanten Aufstand':3,'Stein':2,'13er Bogen':2,'Vertragsbruch':2,'FourAceFour-Feuer-Reverse-Blöff':1};
-const DECK_BEIDE = {'Gilip der Glibbrige':3,'Lord Phillipp of Glencoe':3,'Phülügülüm':3,'Baby Niko':3,'Big Mama die Buwemon-Trainerin':3,'Marzo der Gott':3,'Marcopter':3,'Marco der Hund':3,'Leo Norris':3,'Leonie die Schäferin':3,'Glorian':3,'Flosama':3,'Klorian':3,'Lisa aus Australien':3,'Finn der Peniskopf':3,'Grünika':3,'Schwammika':3,'Antika':3,'Marie die Königsgardistin':3,'AnniKKKa':3,'Kax Maufmann':3,'Maxodia der Verbotene':3,'Maxibu':3,'Hoffi der rasierte Karnevalsprinz':3,'Bierre':3,'Fabio das Berlin-City-Girl':3,'Giraffael':3,'Hannah im Bach':3,'Alexerus Snape':3,'Ramon der Schinken':3,'Suffia':3,'Luis Münsters':3,'Cedzilla':3,'Griechischer Apored':3,'Cediboy':3,'Clarry Pather der Maincharacter':3,'Barista Clarista der Mister-Fister':3,'ClariSSIO':3,'Alicia die ehrenlose Fettsau':3,'Dr. Stirli':3,'Die Pogofanten':1,"L'Enderdragon":1,'Golop der Grobe':1,'Der Zeitführer':1,'BOOM Clan':1,'Glaskuppel':9,'Calgon':9,'Clubmate':7,'Eine Runde noch':7,'RGB':7,'Nachschlag':7,'Mecces':7,'Ablehnt':7,'Dinkelmehl':7,'Wanze':5,'UwU ':5,'Tut mir leid…':5,'Ragequit':4,'Random Vote':4,'Neue BESSERE Karte':4,'Discord Meeting':4,'Zeitmaschinen Veruntreuung':4,'Sigma Transformation':4,'Tristanverbot':4,'Elefanten Aufstand':4,'Stein':3,'13er Bogen':3,'Vertragsbruch':3,'FourAceFour-Feuer-Reverse-Blöff':2};
+const DECK_BASIS = {'Gilip der Glibbrige':3,'Lord Phillipp of Glencoe':3,'Phülügülüm':3,'Baby Niko':0,'Big Mama die Buwemon-Trainerin':0,'Marzo der Gott':3,'Marcopter':3,'Marco der Hund':3,'Leo Norris':0,'Leonie die Schäferin':0,'Glorian':3,'Flosama':3,'Klorian':3,'Lisa aus Australien':0,'Finn der Peniskopf':0,'Grünika':3,'Schwammika':3,'Antika':3,'Marie die Königsgardistin':0,'AnniKKKa':0,'Kax Maufmann':3,'Maxodia der Verbotene':3,'Maxibu':3,'Hoffi der rasierte Karnevalsprinz':0,'Bierre':0,'Fabio das Berlin-City-Girl':3,'Giraffael':3,'Hannah im Bach':3,'Alexerus Snape':0,'Ramon der Schinken':0,'Suffia':3,'Luis Münsters':3,'Cedzilla':3,'Griechischer ApoRed':0,'Cediboy':0,'Clarry Pather der Maincharacter':3,'Barista Clarista der Mister-Fister':3,'ClariSSIO':3,'Alicia die ehrenlose Fettsau':0,'Dr. Stirli':0,'Die Pogofanten':1,"L'Enderdragon":1,'Golop der Grobe':0,'Der Zeitführer':1,'BOOM Clan':1,'Glaskuppel':6,'Calgon':6,'Clubmate':5,'Eine Runde noch':5,'RGB':5,'Nachschlag':5,'Mecces':5,'Ablehnt':5,'Dinkelmehl':5,'Wanze':2,'UwU ':2,'Tut mir leid…':2,'Ragequit':2,'Random Vote':2,'Neue BESSERE Karte':2,'Discord Meeting':2,'Zeitmaschinen Veruntreuung':2,'Sigma Transformation':0,'Tristanverbot':2,'Elefanten Aufstand':2,'Stein':2,'13er Bogen':2,'Vertragsbruch':2,'FourAceFour-Feuer-Reverse-Blöff':1};
+const DECK_ERW1 = {'Gilip der Glibbrige':3,'Lord Phillipp of Glencoe':3,'Phülügülüm':3,'Baby Niko':3,'Big Mama die Buwemon-Trainerin':0,'Marzo der Gott':3,'Marcopter':3,'Marco der Hund':3,'Leo Norris':3,'Leonie die Schäferin':0,'Glorian':3,'Flosama':3,'Klorian':3,'Lisa aus Australien':3,'Finn der Peniskopf':0,'Grünika':3,'Schwammika':3,'Antika':3,'Marie die Königsgardistin':3,'AnniKKKa':0,'Kax Maufmann':3,'Maxodia der Verbotene':3,'Maxibu':3,'Hoffi der rasierte Karnevalsprinz':3,'Bierre':0,'Fabio das Berlin-City-Girl':3,'Giraffael':3,'Hannah im Bach':3,'Alexerus Snape':3,'Ramon der Schinken':0,'Suffia':3,'Luis Münsters':3,'Cedzilla':3,'Griechischer ApoRed':3,'Cediboy':0,'Clarry Pather der Maincharacter':3,'Barista Clarista der Mister-Fister':3,'ClariSSIO':3,'Alicia die ehrenlose Fettsau':3,'Dr. Stirli':0,'Die Pogofanten':1,"L'Enderdragon":1,'Golop der Grobe':1,'Der Zeitführer':1,'BOOM Clan':1,'Glaskuppel':7,'Calgon':7,'Clubmate':6,'Eine Runde noch':6,'RGB':6,'Nachschlag':6,'Mecces':6,'Ablehnt':6,'Dinkelmehl':6,'Wanze':4,'UwU ':4,'Tut mir leid…':4,'Ragequit':3,'Random Vote':3,'Neue BESSERE Karte':3,'Discord Meeting':3,'Zeitmaschinen Veruntreuung':3,'Sigma Transformation':3,'Tristanverbot':3,'Elefanten Aufstand':3,'Stein':2,'13er Bogen':2,'Vertragsbruch':2,'FourAceFour-Feuer-Reverse-Blöff':1};
+const DECK_ERW2 = {'Gilip der Glibbrige':3,'Lord Phillipp of Glencoe':3,'Phülügülüm':3,'Baby Niko':0,'Big Mama die Buwemon-Trainerin':3,'Marzo der Gott':3,'Marcopter':3,'Marco der Hund':3,'Leo Norris':0,'Leonie die Schäferin':3,'Glorian':3,'Flosama':3,'Klorian':3,'Lisa aus Australien':0,'Finn der Peniskopf':3,'Grünika':3,'Schwammika':3,'Antika':3,'Marie die Königsgardistin':0,'AnniKKKa':3,'Kax Maufmann':3,'Maxodia der Verbotene':3,'Maxibu':3,'Hoffi der rasierte Karnevalsprinz':0,'Bierre':3,'Fabio das Berlin-City-Girl':3,'Giraffael':3,'Hannah im Bach':3,'Alexerus Snape':0,'Ramon der Schinken':3,'Suffia':3,'Luis Münsters':3,'Cedzilla':3,'Griechischer ApoRed':0,'Cediboy':3,'Clarry Pather der Maincharacter':3,'Barista Clarista der Mister-Fister':3,'ClariSSIO':3,'Alicia die ehrenlose Fettsau':0,'Dr. Stirli':3,'Die Pogofanten':1,"L'Enderdragon":1,'Golop der Grobe':1,'Der Zeitführer':1,'BOOM Clan':1,'Glaskuppel':7,'Calgon':7,'Clubmate':6,'Eine Runde noch':6,'RGB':6,'Nachschlag':6,'Mecces':6,'Ablehnt':6,'Dinkelmehl':6,'Wanze':4,'UwU ':4,'Tut mir leid…':4,'Ragequit':3,'Random Vote':3,'Neue BESSERE Karte':3,'Discord Meeting':3,'Zeitmaschinen Veruntreuung':3,'Sigma Transformation':3,'Tristanverbot':3,'Elefanten Aufstand':3,'Stein':2,'13er Bogen':2,'Vertragsbruch':2,'FourAceFour-Feuer-Reverse-Blöff':1};
+const DECK_BEIDE = {'Gilip der Glibbrige':3,'Lord Phillipp of Glencoe':3,'Phülügülüm':3,'Baby Niko':3,'Big Mama die Buwemon-Trainerin':3,'Marzo der Gott':3,'Marcopter':3,'Marco der Hund':3,'Leo Norris':3,'Leonie die Schäferin':3,'Glorian':3,'Flosama':3,'Klorian':3,'Lisa aus Australien':3,'Finn der Peniskopf':3,'Grünika':3,'Schwammika':3,'Antika':3,'Marie die Königsgardistin':3,'AnniKKKa':3,'Kax Maufmann':3,'Maxodia der Verbotene':3,'Maxibu':3,'Hoffi der rasierte Karnevalsprinz':3,'Bierre':3,'Fabio das Berlin-City-Girl':3,'Giraffael':3,'Hannah im Bach':3,'Alexerus Snape':3,'Ramon der Schinken':3,'Suffia':3,'Luis Münsters':3,'Cedzilla':3,'Griechischer ApoRed':3,'Cediboy':3,'Clarry Pather der Maincharacter':3,'Barista Clarista der Mister-Fister':3,'ClariSSIO':3,'Alicia die ehrenlose Fettsau':3,'Dr. Stirli':3,'Die Pogofanten':1,"L'Enderdragon":1,'Golop der Grobe':1,'Der Zeitführer':1,'BOOM Clan':1,'Glaskuppel':9,'Calgon':9,'Clubmate':7,'Eine Runde noch':7,'RGB':7,'Nachschlag':7,'Mecces':7,'Ablehnt':7,'Dinkelmehl':7,'Wanze':5,'UwU ':5,'Tut mir leid…':5,'Ragequit':4,'Random Vote':4,'Neue BESSERE Karte':4,'Discord Meeting':4,'Zeitmaschinen Veruntreuung':4,'Sigma Transformation':4,'Tristanverbot':4,'Elefanten Aufstand':4,'Stein':3,'13er Bogen':3,'Vertragsbruch':3,'FourAceFour-Feuer-Reverse-Blöff':2};
 const NO_DLC = DECK_BASIS; // Alias
 function getDeckCounts() {
   if (buwemonDeckAN) {
@@ -2852,7 +2854,7 @@ function cleanUpOwnAbilityCards(playedCards, killSlotId, killOwnerP, is4, cleanA
   (playedCards || []).forEach(pc => {
     // Karte aus dem Slot entfernen - das machen ALLE Clients (Slot muss überall leer sein)
     // Ausnahme: Glaskuppel bleibt immer im Slot (sie hat ihre eigene Ablauf-Mechanik)
-    if (pc.cardName === 'Glaskuppel') return;
+    if (pc.cardName === 'Glaskuppel' || pc.cardName === 'Glaskuppel Ereignis') return;
     const cd = G.slots[pc.slotId];
     // Bei returnToHand: Karten-Info aus pc nutzen falls Slot schon leer (durch vorherigen State-Sync)
     const cdData = cd || (returnToHand && pc.cardColor ? {name: pc.cardName, color: pc.cardColor, type: pc.cardType || 'eff', file: pc.cardFile || ''} : null);
@@ -3293,7 +3295,7 @@ function moveCombatEquipToGrave(defenderSlotId, preEquipCount, is4) {
 function getGlaskuppelSlot(p, is4) {
   const suf = is4 ? '-4' : '';
   const pfx = 'p'+p;
-  return ['eff1','eff2','eff3','eff4'].map(e=>pfx+'-'+e+suf).find(s => G.slots[s] && G.slots[s].name === 'Glaskuppel') || null;
+  return ['eff1','eff2','eff3','eff4'].map(e=>pfx+'-'+e+suf).find(s => G.slots[s] && (G.slots[s].name === 'Glaskuppel' || G.slots[s].name === 'Glaskuppel Ereignis')) || null;
 }
 
 function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, preEquipCount) {
@@ -4960,7 +4962,8 @@ function beginZwillingsattacke(btn, cardEl) {
           fakeEl2.dataset.ctype = slotData.type || 'buw';
           fakeEl2.dataset.uid = 0;
           fakeEl2.dataset.slotId = slotId;
-          turnActionsAllowed = Math.max(turnActionsAllowed, turnActionsUsed + 1);
+          // Zweiter Angriff erlauben, danach komplett geblockt
+          turnActionsAllowed = turnActionsUsed + 1;
           beginAttackSelection(null, fakeEl2);
         }, 800);
       };
@@ -4973,7 +4976,8 @@ function beginZwillingsattacke(btn, cardEl) {
       fakeEl.dataset.uid = 0;
       fakeEl.dataset.slotId = slotId;
       fakeEl._afterFn = afterFirst;
-      turnActionsUsed = 0;
+      // Ersten Angriff erlauben (Fähigkeit hat used bereits auf 1 gesetzt)
+      turnActionsAllowed = turnActionsUsed + 1;
       beginAttackSelection(null, fakeEl);
     }, 300);
   });
@@ -5739,8 +5743,10 @@ function computeEquipBonus(buwColorHexRaw, equipped) {
       bonus -= 20;
     } else if (eq.name === '100 Ereignis') {
       bonus -= 60; // 160 - 60 = 100 AP
-    } else if (eq.name === 'Plus10 Ereignis') {
+    } else if (eq.name === 'Plus10 Ereignis' || eq.name === 'Plus 10') {
       bonus += 10;
+    } else if (eq.name === 'Plus20 Ereignis' || eq.name === 'Plus 20') {
+      bonus += 20;
     }
   });
   return bonus;
@@ -6013,7 +6019,7 @@ function onCarryDrop(e) {
       const isExSlot = sid.endsWith('-ex') || sid.endsWith('-ex-4');
       const isEffSlot = /-eff\d(-4)?$/.test(sid);
       const isVerbotSlot = /-verbot\d(-4)?$/.test(sid);
-      const EFF_EREIGNIS_NAMES = ['Mecces Ereignis','Clubmate Ereignis'];
+      const EFF_EREIGNIS_NAMES = ['Mecces Ereignis','Clubmate Ereignis','Glaskuppel Ereignis'];
       const VERBOT_NAMES = ['Mecces Verbot','Eine Runde noch Verbot','Nachschlag Verbot'];
       if (isExSlot && cd.type !== 'ex' && cd.type !== 'ex-ereignis') break;
       if (isEffSlot && !(cd.type === 'eff' || EFF_EREIGNIS_NAMES.includes(cd.name))) break;
@@ -6593,9 +6599,7 @@ function showCardCountDebug() {
   // Soll-Anzahl abhängig vom Erweiterung-Toggle:
   // Erweiterung AN -> CARD_DB.count (volle Anzahl inkl. DLC)
   // Erweiterung AUS -> NO_DLC[name] (reduzierte Anzahl ohne DLC)
-  const WITH_DLC = {};
-  CARD_DB.forEach(def => { WITH_DLC[def.name] = def.count; });
-  const EXPECTED = erweiterungAN ? WITH_DLC : NO_DLC;
+  const EXPECTED = getDeckCounts();
 
   // Alle Karten zählen (nur buw und spec, keine ereignis/eff)
   const TYPES = new Set(['buw','spec','eff']);
@@ -6764,12 +6768,14 @@ const EREIGNIS_CARDS = [
   {name:"Ereignis",              file:"Ereignis.png",              color:"#888888", type:"ereignis"},
   {name:"Clubmate Ereignis",     file:"Clubmate_Ereignis.png",     color:"#888888", type:"ereignis"},
   {name:"Mecces Ereignis",       file:"Mecces_Ereignis.png",       color:"#888888", type:"ereignis"},
+  {name:"Glaskuppel Ereignis",   file:"Glaskuppel_Ereignis.png",   color:"#888888", type:"ereignis"},
   {name:"Mecces Verbot",         file:"Mecces_Verbot.png",         color:"#888888", type:"ereignis"},
   {name:"Eine Runde noch Verbot",file:"Eine_Runde_Noch_Verbot.png",color:"#888888", type:"ereignis"},
   {name:"Nachschlag Verbot",     file:"Nachschlag_Verbot.png",     color:"#888888", type:"ereignis"},
   {name:"100",                   file:"100.png",                   color:"#888888", type:"ereignis"},
   {name:"Minus 20",              file:"Minus_20.png",              color:"#888888", type:"ereignis"},
   {name:"Plus 10",               file:"Plus_10.png",               color:"#888888", type:"ereignis"},
+  {name:"Plus 20",               file:"Plus_20.png",               color:"#888888", type:"ereignis"},
 ];
 
 // EX color → ereignis card mapping
@@ -7564,7 +7570,7 @@ function tryDockCard(el) {
       const isExSlot = sid.endsWith('-ex') || sid.endsWith('-ex-4');
       const isEffSlot = /-eff\d(-4)?$/.test(sid);
       const isVerbotSlot = /-verbot\d(-4)?$/.test(sid);
-      const EFF_EREIGNIS_NAMES = ['Mecces Ereignis','Clubmate Ereignis'];
+      const EFF_EREIGNIS_NAMES = ['Mecces Ereignis','Clubmate Ereignis','Glaskuppel Ereignis'];
       const VERBOT_NAMES = ['Mecces Verbot','Eine Runde noch Verbot','Nachschlag Verbot'];
       const EQUIP_NAMES = ['Clubmate', '13er Bogen', 'Clubmate Ereignis'];
       const isBuwOrExSlot = !isEffSlot && !isVerbotSlot;
@@ -9151,9 +9157,9 @@ function toggle4PMode() {
   fourPlayerMode = !fourPlayerMode;
   const btn = document.getElementById('lobby-4p-toggle');
   if (btn) {
-    btn.textContent = '4-Spieler: ' + (fourPlayerMode ? 'AN' : 'AUS');
-    btn.style.background = fourPlayerMode ? 'rgba(0,150,80,0.7)' : 'rgba(180,185,195,0.75)';
-    btn.style.color = fourPlayerMode ? '#fff' : '#2a2e3a';
+    btn.textContent = fourPlayerMode ? '2-4 Spieler Board' : '2 Spieler Board';
+    btn.style.background = 'rgba(0,150,80,0.7)';
+    btn.style.color = '#fff';
   }
   document.getElementById('board').style.display = fourPlayerMode ? 'none' : '';
   document.getElementById('board4').style.display = fourPlayerMode ? 'flex' : 'none';
@@ -10076,11 +10082,11 @@ document.querySelectorAll('.swatch').forEach(sw=>{
     ">
     <div id="lobby-color-picker" style="display:flex;flex-wrap:wrap;justify-content:center;gap:5px;"></div>
     <div style="display:flex;flex-direction:column;gap:8px;width:100%;">
-      <button id="lobby-4p-toggle" onclick="toggle4PMode()" style="background:rgba(180,185,195,0.75);border:1px solid rgba(255,255,255,0.7);border-radius:20px;padding:6px 16px;font-family:'AiSpec',sans-serif;font-size:.85rem;cursor:pointer;color:#2a2e3a;transition:background .2s;width:100%;">4-Spieler: AUS</button>
-      <button id="erweiterung-btn" onclick="toggleErweiterung(1)" style="background:rgba(0,150,80,0.7);border:1px solid rgba(255,255,255,0.7);border-radius:20px;padding:6px 16px;font-family:'AiSpec',sans-serif;font-size:.85rem;cursor:pointer;color:#fff;width:100%;">Erweiterung #1: AN</button>
-      <button id="erweiterung2-btn" onclick="toggleErweiterung(2)" style="background:rgba(180,185,195,0.75);border:1px solid rgba(255,255,255,0.7);border-radius:20px;padding:6px 16px;font-family:'AiSpec',sans-serif;font-size:.85rem;cursor:pointer;color:#2a2e3a;width:100%;">Erweiterung #2: AUS</button>
+      <button id="sandbox-btn" onclick="toggleSandbox()" style="background:rgba(0,150,80,0.7);border:1px solid rgba(255,255,255,0.7);border-radius:20px;padding:6px 16px;font-family:'AiSpec',sans-serif;font-size:.85rem;cursor:pointer;color:#fff;width:100%;">Sandbox-Modus</button>
+      <button id="lobby-4p-toggle" onclick="toggle4PMode()" style="background:rgba(0,150,80,0.7);border:1px solid rgba(255,255,255,0.7);border-radius:20px;padding:6px 16px;font-family:'AiSpec',sans-serif;font-size:.85rem;cursor:pointer;color:#fff;transition:background .2s;width:100%;">2 Spieler Board</button>
+      <button id="erweiterung-btn" onclick="toggleErweiterung(1)" style="background:rgba(0,150,80,0.7);border:1px solid rgba(255,255,255,0.7);border-radius:20px;padding:6px 16px;font-family:'AiSpec',sans-serif;font-size:.85rem;cursor:pointer;color:#fff;width:100%;">Erweiterung <span style="font-family:Arial,sans-serif;font-weight:bold;">#</span>1: AN</button>
+      <button id="erweiterung2-btn" onclick="toggleErweiterung(2)" style="background:rgba(180,185,195,0.75);border:1px solid rgba(255,255,255,0.7);border-radius:20px;padding:6px 16px;font-family:'AiSpec',sans-serif;font-size:.85rem;cursor:pointer;color:#2a2e3a;width:100%;">Erweiterung <span style="font-family:Arial,sans-serif;font-weight:bold;">#</span>2: AUS</button>
       <button id="buwemon-deck-btn" onclick="toggleBuwemonDeck()" style="background:rgba(180,185,195,0.75);border:1px solid rgba(255,255,255,0.7);border-radius:20px;padding:6px 16px;font-family:'AiSpec',sans-serif;font-size:.85rem;cursor:pointer;color:#2a2e3a;width:100%;">Buwemon-Deck: AUS</button>
-      <button id="sandbox-btn" onclick="toggleSandbox()" style="background:rgba(0,150,80,0.7);border:1px solid rgba(255,255,255,0.7);border-radius:20px;padding:6px 16px;font-family:'AiSpec',sans-serif;font-size:.85rem;cursor:pointer;color:#fff;width:100%;">Sandbox: AN</button>
     </div>
   </div>
 
@@ -10183,7 +10189,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v52c
+    v52g
   </div>
 </div>
 
@@ -11437,17 +11443,17 @@ function toggleErweiterung(n) {
   else erweiterung2AN = !erweiterung2AN;
   if (erweiterungAN || erweiterung2AN) { buwemonDeckAN = false; updateBuwemonDeckBtn(); }
   const btn1 = document.getElementById('erweiterung-btn');
-  if (btn1) { btn1.textContent = 'Erweiterung #1: ' + (erweiterungAN ? 'AN' : 'AUS'); btn1.style.background = erweiterungAN ? 'rgba(0,150,80,0.7)' : 'rgba(180,185,195,0.75)'; btn1.style.color = erweiterungAN ? '#fff' : '#2a2e3a'; }
+  if (btn1) { btn1.innerHTML = 'Erweiterung <span style="font-family:Arial,sans-serif;font-weight:bold;">#</span>1: ' + (erweiterungAN ? 'AN' : 'AUS'); btn1.style.background = erweiterungAN ? 'rgba(0,150,80,0.7)' : 'rgba(180,185,195,0.75)'; btn1.style.color = erweiterungAN ? '#fff' : '#2a2e3a'; }
   const btn2 = document.getElementById('erweiterung2-btn');
-  if (btn2) { btn2.textContent = 'Erweiterung #2: ' + (erweiterung2AN ? 'AN' : 'AUS'); btn2.style.background = erweiterung2AN ? 'rgba(0,150,80,0.7)' : 'rgba(180,185,195,0.75)'; btn2.style.color = erweiterung2AN ? '#fff' : '#2a2e3a'; }
+  if (btn2) { btn2.innerHTML = 'Erweiterung <span style="font-family:Arial,sans-serif;font-weight:bold;">#</span>2: ' + (erweiterung2AN ? 'AN' : 'AUS'); btn2.style.background = erweiterung2AN ? 'rgba(0,150,80,0.7)' : 'rgba(180,185,195,0.75)'; btn2.style.color = erweiterung2AN ? '#fff' : '#2a2e3a'; }
 }
 
 function toggleBuwemonDeck() {
   buwemonDeckAN = !buwemonDeckAN;
   if (buwemonDeckAN) {
     erweiterungAN = false; erweiterung2AN = false;
-    const b1 = document.getElementById('erweiterung-btn'); if(b1){b1.textContent='Erweiterung #1: AUS';b1.style.background='rgba(180,185,195,0.75)';b1.style.color='#2a2e3a';}
-    const b2 = document.getElementById('erweiterung2-btn'); if(b2){b2.textContent='Erweiterung #2: AUS';b2.style.background='rgba(180,185,195,0.75)';b2.style.color='#2a2e3a';}
+    const b1 = document.getElementById('erweiterung-btn'); if(b1){b1.innerHTML='Erweiterung <span style="font-family:Arial,sans-serif;font-weight:bold;">#</span>1: AUS';b1.style.background='rgba(180,185,195,0.75)';b1.style.color='#2a2e3a';}
+    const b2 = document.getElementById('erweiterung2-btn'); if(b2){b2.innerHTML='Erweiterung <span style="font-family:Arial,sans-serif;font-weight:bold;">#</span>2: AUS';b2.style.background='rgba(180,185,195,0.75)';b2.style.color='#2a2e3a';}
   }
   updateBuwemonDeckBtn();
 }
@@ -11460,6 +11466,16 @@ function updateBuwemonDeckBtn() {
   b.style.color = buwemonDeckAN ? '#fff' : '#2a2e3a';
 }
 
+// Init Erweiterung button text
+(function() {
+  const b1 = document.getElementById('erweiterung-btn');
+  const b2 = document.getElementById('erweiterung2-btn');
+  if (b1) b1.innerHTML = 'Erweiterung <span style="font-family:Arial,sans-serif;font-weight:bold;">#</span>1: AN';
+  if (b2) b2.innerHTML = 'Erweiterung <span style="font-family:Arial,sans-serif;font-weight:bold;">#</span>2: AUS';
+  // Sandbox initial grau (AN=grau), Automatik grün (AUS=grün)
+  const sb = document.getElementById('sandbox-btn');
+  // sandbox always green
+})();
 let sandboxMode = true;
 // LP im Sandbox-Modus direkt editierbar machen
 window.addEventListener('DOMContentLoaded', () => {
@@ -11702,9 +11718,9 @@ function toggleSandbox() {
   sandboxMode = !sandboxMode;
   const btn = document.getElementById('sandbox-btn');
   if (btn) {
-    btn.textContent = 'Sandbox: ' + (sandboxMode ? 'AN' : 'AUS');
-    btn.style.background = sandboxMode ? 'rgba(0,150,80,0.7)' : 'rgba(180,185,195,0.75)';
-    btn.style.color = sandboxMode ? '#fff' : '#2a2e3a';
+    btn.textContent = sandboxMode ? 'Sandbox-Modus' : 'Automatik-Modus';
+    btn.style.background = 'rgba(0,150,80,0.7)';
+    btn.style.color = '#fff';
   }
   document.body.classList.toggle('automatik-mode', !sandboxMode);
   updatePerspectiveBtnVisibility();
