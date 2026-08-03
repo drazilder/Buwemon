@@ -3216,6 +3216,8 @@ function showOutcomeToast(text, is4) {
 // Besitzers - passiert immer nach einem Kampf, unabhängig vom Ausgang (nur falls das
 // verteidigende Buwemon den Kampf überlebt hat - stirbt es, wird die komplette Ausrüstung
 // bereits über den normalen Friedhof-Umzug mit erledigt).
+const TEMP_EQUIP_NAMES = ['Clubmate', '13er Bogen', 'Clubmate Ereignis'];
+
 function clearCombatEquipAfterFight(slotIds, is4) {
   (slotIds || []).forEach(sid => {
     const cd = G.slots[sid];
@@ -4922,8 +4924,8 @@ function _startZwillingsZiel(slotId, is4, isSecond) {
   fakeEl.dataset.ctype = slotData.type || 'buw';
   fakeEl.dataset.uid = 0;
   fakeEl.dataset.slotId = slotId;
+  fakeEl._afterFn = afterFn || null;
   turnActionsUsed = 0;
-  // Direkt pendingAttackSelection setzen wie Grünika (kein turnActionsUsed Check)
   pendingAttackSelection = {
     cardEl: fakeEl, slotId, is4,
     attackerP: parseInt((slotId.match(/^p(\d)/)||[])[1]||'1'),
@@ -7152,6 +7154,20 @@ function onCardDockedToEffSlot(player, slotId, cd) {
   // Eine Runde noch: prüfen ob nicht durch Verbotskarte geblockt, dann Reaktionsfenster, dann Friedhof-Auswahl
   if (cd.name === 'Random Vote') {
     const ownerP = parseInt(player.replace('p',''));
+    // Prüfen ob Aktivator mindestens 1 Buwemon auf dem Feld hat
+    const _myBuwSlots = ['buw1','buw2','buw3'].map(s => 'p'+ownerP+'-'+s+(is4?'-4':'')).filter(s => G.slots[s]);
+    if (!_myBuwSlots.length) {
+      G.slots[slotId] = null; renderSlot(slotId);
+      // Karte zurück auf Hand
+      const myArr = is4 ? handOrderByPlayer4p : handOrderByPlayer2p;
+      if(!myArr[ownerP])myArr[ownerP]=[];
+      const _rvUid = cd.uid || G.nid++;
+      const _rvEl = spawnCard({...cd, uid:_rvUid}, 0, 0, false);
+      myArr[ownerP].push(_rvUid);
+      if(is4)layoutMyHand4();else layoutMyHand();
+      showOutcomeToast('Random Vote: Du musst mindestens ein Buwemon auf dem Spielfeld haben!', is4);
+      return;
+    }
     const fake = document.createElement('div');
     fake.dataset.name = cd.name; fake.dataset.color = cd.color;
     fake.dataset.ctype = cd.type||'eff'; fake.dataset.uid = cd.uid||0;
@@ -7880,7 +7896,16 @@ function releaseSlot(slotId, x, y) {
       if (!G.slots[lsid]) return;
       if (G.slots[lsid].type === 'ex-auto') return;
       // Im Automatik-Modus: keine manuellen Karten aus Slots ziehen (außer Debug)
-      if (!sandboxMode && !debugMode) return;
+      // Aber pendingAttackSelection Checks müssen noch laufen!
+      if (!sandboxMode && !debugMode) {
+        if (pendingAttackSelection && cdNow) {
+          const targetPlayer = parseInt((lsid.match(/^p(\d)/)||[])[1]||'0');
+          if (targetPlayer !== pendingAttackSelection.attackerP) {
+            confirmAttackTarget(lsid, cdNow);
+          }
+        }
+        return;
+      }
       const cd = G.slots[lsid];
       G.slots[lsid] = null;
       renderSlot(lsid);
@@ -10121,7 +10146,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v51u
+    v51x
   </div>
 </div>
 
