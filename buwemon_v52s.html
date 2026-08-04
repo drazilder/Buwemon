@@ -2699,7 +2699,10 @@ function beginAbilityActivation(el, abilityKey, abilityName, resolveFn, defender
   const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
   const slotId = el.dataset.slotId;
   if (!slotId) return;
-  _lastActivatorSlotId = toLogicalId(slotId);
+  // el.dataset.slotId ist BEREITS LOGISCH (siehe Slot-ID-Vertrag oben bei toLogicalId).
+  // KEIN toLogicalId hier! Beim Host waere das die Identitaet (faellt nicht auf),
+  // beim Gast dreht es p1<->p2 und _lastActivatorSlotId zeigt auf den GEGNER.
+  _lastActivatorSlotId = slotId;
   // Zug-Regel: Buwemon-Fähigkeiten (nicht Effektkarten) nur einmal pro Zug
   const isBuwAbility = (el.dataset.ctype === 'buw' || el.dataset.ctype === 'spec') && abilityKey !== 'angriff';
   if (isBuwAbility && !sandboxMode && !debugMode) {
@@ -3129,7 +3132,9 @@ function finalizeAbilityChain(killsBuwemon) {
     // Kampfsituation überschrieben worden sein). data.slotId ist PHYSISCH aus Sicht des Aktivators -
     // muss über toLogicalId zurück in die logische Form gewandelt werden, sonst korrekt nur für
     // Spieler 1/Host (bei dem physisch==logisch zufällig übereinstimmt).
-    if (data.slotId) _lastActivatorSlotId = toLogicalId(data.slotId);
+    // data.slotId wurde vom Aktivator LOGISCH gesendet (data.slotId = el.dataset.slotId).
+    // Kein toLogicalId - das wuerde es beim Gast erneut drehen.
+    if (data.slotId) _lastActivatorSlotId = data.slotId;
     if (data.isAttack) {
       // Bei Angriffen hat FourAceFour eine feste, unbedingte Wirkung (Angreifer stirbt, Angriff
       // schlägt fehl) - unabhängig vom sonstigen "blockiert/nicht blockiert"-Stand.
@@ -3568,7 +3573,7 @@ function setAbilityShimmer(slotId, active) {
       glorianActiveSlot = null;
       glorianSuppressed.forEach(s => {
         dinkelmehlSuppressed.delete(s);
-        if (activePermanentAbilities.has(s) && G.slots[toLogicalId(s)]) setAbilityShimmer(s, true);
+        if (activePermanentAbilities.has(s) && G.slots[s]) setAbilityShimmer(s, true); // s ist logisch
       });
       glorianSuppressed.clear();
     }
@@ -3808,7 +3813,7 @@ setInterval(() => {
 function beginLegilimens(btn, el) {
   closePopup();
   beginAbilityActivation(el, 'Legilimens', 'Legilimens', () => {
-    const slotId = toLogicalId(el.dataset.slotId);
+    const slotId = el.dataset.slotId; // bereits logisch - KEIN toLogicalId
     const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
     const ownerP = parseInt((slotId.match(/^p(\d)/)||[])[1]||'1');
     const activePlayers = is4 ? [1,2,3,4].filter(p => G4.active[p]) : [1,2];
@@ -5889,7 +5894,7 @@ function renderPopupActionButtons(el, fd) {
 
   const atkName = CARD_ATTACKS[name];
   const turnBlocked = !sandboxMode && !debugMode && (turnActionsUsed >= turnActionsAllowed);
-  const _baristaElSlotLog = toLogicalId(el.dataset.slotId);
+  const _baristaElSlotLog = el.dataset.slotId; // bereits logisch - KEIN toLogicalId
   const firstRoundBlocksAtk = !sandboxMode && !debugMode && !firstRoundOver;
   // Im Automatik-Modus: Buttons fremder Buwemon komplett sperren
   const _buwSlotLog = el.dataset.slotId || null;
@@ -5912,7 +5917,7 @@ function renderPopupActionButtons(el, fd) {
     wrap.appendChild(atkBtn);
   }
   if (!isEx) {
-    const _schwSlotId = el.dataset.slotId ? toLogicalId(el.dataset.slotId) : null;
+    const _schwSlotId = el.dataset.slotId || null; // bereits logisch - KEIN toLogicalId
     const _schwCd = _schwSlotId ? G.slots[_schwSlotId] : null;
     const _schwUid = _schwCd ? (_schwCd.uid !== undefined ? String(_schwCd.uid) : _schwSlotId) : null;
     const _schwState = (_schwUid && schwammikaState[_schwUid]) ? schwammikaState[_schwUid] : null;
@@ -7345,9 +7350,9 @@ function onCardDockedToEffSlot(player, slotId, cd) {
         // Nachschlag hebt die Giraffael/Clarry-Selbstverschiebungs-Sperre der eigenen Buwemon auf
         ['buw1','buw2','buw3'].forEach(bs => {
           const _bcd = G.slots[player+'-'+bs+suf2];
-          if (_bcd && _bcd.uid && selfMovedBlockedUids.has(_bcd.uid)) {
-            selfMovedBlockedUids.delete(_bcd.uid);
-            if (NET.mode === 'multi') netSend({t:'self_moved_unblock', uid: _bcd.uid});
+          if (_bcd && _bcd.uid && selfMovedBlockedUids.has(String(_bcd.uid))) {
+            selfMovedBlockedUids.delete(String(_bcd.uid));
+            if (NET.mode === 'multi') netSend({t:'self_moved_unblock', uid: String(_bcd.uid)});
           }
         });
         showOutcomeToast('Nachschlag: Eine weitere Buwemonaktion erlaubt!', is4);
@@ -7867,7 +7872,7 @@ function releaseSlot(slotId, x, y) {
   if (!cd || cd.type === 'ex-auto') { G.slots[slotId] = null; renderSlot(slotId); return; }
   resetAbilityUsesForSlot(slotId);
   // Wenn eine gesperrte Karte durch externe Aktion verschoben wird → Sperre aufheben
-  if (cd.uid) selfMovedBlockedUids.delete(cd.uid);
+  if (cd.uid) selfMovedBlockedUids.delete(String(cd.uid));
   if (legilimensSlotId === slotId) clearLegilimens();
   G.slots[slotId] = null;
   renderSlot(slotId);
@@ -8939,8 +8944,8 @@ function doLiiinks() {
 
   // Giraffael die Liiinks ausgelöst hat → Fähigkeit bleibt geblockt nach Verschiebung
   if (_giraffaelPreCd && _giraffaelPreCd.name === 'Giraffael' && _giraffaelPreCd.uid) {
-    selfMovedBlockedUids.add(_giraffaelPreCd.uid);
-    if (NET.mode === 'multi') netSend({t:'self_moved_block', uid: _giraffaelPreCd.uid});
+    selfMovedBlockedUids.add(String(_giraffaelPreCd.uid));
+    if (NET.mode === 'multi') netSend({t:'self_moved_block', uid: String(_giraffaelPreCd.uid)});
   }
   checkExBuwemon('p1');
   checkExBuwemon('p2');
@@ -8992,8 +8997,8 @@ function doRecast() {
   const _recastCd = _clarryPreCd; // bereits vor dem Shuffle gespeichert
   window._rcPreOwners = null;
   if (_recastCd && _recastCd.name === 'Clarry Pather der Maincharacter' && _recastCd.uid) {
-    selfMovedBlockedUids.add(_recastCd.uid);
-    if (NET.mode === 'multi') netSend({t:'self_moved_block', uid: _recastCd.uid});
+    selfMovedBlockedUids.add(String(_recastCd.uid));
+    if (NET.mode === 'multi') netSend({t:'self_moved_block', uid: String(_recastCd.uid)});
   }
   checkExBuwemon('p1'); checkExBuwemon('p2');
   checkZoneColor('p1'); checkZoneColor('p2');
@@ -9172,8 +9177,8 @@ function doLiiinks4() {
 
   // Giraffael die Liiinks ausgelöst hat → Fähigkeit bleibt geblockt nach Verschiebung
   if (_giraffaelPreCd4 && _giraffaelPreCd4.name === 'Giraffael' && _giraffaelPreCd4.uid) {
-    selfMovedBlockedUids.add(_giraffaelPreCd4.uid);
-    if (NET.mode === 'multi') netSend({t:'self_moved_block', uid: _giraffaelPreCd4.uid});
+    selfMovedBlockedUids.add(String(_giraffaelPreCd4.uid));
+    if (NET.mode === 'multi') netSend({t:'self_moved_block', uid: String(_giraffaelPreCd4.uid)});
   }
 
   if (NET.mode === 'multi' && fourPlayerMode) netSendState4();
@@ -9244,8 +9249,8 @@ function doRecast4() {
 
   // Clarry Pather die Recast ausgelöst hat → Fähigkeit bleibt geblockt nach Verschiebung
   if (_clarryPreCd4 && _clarryPreCd4.name === 'Clarry Pather der Maincharacter' && _clarryPreCd4.uid) {
-    selfMovedBlockedUids.add(_clarryPreCd4.uid);
-    if (NET.mode === 'multi') netSend({t:'self_moved_block', uid: _clarryPreCd4.uid});
+    selfMovedBlockedUids.add(String(_clarryPreCd4.uid));
+    if (NET.mode === 'multi') netSend({t:'self_moved_block', uid: String(_clarryPreCd4.uid)});
   }
 
   if (NET.mode === 'multi' && fourPlayerMode) netSendState4();
@@ -10325,7 +10330,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div id="game-version-label" style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v52q
+    v52s
   </div>
 </div>
 
@@ -11460,10 +11465,10 @@ if (d.t === 'state4') {
     if (!_stillOn) permanentAbilityUsed.delete(d.uid);
   }
   if (d.t === 'self_moved_block') {
-    selfMovedBlockedUids.add(d.uid);
+    selfMovedBlockedUids.add(String(d.uid));
   }
   if (d.t === 'self_moved_unblock') {
-    selfMovedBlockedUids.delete(d.uid);
+    selfMovedBlockedUids.delete(String(d.uid));
   }
   if (d.t === 'firstRoundOver') {
     if (!firstRoundOver) {
@@ -11712,15 +11717,16 @@ const ABILITY_LIMITS = {
 
 function canUseAbility(slotId, abilityName) {
   if (debugMode || sandboxMode) return true;
-  // Giraffael/Clarry die durch eigene Fähigkeit verschoben wurden: Fähigkeit geblockt
-  const lsidCheck = toLogicalId(slotId);
-  const cdCheck = G.slots[lsidCheck];
-  if (cdCheck && cdCheck.uid && selfMovedBlockedUids.has(cdCheck.uid)) {
-    if ((cdCheck.name === 'Giraffael' && abilityName === 'Liiinks') ||
-        (cdCheck.name === 'Clarry Pather der Maincharacter' && abilityName === 'Recast')) return false;
+  const lsid = slotId; // bereits logisch - KEIN toLogicalId (drehte beim Gast auf den Gegner)
+  _assertLogicalSlotId(slotId, 'canUseAbility');
+  // Giraffael/Clarry die durch eigene Fähigkeit verschoben wurden: Fähigkeit bleibt geblockt.
+  // UIDs als String vergleichen (Netzwerk/JSON-Typsicherheit).
+  const _cdChk = G.slots[lsid];
+  if (_cdChk && _cdChk.uid !== undefined && selfMovedBlockedUids.has(String(_cdChk.uid))) {
+    if ((_cdChk.name === 'Giraffael' && abilityName === 'Liiinks') ||
+        (_cdChk.name === 'Clarry Pather der Maincharacter' && abilityName === 'Recast')) return false;
   }
   if (turnActionsUsed >= turnActionsAllowed) return false;
-  const lsid = toLogicalId(slotId);
   const limit = ABILITY_LIMITS[abilityName];
   if (limit === null || limit === undefined) return true;
   // UID-basiertes Tracking: Karte folgt der Karte, nicht dem Slot
@@ -11734,10 +11740,12 @@ function canUseAbility(slotId, abilityName) {
   return used < limit;
 }
 
+// ERWARTET EINE LOGISCHE SLOT-ID (siehe Slot-ID-Vertrag bei toLogicalId).
 function markAbilityUsed(slotId, abilityName) {
   if (debugMode || sandboxMode) return;
   turnActionsUsed++;
-  const lsid = toLogicalId(slotId);
+  const lsid = slotId; // bereits logisch - KEIN toLogicalId (drehte beim Gast auf den Gegner)
+  _assertLogicalSlotId(slotId, 'markAbilityUsed');
   const limit = ABILITY_LIMITS[abilityName];
   if (limit !== null && limit !== undefined) {
     const cdM = G.slots[lsid];
@@ -11752,8 +11760,10 @@ function markAbilityUsed(slotId, abilityName) {
   updateAbilityButtonStates();
 }
 
+// ERWARTET EINE LOGISCHE SLOT-ID (siehe Slot-ID-Vertrag bei toLogicalId).
 function resetAbilityUsesForSlot(slotId) {
-  const lsid = toLogicalId(slotId);
+  const lsid = slotId; // bereits logisch - KEIN toLogicalId
+  _assertLogicalSlotId(slotId, 'resetAbilityUsesForSlot');
   delete abilityUsesThisLife['slot:'+lsid];
   const cd = G.slots[lsid];
   if (cd && cd.uid !== undefined) {
@@ -11892,6 +11902,50 @@ function logicalIdFor4p(physicalId) {
   const L = PHYS_SEQ_4P[(idx + j) % 4];
   return 'p' + L + rest;
 }
+// ═══════════════════════════════════════════════════════════════════════════════
+// SLOT-ID-VERTRAG  -  BITTE VOR JEDER AENDERUNG LESEN
+// ═══════════════════════════════════════════════════════════════════════════════
+// Es gibt ZWEI Arten von Slot-IDs:
+//   LOGISCH  = wem der Slot im Spiel gehoert   (p1-buw1 = Slot 1 von Spieler 1)
+//   PHYSISCH = wo er auf DIESEM Bildschirm ist (p1-buw1 = unten, aus MEINER Sicht)
+//
+// Fuer Spieler 1 / Host sind beide IDENTISCH. Deshalb faellt eine falsche oder
+// doppelte Umrechnung beim Testen als Host NIE auf - sie zerstoert aber sofort
+// alles beim Gast (P2/P3/P4). Genau daher kommen alle "geht nur beim Host"-Bugs.
+//
+// REGELN:
+//   1. G.slots[...] wird IMMER mit LOGISCHEN IDs indiziert.
+//   2. document.getElementById(...) braucht IMMER PHYSISCHE IDs -> physId(logisch).
+//   3. el.dataset.slotId ist IMMER LOGISCH (wird als lsid gesetzt).
+//   4. Netzwerk-Nachrichten (data.slotId, d.slotId) sind IMMER LOGISCH.
+//   5. _lastActivatorSlotId ist IMMER LOGISCH.
+//   6. activePermanentAbilities / glorianActiveSlot.slotId sind IMMER LOGISCH.
+//   7. toLogicalId() NUR auf echte Bildschirm-Herkunft anwenden (Klick-Ziel,
+//      Drop-Ziel, DOM-Element-ID) - NIEMALS auf etwas aus 1,3,4,5,6.
+//
+// Diese Funktionen ERWARTEN bereits logische IDs und duerfen NICHT nochmal
+// umrechnen: markAbilityUsed, canUseAbility, resetAbilityUsesForSlot,
+// setAbilityShimmer, renderSlot, releaseSlot.
+//
+// TESTREGEL: Jede Aenderung an Faehigkeiten IMMER als GAST (P2) testen, nie nur
+// als Host - sonst bleiben genau diese Fehler unsichtbar.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Debug-Waechter: meldet, wenn eine Funktion eine PHYSISCHE ID bekommt, obwohl sie
+// laut Vertrag eine LOGISCHE erwartet. Greift nur beim Gast (beim Host sind beide
+// gleich und ein Fehler ist grundsaetzlich nicht erkennbar).
+function _assertLogicalSlotId(slotId, fnName) {
+  try {
+    if (!slotId || sandboxMode || NET.mode !== 'multi') return;
+    const flipped = toLogicalId(slotId);
+    if (flipped === slotId) return;              // Host: nicht unterscheidbar
+    if (G.slots[slotId]) return;                 // logisch belegt -> plausibel korrekt
+    if (!G.slots[flipped]) return;               // beide leer -> keine Aussage moeglich
+    console.warn('[SLOT-ID-VERTRAG] ' + fnName + '() bekam vermutlich eine PHYSISCHE ID: '
+      + slotId + ' (logisch waere: ' + flipped + '). Das bricht das Spiel beim Gast!');
+  } catch(e) {}
+}
+
 // Dispatcher für die Rückrichtung (Bildschirmposition -> logischer Spieler). Für 2p ist physId()
 // selbstinvers (einfacher Tausch) und kann wiederverwendet werden, für 4p NICHT.
 function toLogicalId(physicalId) {
