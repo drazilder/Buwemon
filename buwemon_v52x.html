@@ -1557,8 +1557,12 @@ function removeFromMyHand(el) {
 }
 
 function setTurn2p(p) {
+  // Nur bei echtem Zugwechsel zuruecksetzen! Wird dieselbe turn2-Nachricht erneut
+  // zugestellt (Broadcast/Reconnect), wuerde resetTurnFlags() sonst mitten im Zug die
+  // bereits verbrauchte Buwemonaktion wieder freigeben.
+  const _turnChanged2 = (TURN_2P !== p);
   TURN_2P = p; _turnSeq2p++; updateTurnUI2p(); autoDrawIfMyTurn2p(p, _turnSeq2p);
-  if (p === myLogicalPlayer2p()) resetTurnFlags();
+  if (_turnChanged2 && p === myLogicalPlayer2p()) resetTurnFlags();
   if (!firstRoundOver) {
     if (firstRoundSeenPlayers.has(p)) {
       firstRoundOver = true;
@@ -1681,8 +1685,10 @@ function removeFromMyHand4(el) {
 }
 
 function setTurn4p(p) {
+  // Nur bei echtem Zugwechsel zuruecksetzen (siehe setTurn2p)
+  const _turnChanged4 = (TURN_4P !== p);
   TURN_4P = p; _turnSeq4p++; updateTurnUI4p(); autoDrawIfMyTurn4p(p, _turnSeq4p);
-  if (p === myLogicalPlayer4p()) resetTurnFlags();
+  if (_turnChanged4 && p === myLogicalPlayer4p()) resetTurnFlags();
   if (!firstRoundOver) {
     if (firstRoundSeenPlayers.has(p)) {
       firstRoundOver = true;
@@ -1857,17 +1863,17 @@ const CARD_DB=[
   {name:"Lord Phillipp of Glencoe",count:3,color:"#cc3333",type:"buw"},
   {name:"Phülügülüm",count:3,color:"#cc3333",type:"buw"},
   {name:"Baby Niko",count:3,color:"#cc3333",type:"buw"},
-  {name:"Big Mama die Buwemon-Trainerin",count:3,color:"#e52421",type:"buw",file:"BigMama.png"},
+  {name:"Big Mama die Buwemon-Trainerin",count:3,color:"#cc3333",type:"buw",file:"BigMama.png"},
   {name:"Marzo der Gott",count:3,color:"#cc5500",type:"buw"},
   {name:"Marcopter",count:3,color:"#cc5500",type:"buw"},
   {name:"Marco der Hund",count:3,color:"#cc5500",type:"buw"},
   {name:"Leo Norris",count:3,color:"#cc5500",type:"buw"},
-  {name:"Leonie die Schäferin",count:3,color:"#f58819",type:"buw",file:"Leonie_Die_Schaeferin.png"},
+  {name:"Leonie die Schäferin",count:3,color:"#cc5500",type:"buw",file:"Leonie_Die_Schaeferin.png"},
   {name:"Glorian",count:3,color:"#aa9900",type:"buw"},
   {name:"Flosama",count:3,color:"#aa9900",type:"buw"},
   {name:"Klorian",count:3,color:"#aa9900",type:"buw"},
   {name:"Lisa aus Australien",count:3,color:"#aa9900",type:"buw"},
-  {name:"Finn der Peniskopf",count:3,color:"#f7e821",type:"buw",file:"Finn.png"},
+  {name:"Finn der Peniskopf",count:3,color:"#aa9900",type:"buw",file:"Finn.png"},
   {name:"Grünika",count:3,color:"#2e8a2e",type:"buw"},
   {name:"Schwammika",count:3,color:"#2e8a2e",type:"buw"},
   {name:"Antika",count:3,color:"#2e8a2e",type:"buw"},
@@ -1877,22 +1883,22 @@ const CARD_DB=[
   {name:"Maxodia der Verbotene",count:3,color:"#1a44bb",type:"buw"},
   {name:"Maxibu",count:3,color:"#1a44bb",type:"buw"},
   {name:"Hoffi der rasierte Karnevalsprinz",count:3,color:"#1a44bb",type:"buw"},
-  {name:"Bierre",count:3,color:"#2e519f",type:"buw",file:"Bierre.png"},
+  {name:"Bierre",count:3,color:"#1a44bb",type:"buw",file:"Bierre.png"},
   {name:"Fabio das Berlin-City-Girl",count:3,color:"#6622aa",type:"buw"},
   {name:"Giraffael",count:3,color:"#6622aa",type:"buw"},
   {name:"Hannah im Bach",count:3,color:"#6622aa",type:"buw"},
   {name:"Alexerus Snape",count:3,color:"#6622aa",type:"buw"},
-  {name:"Ramon der Schinken",count:3,color:"#6c4394",type:"buw",file:"Ramon.png"},
+  {name:"Ramon der Schinken",count:3,color:"#6622aa",type:"buw",file:"Ramon.png"},
   {name:"Suffia",count:3,color:"#666666",type:"buw"},
   {name:"Luis Münsters",count:3,color:"#666666",type:"buw"},
   {name:"Cedzilla",count:3,color:"#666666",type:"buw"},
   {name:"Griechischer ApoRed",count:3,color:"#666666",type:"buw"},
-  {name:"Cediboy",count:3,color:"#a7a7a7",type:"buw",file:"Cediboy.png"},
+  {name:"Cediboy",count:3,color:"#666666",type:"buw",file:"Cediboy.png"},
   {name:"Clarry Pather der Maincharacter",count:3,color:"#008899",type:"buw"},
   {name:"Barista Clarista der Mister-Fister",count:3,color:"#008899",type:"buw"},
   {name:"ClariSSIO",count:3,color:"#008899",type:"buw"},
   {name:"Alicia die ehrenlose Fettsau",count:3,color:"#008899",type:"buw"},
-  {name:"Dr. Stirli",count:3,color:"#00c8d4",type:"buw",file:"DrStirli.png"},
+  {name:"Dr. Stirli",count:3,color:"#008899",type:"buw",file:"DrStirli.png"},
   {name:"Die Pogofanten",count:1,color:"#111111",type:"spec"},
   {name:"L'Enderdragon",count:1,color:"#111111",type:"spec"},
   {name:"Golop der Grobe",count:1,color:"#111111",type:"spec"},
@@ -2705,9 +2711,15 @@ function beginAbilityActivation(el, abilityKey, abilityName, resolveFn, defender
   _lastActivatorSlotId = slotId;
   // Zug-Regel: Buwemon-Fähigkeiten (nicht Effektkarten) nur einmal pro Zug
   const isBuwAbility = (el.dataset.ctype === 'buw' || el.dataset.ctype === 'spec') && abilityKey !== 'angriff';
-  if (isBuwAbility && !sandboxMode && !debugMode) {
+  // Angriffe zaehlen ebenfalls als Buwemonaktion. Frueher war der Limit-Check an
+  // isBuwAbility gekoppelt, das Angriffe per Definition ausschliesst -> der Zaehler wurde
+  // zwar erhoeht, aber NIE geprueft: man konnte unbegrenzt weiter angreifen und danach
+  // (da markAbilityUsed jedes Mal hochzaehlte) blieb die Sperre wirkungslos.
+  const _isTurnAction = isBuwAbility || (abilityKey === 'angriff' &&
+    (el.dataset.ctype === 'buw' || el.dataset.ctype === 'spec' || el.dataset.ctype === 'ex-ereignis' || el.dataset.ctype === 'ex-auto'));
+  if (_isTurnAction && !sandboxMode && !debugMode) {
     if (turnActionsUsed >= turnActionsAllowed) { showOutcomeToast('⚠ Du hast in diesem Zug bereits angegriffen oder eine Fähigkeit genutzt!', is4); return; }
-    if (!canUseAbility(slotId, abilityKey)) { showOutcomeToast('⚠ Diese Fähigkeit wurde bereits ausgeschöpft!', is4); return; }
+    if (isBuwAbility && !canUseAbility(slotId, abilityKey)) { showOutcomeToast('⚠ Diese Fähigkeit wurde bereits ausgeschöpft!', is4); return; }
   }
   // Der Besitzer der aktivierenden Karte ergibt sich aus ihrem Slot, NICHT aus NET.myPlayer
   // (im Solo-Modus ist NET.myPlayer immer 1, unabhängig davon wessen Karte gerade agiert)
@@ -2981,7 +2993,7 @@ function cleanUpOwnAbilityCards(playedCards, killSlotId, killOwnerP, is4, cleanA
 // Wird lokal aufgerufen, sobald ICH eine gültige Antwortkarte (Dinkelmehl/Ablehnt/FourAceFour) andocke
 // Effektkarten, die während eines ANGRIFFS als Verteidigung eingesetzt werden können
 // (ersetzen dort Dinkelmehl - das ist nur für sonstige Fähigkeiten gedacht)
-const ATTACK_DEFENSE_NAMES = ['Calgon','Stein','UwU ','Glaskuppel','Tut mir leid\u2026','RGB'];
+const ATTACK_DEFENSE_NAMES = ['Calgon','Stein','UwU ','Glaskuppel','Glaskuppel Ereignis','Tut mir leid\u2026','RGB'];
 // Karten, die NUR in bestimmten Kampfsituationen einsetzbar sind (key=Kartenname, value=Rolle)
 // 'attacker' = nur der Angreifer, 'defender_any' = Verteidiger bei Buw- und LP-Angriff, 'defender_buw' = nur bei Buwemon-Angriff
 const COMBAT_ONLY_ROLES = {
@@ -3019,6 +3031,13 @@ function checkAbilityBlock(cd, slotId) {
     validNames = isFirstStep ? ABILITY_FIRST_RESPONSE_NAMES : ABILITY_CHAIN_RESPONSE_NAMES;
   }
   if (!validNames.includes(cd.name)) return;
+  // Greift ein EX-Buwemon an, sind Calgon/Stein/Tut mir leid/RGB/Ablehnt wirkungslos.
+  // Erlaubt bleiben nur Glaskuppel (auch als Ereigniskarte), UwU und FourAceFour -
+  // sowie das Ausruesten von Clubmate/Clubmate Ereignis/13er Bogen (eigener Pfad).
+  if (isAttack && pendingAbility.slotId && /-ex(-4)?$/.test(pendingAbility.slotId)) {
+    const EX_ALLOWED_DEFENSE = ['Glaskuppel', 'Glaskuppel Ereignis', 'UwU ', FOURACEFOUR_NAME];
+    if (!EX_ALLOWED_DEFENSE.includes(cd.name)) return;
+  }
   if (isFirstStep && player === pendingAbility.activatorP) return; // Aktivator kann die eigene Fähigkeit/den eigenen Angriff nicht selbst blocken
   if (player === pendingAbility.lastActor) return; // nicht zweimal hintereinander derselbe Spieler
 
@@ -3165,6 +3184,11 @@ function beginAttackSelection(btn, cardEl) {
   closePopup();
   if (pendingAbility) { alert('Es läuft gerade schon eine Fähigkeit/ein Angriff - bitte warten.'); return; }
   const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  // Sicherheitsnetz: der verblasste Button koennte aus einem veralteten Popup stammen
+  if (!sandboxMode && !debugMode && turnActionsUsed >= turnActionsAllowed) {
+    showOutcomeToast('⚠ Du hast in diesem Zug bereits angegriffen oder eine Fähigkeit genutzt!', is4);
+    return;
+  }
   const slotId = cardEl.dataset.slotId;
   if (!slotId) return;
   const attackerP = parseInt((slotId.match(/^p(\d)/)||[])[1] || '1');
@@ -3198,9 +3222,29 @@ function confirmAttackTarget(lsid, targetCd) {
   document.getElementById('abil-toast'+suf).classList.remove('open');
   document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
   const defenderP = parseInt((lsid.match(/^p(\d)/)||[])[1] || '0');
-  const preEquipCount = (targetCd.equipped || []).length;
+  // Lisas Schutzwall: per Zufall wird entschieden, welches Buwemon wirklich getroffen wird
+  // (null = der Angriff geht komplett ins Leere).
+  const { chosen: _lisaTarget, txt: _lisaTxt } = applyLisaRedirect(lsid, defenderP, sel.is4);
+  if (_lisaTarget === null) {
+    // Angriff geht komplett ins Leere: Es gibt nichts abzuwehren, also wird hier BEWUSST
+    // KEINE Kampfsituation geoeffnet (frueher lief eine leere Runde mit 30s-Timer und
+    // leuchtenden Buwemon durch). Nur kurzer Info-Toast - das Event ist damit beendet.
+    pendingAttackSelection = null;
+    showOutcomeToast(_lisaTxt, sel.is4);
+    if (NET.mode === 'multi') netSend({t:'outcome_toast', text: _lisaTxt, is4: sel.is4});
+    // Die Buwemonaktion ist trotzdem verbraucht (der Angriff wurde ja durchgefuehrt).
+    if (!sandboxMode && !debugMode) markAbilityUsed(sel.slotId, 'angriff');
+    if (NET.mode === 'multi') { sel.is4 ? netSendState4() : netSendState(); }
+    return;
+  }
+  const realLsid = _lisaTarget;
+  const realCd = G.slots[realLsid] || targetCd;
+  const preEquipCount = (realCd.equipped || []).length;
   pendingAttackSelection = null;
-  beginAbilityActivation(sel.cardEl, 'angriff', sel.attackName, (resolveInfo) => resolveAttack(sel, lsid, defenderP, false, resolveInfo, preEquipCount), lsid, { defenderName: targetCd.name, defenderColor: targetCd.color });
+  // Lisa-Meldung (falls umgeleitet) wird als extraText direkt in die Kampfsituation
+  // eingeblendet statt als konkurrierender Standalone-Toast.
+  beginAbilityActivation(sel.cardEl, 'angriff', sel.attackName, (resolveInfo) => resolveAttack(sel, realLsid, defenderP, false, resolveInfo, preEquipCount), realLsid,
+    { defenderName: realCd.name, defenderColor: realCd.color, extraText: (_lisaTxt && realLsid !== lsid) ? ' (' + _lisaTxt + ')' : '' });
 }
 
 function confirmAttackTargetLP(defenderP, is4) {
@@ -3278,6 +3322,18 @@ function moveToGraveLogical(slotId, cd, is4) {
   if (!cd) return;
   const p = parseInt((slotId.match(/^p(\d)/)||[])[1] || '0');
   const pfx = 'p'+p;
+  // Dauereffekte haengen an der KARTE - verlaesst sie das Feld, muessen alle an ihr
+  // haengenden Zustaende (Glorian/Barista/Luis/Lisa-Shimmer, Dinkelmehl-Pause, Barista-
+  // Betaeubung) sauber aufgeraeumt werden. setAbilityShimmer(..., false) uebernimmt das
+  // bereits fuer Glorian/Barista-ALS-AKTIVATOR; hier zusaetzlich fuer den Fall dass DIESE
+  // Karte selbst das BARISTA-ZIEL war (Punkt: verblasste Karte stirbt -> Sperre muss weg).
+  if (cd.uid !== undefined && String(cd.uid) === String(baristaTargetUid)) {
+    setBaristaFade(slotId, false);
+    baristaActiveSlot = null; baristaTargetSlot = null; baristaTargetName = null; baristaTargetUid = null;
+  }
+  if (abilActive(slotId)) setAbilityShimmer(slotId, false);
+  dinkSet(slotId, false);
+  glorSuppSet(slotId, false);
   G.slots[slotId] = null;
   renderSlot(slotId);
   const bcd = { name: cd.name, color: cd.color, type: cd.type || cd.ctype, file: cd.file || '' };
@@ -3418,13 +3474,22 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
   const defCd = G.slots[defenderSlotId];
   if (!defCd) return;
   // Luis Münsters Dauerfähigkeit: 4/6 Schutz (wie Calgon), wenn Schimmer aktiv
-  if (defCd.name === 'Luis Münsters' && activePermanentAbilities.has(defenderSlotId) && !dinkelmehlSuppressed.has(defenderSlotId)) {
+  if (defCd.name === 'Luis Münsters' && abilActive(defenderSlotId) && !dinkActive(defenderSlotId)) {
     const luisBlocks = Math.random() < 4/6;
     const luisTxt = luisBlocks ? 'Münster-Effekt: Angriff abgewehrt!' : 'Münster-Effekt hat NICHT gewirkt – Angriff wird durchgeführt.';
     showOutcomeToast(luisTxt, is4);
+    // resolveAttack laeuft NUR beim Angreifer - ohne netSend saehe der Verteidiger das
+    // Ergebnis nie. An alle Spieler senden, damit jeder den Ausgang sieht.
+    if (NET.mode === 'multi') netSend({t:'outcome_toast', text: luisTxt, is4});
 
     if (luisBlocks) {
       if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
+      // Zwillingsattacke: der zweite Angriff steht auch dann zu, wenn der erste
+      // abgewehrt wurde. Dieser return-Pfad uebersprang frueher den _afterFn-Aufruf
+      // am Ende der Funktion - Apo bekam nach einer Luis-Abwehr keinen zweiten Angriff.
+      if (sel.cardEl && sel.cardEl._afterFn && G.slots[sel.slotId]) {
+        const fn = sel.cardEl._afterFn; sel.cardEl._afterFn = null; setTimeout(() => fn(), 800);
+      }
       return;
     }
   } // Ziel existiert nicht mehr (z.B. schon anderweitig entfernt)
@@ -3452,6 +3517,10 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
       atkPowerOverride = sel.attackPower - 30;
       if (atkColor === '#008899') attackerDiesAfterwards = true; // Angreifer ist Cyan
     } else if (defense.name === 'Tut mir leid\u2026') {
+      // Zweiter Angriff der Zwillingsattacke bleibt auch hier bestehen
+      if (sel.cardEl && sel.cardEl._afterFn && G.slots[sel.slotId]) {
+        const fn = sel.cardEl._afterFn; sel.cardEl._afterFn = null; setTimeout(() => fn(), 800);
+      }
       return; // Alles (Effektkarten + Ausrüstungen zurück auf Hand) läuft in finalizeAbilityChain via cleanUpOwnAbilityCards
     } else if (defense.name === 'RGB') {
       // RGB zieht 2 Karten für den Besitzer (ownerP aus defense) - Kampf läuft danach normal weiter
@@ -3520,6 +3589,41 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
 
 // ── DAUERFÄHIGKEITEN ──
 // Set mit SlotIDs von Buwemon die gerade eine aktive Dauerfähigkeit haben
+// ═══════════════════════════════════════════════════════════════════════════════
+// DAUEREFFEKT-VERTRAG: Diese drei Sets enthalten KARTEN-UIDs, NICHT Slot-IDs.
+// Ein Effekt gehoert IMMER zur einzelnen Karte, NIE zum Feld. Wandert die Karte in
+// ein anderes Feld, wandert der Effekt mit; verlaesst sie das Spielfeld, ist der
+// Effekt weg und die naechste Karte im selben Feld erbt ihn NICHT.
+// Zugriff ausschliesslich ueber abilActive/abilSet/dinkActive/dinkSet/glorSuppActive/glorSuppSet.
+// Ueber NETZWERK werden immer LOGISCHE SLOT-IDs uebertragen (UIDs divergieren
+// zwischen Host und Gast!) - der Empfaenger loest sie lokal in seine uid auf.
+// ═══════════════════════════════════════════════════════════════════════════════
+function _uidAt(slotId) {
+  const cd = slotId ? G.slots[slotId] : null;
+  return (cd && cd.uid !== undefined && cd.uid !== null) ? String(cd.uid) : null;
+}
+function _slotOfUid(uid) {
+  if (uid === null || uid === undefined) return null;
+  const t = String(uid);
+  return Object.keys(G.slots).find(s => G.slots[s] && String(G.slots[s].uid) === t) || null;
+}
+function abilActive(slotId) { const u = _uidAt(slotId); return u !== null && activePermanentAbilities.has(u); }
+const _abilOwnerByUid = {}; // uid -> ownerP bei Aktivierung (fuer Besitzerwechsel-Erkennung)
+function abilSet(slotId, on) {
+  const u = _uidAt(slotId); if (u === null) return;
+  if (on) {
+    activePermanentAbilities.add(u);
+    if (_abilOwnerByUid[u] === undefined) _abilOwnerByUid[u] = parseInt((String(slotId).match(/^p(\d)/)||[])[1]||'0');
+  } else { activePermanentAbilities.delete(u); delete _abilOwnerByUid[u]; }
+}
+function dinkActive(slotId) { const u = _uidAt(slotId); return u !== null && dinkelmehlSuppressed.has(u); }
+function dinkSet(slotId, on) { const u = _uidAt(slotId); if (u === null) return; if (on) dinkelmehlSuppressed.add(u); else dinkelmehlSuppressed.delete(u); }
+function glorSuppActive(slotId) { const u = _uidAt(slotId); return u !== null && glorianSuppressed.has(u); }
+function glorSuppSet(slotId, on) { const u = _uidAt(slotId); if (u === null) return; if (on) glorianSuppressed.add(u); else glorianSuppressed.delete(u); }
+// Aktuelle Slots aller Karten mit aktivem Dauereffekt (fuer Iterationen)
+function activeAbilitySlots() { return [...activePermanentAbilities].map(u => _slotOfUid(u)).filter(Boolean); }
+function glorianSuppressedSlots() { return [...glorianSuppressed].map(u => _slotOfUid(u)).filter(Boolean); }
+
 const activePermanentAbilities = new Set();
 // Set mit SlotIDs die durch Dinkelmehl temporär deaktiviert sind (bis Zug-Ende)
 const dinkelmehlSuppressed = new Set();
@@ -3556,9 +3660,15 @@ const firstRoundSeenPlayers = new Set(); // welche Spieler hatten schon einen Zu
 let pendingClariSSIO = null;
 let baristaActiveSlot = null; // {slotId, ownerP}
 let baristaTargetSlot = null; // logische SlotId des betäubten Buwemon
-let baristaTargetName = null; // Name der betäubten Karte (für Fix wenn Karte stirbt)
+let baristaTargetName = null;
+let baristaTargetUid = null; // UID der betaeubten Karte - Effekt haengt an der KARTE, nicht am Feld // Name der betäubten Karte (für Fix wenn Karte stirbt)
 let pendingBaristaTarget = null; // Zielauswahl pending // SlotIDs von pausierten Dauerfähigkeiten
 function setAbilityShimmer(slotId, active) {
+  // WICHTIG: Der ZUSTAND wird immer zuerst gesetzt - unabhaengig davon, ob das DOM
+  // gerade bereit ist. Frueher stand activePermanentAbilities.add() ganz am Ende hinter
+  // mehreren return-Punkten; war die Karte beim Empfaenger noch nicht gerendert, wurde
+  // der Effekt nie registriert (Luis/Lisa/Glorian/Barista wirkten dann nur beim Host).
+  abilSet(slotId, !!active);
   const slotEl = document.getElementById(physId(slotId));
   if (!slotEl) return;
   // Alten Shimmer entfernen
@@ -3567,19 +3677,18 @@ function setAbilityShimmer(slotId, active) {
   const oldWrap = slotEl.querySelector('.shimmer-img-wrap');
   if (oldWrap) { const imgEl = oldWrap.querySelector('img'); if(imgEl) oldWrap.parentNode.insertBefore(imgEl, oldWrap); oldWrap.remove(); }
   if (!active) {
-    activePermanentAbilities.delete(slotId);
     // Glorian deaktiviert: supprimierte Dauerfähigkeiten wiederherstellen
     if (glorianActiveSlot && glorianActiveSlot.slotId === slotId) {
       glorianActiveSlot = null;
-      glorianSuppressed.forEach(s => {
-        dinkelmehlSuppressed.delete(s);
-        if (activePermanentAbilities.has(s) && G.slots[s]) setAbilityShimmer(s, true); // s ist logisch
+      glorianSuppressedSlots().forEach(s => {
+        dinkSet(s, false);
+        if (abilActive(s)) setAbilityShimmer(s, true);
       });
       glorianSuppressed.clear();
     }
     if (baristaActiveSlot && baristaActiveSlot.slotId === slotId) {
       setBaristaFade(baristaTargetSlot, false);
-      baristaActiveSlot = null; baristaTargetSlot = null; baristaTargetName = null;
+      baristaActiveSlot = null; baristaTargetSlot = null; baristaTargetName = null; baristaTargetUid = null;
     }
     return;
   }
@@ -3597,18 +3706,25 @@ function setAbilityShimmer(slotId, active) {
   shimDiv.className = 'shimmer-wrapper';
   shimDiv.style.cssText = 'position:absolute;inset:0;border-radius:6px;pointer-events:none;z-index:9;background:linear-gradient(105deg,transparent 25%,rgba(255,255,255,0.6) 50%,transparent 75%);background-size:200% 100%;animation:abilityShimmer 1.6s linear infinite;mix-blend-mode:screen;';
   wrap.appendChild(shimDiv);
-  activePermanentAbilities.add(slotId);
 }
 
 function clearDinkelmehlSuppression() {
-  dinkelmehlSuppressed.forEach(slotId => {
-    if (!glorianSuppressed.has(slotId)) setAbilityShimmer(slotId, true);
+  [...dinkelmehlSuppressed].forEach(uid => {
+    const slotId = _slotOfUid(uid);
+    if (slotId && !glorianSuppressed.has(uid)) setAbilityShimmer(slotId, true);
   });
   dinkelmehlSuppressed.clear();
-  glorianSuppressed.forEach(s => dinkelmehlSuppressed.add(s));
-  // Barista Fade wiederherstellen nach Zug-Ende
-  if (baristaTargetSlot) setBaristaFade(baristaTargetSlot, true);
-  if (baristaActiveSlot) setAbilityShimmer(baristaActiveSlot.slotId, true);
+  glorianSuppressed.forEach(u => dinkelmehlSuppressed.add(u));
+  // Barista Fade wiederherstellen nach Zug-Ende. NUR wenn die betaeubte KARTE (uid) noch
+  // in diesem Feld liegt - sonst wuerde ein NEU dorthin gedocktes Buwemon faelschlich mit
+  // verblassen und dessen Aktionsbuttons wuerden ebenfalls blockiert (Effekt haengt an der
+  // Karte, nicht am Feld - siehe DAUEREFFEKT-VERTRAG).
+  if (baristaTargetUid) {
+    const _btSlotRestore = _slotOfUid(baristaTargetUid);
+    if (_btSlotRestore) { baristaTargetSlot = _btSlotRestore; setBaristaFade(_btSlotRestore, true); }
+    else { baristaActiveSlot = null; baristaTargetSlot = null; baristaTargetName = null; baristaTargetUid = null; }
+  }
+  if (baristaActiveSlot && abilActive(baristaActiveSlot.slotId)) setAbilityShimmer(baristaActiveSlot.slotId, true);
 }
 
 // ── ABLEHNT / DINKELMEHL / FOURACEFLOUR IM EIGENEN ZUG (ausserhalb Kampfsituation) ──
@@ -3776,8 +3892,8 @@ document.addEventListener('pointerdown', (e) => {
     } else if (cardName === 'Dinkelmehl') {
       beginAbilityActivation(fake, 'Dinkelmehl', 'Dinkelmehl – ' + (cd ? cd.name : lsid), () => {
         // Fähigkeit des Buwemon für diesen Zug deaktivieren
-        if (activePermanentAbilities.has(lsid)) {
-          dinkelmehlSuppressed.add(lsid);
+        if (abilActive(lsid)) {
+          dinkSet(lsid, true);
           const g = abilityGlowEl(lsid); if (g) g.classList.remove('ability-shimmer');
           const slotEl2 = document.getElementById(physId(lsid));
           if (slotEl2) {
@@ -3838,7 +3954,8 @@ function revealHandForLegilimens(targetP, is4) {
   handEl.querySelectorAll('.sim-hand-card').forEach(c => {
     const img = c.querySelector('img');
     if (!img) return;
-    const src = c.dataset.file || (c.dataset.name ? thumbFor(c.dataset.name) : null);
+    // imgFor() setzt das 'karten/'-Praefix - ohne das bleiben Ereigniskarten unsichtbar.
+    const src = imgFor(c.dataset.name, false, c.dataset.file);
     if (src) img.src = src;
     c.style.pointerEvents = 'auto'; c.style.cursor = 'pointer';
     c.ondblclick = (e2) => {
@@ -4082,22 +4199,26 @@ function beginLisaAbility(btn, el) {
 
 // Gibt den tatsächlich getroffenen SlotId zurück (oder null = Angriff geht ins Leere)
 // Wird in confirmAttackTarget aufgerufen wenn der Verteidiger eine aktive Lisa hat.
+// Gibt {chosen, txt} zurueck statt selbst einen Toast zu zeigen: applyLisaRedirect wird
+// unmittelbar VOR dem Oeffnen der echten Kampf-Reaktionsrunde aufgerufen. showOutcomeToast()
+// und die Kampfsituation (openAbilityRound) teilen sich dasselbe Toast-DOM-Element; ein hier
+// direkt ausgeloester showOutcomeToast() plant einen 3s-Timer, der die gerade erst geoeffnete
+// Kampfsituation vorzeitig wieder schliesst ("keine Kampfsituation/Toasts" beim Verteidiger).
+// Der Aufrufer zeigt die Meldung stattdessen ueber das extraText-Feld der Kampfsituation
+// selbst an (Fall: getroffen) bzw. per eigenstaendigem Toast NUR wenn danach keine weitere
+// Kampfsituation folgt (Fall: ins Leere).
 function applyLisaRedirect(originalDefenderSlotId, defenderP, is4) {
   const suf = is4 ? '-4' : '';
   const buwSlots = ['buw1','buw2','buw3']
     .map(s => 'p'+defenderP+'-'+s+suf)
     .filter(sid => G.slots[sid]);
-  // Lisa aktiv?
-  const lisaActive = buwSlots.some(sid => G.slots[sid] && G.slots[sid].name === 'Lisa aus Australien' && activePermanentAbilities.has(sid) && !dinkelmehlSuppressed.has(sid));
-  if (!lisaActive) return originalDefenderSlotId;
-  // Optionen: alle Buwemon + "niemand"
+  const lisaActive = buwSlots.some(sid => G.slots[sid] && G.slots[sid].name === 'Lisa aus Australien' && abilActive(sid) && !dinkActive(sid));
+  if (!lisaActive) return { chosen: originalDefenderSlotId, txt: null };
   const options = [...buwSlots, null]; // null = ins Leere
   const chosen = options[Math.floor(Math.random() * options.length)];
   const chosenName = chosen ? (G.slots[chosen] ? G.slots[chosen].name : '?') : null;
   const txt = chosen ? 'Lisas Schutzwall: ' + chosenName + ' wurde getroffen!' : 'Lisas Schutzwall: Angriff geht ins Leere!';
-  showOutcomeToast(txt, is4);
-  if (NET.mode === 'multi') netSend({t:'outcome_toast', text: txt, is4});
-  return chosen; // null bedeutet: Angriff trifft niemanden
+  return { chosen, txt };
 }
 
 // ── LUIS MÜNSTERS – Münster ──
@@ -4158,7 +4279,9 @@ function resolveWanze(activatorP, targetP, is4, wanzeSlot) {
       const img = c.querySelector('img');
       if (!img) return;
       // Kartenbild anzeigen statt Rückseite
-      const src = c.dataset.file || (c.dataset.name ? thumbFor(c.dataset.name) : null);
+      // imgFor() setzt das 'karten/'-Praefix. Frueher wurde dataset.file (nur der Dateiname)
+      // direkt als src gesetzt -> Ereigniskarten wie 'Clubmate Ereignis' blieben unsichtbar.
+      const src = imgFor(c.dataset.name, false, c.dataset.file);
       if (src) img.src = src;
       c.style.pointerEvents = 'auto';
       c.style.cursor = 'pointer';
@@ -4177,16 +4300,50 @@ function resolveWanze(activatorP, targetP, is4, wanzeSlot) {
   if (NET.mode === 'multi') netSend({t:'wanze_reveal', targetP, is4, open: true});
 }
 
-function applyGlibbern(slotId, is4) {
+// Laufende Glibber-Animationen: uid -> Endzeit. An die KARTE gebunden (Dauereffekt-
+// Vertrag), damit renderSlot den Effekt jederzeit wiederherstellen kann.
+const glibberUntilByUid = {};
+const GLIBBER_MS = 5000;
+
+function applyGlibbern(slotId, is4, _try) {
   const is4mode = is4 !== undefined ? is4 : (typeof fourPlayerMode !== 'undefined' && fourPlayerMode);
+  const _cdG = G.slots[slotId];
+  if (_cdG && _cdG.uid !== undefined && !(_try > 0)) {
+    glibberUntilByUid[String(_cdG.uid)] = Date.now() + GLIBBER_MS;
+  }
   const physSlotId = is4mode ? physIdFor4p(slotId) : physId(slotId);
   const physSlotEl = document.getElementById(physSlotId);
-  if (!physSlotEl) return;
-  // Karten-Bild: erstes img das kein Icon/Label ist
-  const img = physSlotEl.querySelector('.shimmer-img-wrap img') || physSlotEl.querySelector('.docked-card img') || physSlotEl.querySelector('img');
-  if (!img) return;
+  const img = physSlotEl && (physSlotEl.querySelector('.shimmer-img-wrap img') || physSlotEl.querySelector('.docked-card img') || physSlotEl.querySelector('img'));
+  if (!img) {
+    // Karte wird evtl. gerade neu gerendert - kurz warten und erneut versuchen.
+    const t = (_try || 0) + 1;
+    if (t <= 6) setTimeout(() => applyGlibbern(slotId, is4, t), 120);
+    return;
+  }
   img.style.filter = 'url(#gli)';
-  setTimeout(() => { img.style.filter = ''; }, 5000);
+  const _uidG = _cdG && _cdG.uid !== undefined ? String(_cdG.uid) : null;
+  const _rest = _uidG && glibberUntilByUid[_uidG] ? (glibberUntilByUid[_uidG] - Date.now()) : GLIBBER_MS;
+  setTimeout(() => {
+    if (_uidG) {
+      // Nur beenden, wenn die Laufzeit wirklich abgelaufen ist (ein zwischenzeitliches
+      // Wiederherstellen durch renderSlot darf die Animation nicht vorzeitig killen).
+      if ((glibberUntilByUid[_uidG] || 0) > Date.now()) return;
+      delete glibberUntilByUid[_uidG];
+    }
+    img.style.filter = '';
+  }, Math.max(50, _rest));
+}
+
+// Wird von renderSlot aufgerufen: laeuft fuer die Karte in diesem Slot noch eine
+// Glibber-Animation, wird der Filter nach dem Neuaufbau des DOM wieder gesetzt.
+function restoreGlibberIfActive(slotId) {
+  const cd = G.slots[slotId];
+  if (!cd || cd.uid === undefined) return;
+  const until = glibberUntilByUid[String(cd.uid)];
+  if (!until) return;
+  if (until <= Date.now()) { delete glibberUntilByUid[String(cd.uid)]; return; }
+  const is4m = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  setTimeout(() => applyGlibbern(slotId, is4m, 1), 10);
 }
 
 function clearWanzeReveal() {
@@ -4385,7 +4542,8 @@ function resolveMarie(activatorP, targetP, is4) {
   handEl.querySelectorAll('.sim-hand-card').forEach((c2) => {
     const img = c2.querySelector('img');
     if (!img) return;
-    const src = c2.dataset.file || (c2.dataset.name ? thumbFor(c2.dataset.name) : null);
+    // imgFor() setzt das 'karten/'-Praefix - ohne das bleiben Ereigniskarten unsichtbar.
+    const src = imgFor(c2.dataset.name, false, c2.dataset.file);
     if (src) img.src = src;
     c2.style.pointerEvents = 'auto'; c2.style.cursor = 'pointer';
     c2.ondblclick = (e2) => {
@@ -4468,13 +4626,14 @@ function tryConfirmBarista(lsid, cd) {
 function applyBaristaEffect(baristaSlotId, ownerP, targetLsid, is4) {
   baristaActiveSlot = {slotId: baristaSlotId, ownerP};
   baristaTargetSlot = targetLsid;
+  baristaTargetUid = _uidAt(targetLsid);
   baristaTargetName = (G.slots[targetLsid]||{}).name || null;
   setAbilityShimmer(baristaSlotId, true);
   setBaristaFade(targetLsid, true);
   const tName = (G.slots[targetLsid]||{}).name || '?';
   showOutcomeToast(tName + ' ist betäubt!', is4);
   if (NET.mode==='multi') {
-    netSend({t:'barista_activate', baristaSlotId, ownerP, targetLsid, is4});
+    netSend({t:'barista_activate', baristaSlotId, ownerP, targetLsid, is4, targetName: baristaTargetName});
     is4 ? netSendState4() : netSendState();
   }
 }
@@ -5040,7 +5199,10 @@ function startNBKUI(ownerP, targetP, maxSelect, is4) {
 function beginZwillingsattacke(btn, cardEl) {
   closePopup();
   const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
-  const slotId = toLogicalId(cardEl.dataset.slotId);
+  // cardEl.dataset.slotId ist BEREITS LOGISCH (Slot-ID-Vertrag Regel 3) - kein toLogicalId!
+  // Sonst zeigt slotId beim Gast auf den Gegner-Slot, G.slots[slotId] ist leer
+  // und die Zielauswahl bricht mit 'if (!slotData) return;' still ab.
+  const slotId = cardEl.dataset.slotId;
   beginAbilityActivation(cardEl, 'Zwillingsattacke', 'Zwillingsattacke', () => {
     setTimeout(() => {
       const afterFirst = () => {
@@ -5604,6 +5766,15 @@ const SPECIAL_ABILITY_HANDLERS = {
 // Noch nicht implementierte Fähigkeiten stehen als null da - Button ist sichtbar, aber ohne
 // Funktion. Sobald hier eine echte Funktion eingetragen wird, funktioniert alles automatisch.
 const ABILITY_EFFECTS = {
+  'Kontrollfreak': null,
+  'Grasen': null,
+  'Chemie Unfall': null,
+  'Rassismus': null,
+  'System neustarten': null,
+  'Der Schutz des Katers': null,
+  'Glaskuppel 3D-Druck': null,
+  'Verarztung': null,
+
   'Glibbern': () => {
     const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
     // UID-basiert: finde die Karte die Glibbern ausgelöst hat (robust gegen Dinkelmehl/Ablehnt in der Kampfsituation)
@@ -5646,18 +5817,18 @@ const ABILITY_EFFECTS = {
     glorianActiveSlot = {slotId, ownerP};
     setAbilityShimmer(slotId, true);
     glorianSuppressed.clear();
-    [...activePermanentAbilities].forEach(s => {
+    activeAbilitySlots().forEach(s => {
       const sP = parseInt((s.match(/^p(\d)/)||[])[1]||'1');
       if (sP !== ownerP && s !== slotId) {
-        glorianSuppressed.add(s);
-        dinkelmehlSuppressed.add(s);
+        glorSuppSet(s, true);
+        dinkSet(s, true);
         setAbilityShimmer(s, false);
-        activePermanentAbilities.add(s);
+        abilSet(s, true); // bleibt registriert, nur pausiert
       }
     });
     showOutcomeToast('Glorian pausiert gegnerische Dauerfähigkeiten!', is4);
     if (NET.mode==='multi') {
-      netSend({t:'glorian_activate', slotId, ownerP, glorianSuppressedSlots: [...glorianSuppressed], is4});
+      netSend({t:'glorian_activate', slotId, ownerP, glorianSuppressedSlots: glorianSuppressedSlots(), is4});
       is4 ? netSendState4() : netSendState();
     }
   },
@@ -5902,14 +6073,17 @@ function renderPopupActionButtons(el, fd) {
   const _is4fb = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
   const _isMyCard = !_buwOwner || _buwOwner === (_is4fb ? myLogicalPlayer4p() : myLogicalPlayer2p());
   const foreignCardBlock = !sandboxMode && !debugMode && !_isMyCard;
-  const baristaBlocksThis = !sandboxMode && !debugMode && baristaTargetSlot && baristaActiveSlot &&
+  const baristaBlocksThis = !sandboxMode && !debugMode && baristaTargetUid && baristaActiveSlot &&
     (() => {
-      // Prüfe ob die geblockte Karte noch im Ziel-Slot liegt
-      const targetCd = G.slots[baristaTargetSlot];
-      if (!targetCd || targetCd.name !== baristaTargetName) { baristaTargetSlot = null; baristaTargetName = null; return false; }
-      return (_baristaElSlotLog === baristaTargetSlot || el.dataset.slotId === baristaTargetSlot) &&
+      // Die betaeubte KARTE ueber ihre UID suchen - sie kann das Feld gewechselt haben
+      const _btSlotNow = _slotOfUid(baristaTargetUid);
+      const targetCd = _btSlotNow ? G.slots[_btSlotNow] : null;
+      if (!targetCd) { baristaTargetSlot = null; baristaTargetName = null; baristaTargetUid = null; return false; }
+      baristaTargetSlot = _btSlotNow;
+      // UID-Vergleich: der Block haengt an der KARTE, nicht am Feld
+      return (baristaTargetUid !== null && String(el.dataset.uid) === String(baristaTargetUid)) &&
         el.dataset.name === baristaTargetName &&
-        !dinkelmehlSuppressed.has(baristaActiveSlot.slotId);
+        !dinkActive(baristaActiveSlot.slotId);
     })();
   if (atkName) {
     const atkBtn = makeBtn('Angriff_Icon.png', atkName, (btn, cardEl) => beginAttackSelection(btn, cardEl), totalPower);
@@ -5950,7 +6124,7 @@ function renderPopupActionButtons(el, fd) {
           if (!gSlot || gSlot.name !== 'Glorian') { glorianActiveSlot = null; return false; }
           const cardOwnerP = parseInt((el.dataset.slotId||'p1').match(/^p(\d)/)[1]||'1');
           if (cardOwnerP === glorianActiveSlot.ownerP) return false;
-          if (dinkelmehlSuppressed.has(glorianActiveSlot.slotId)) return false;
+          if (dinkActive(glorianActiveSlot.slotId)) return false;
           return true;
         })();
       const firstRoundBlocksAbil = !sandboxMode && !debugMode && !firstRoundOver &&
@@ -6127,8 +6301,11 @@ function onCarryDrop(e) {
       if (!debugMode && isBuwSlot && SUMMON_MAP[cd.name] && !hasSummonCard(player, cd.name, zoneSuffix2)) break;
       // Im Automatik-Modus: belegte Buwemon-Slots sind NICHT dockbar
       if (!sandboxMode && !debugMode && isBuwSlot && G.slots[lsid]) {
-        // Rückgabe an ursprüngliche Hand-Position erfolgt zentral in pointerup (originalHandIdx)
-        return false;
+        // Automatik-Modus: belegtes Buwemonfeld - Karte zurueck ins Feld legen
+        const _gpBack = clientToGame(e.clientX, e.clientY);
+        spawnCard(cd, clampX(_gpBack.x - 31), clampY(_gpBack.y - 44), false);
+        if (NET.mode==='multi') { zoneSuffix2 ? netSendState4() : netSendState(); }
+        return;
       }
       if (G.slots[lsid]) {
         releaseSlot(lsid, sr.left+4, sr.top+4);
@@ -6144,8 +6321,9 @@ function onCarryDrop(e) {
       if (isEffSlot || isVerbotSlot) checkVerbote(player, zoneSuffix2);
       if (isEffSlot) onCardDockedToEffSlot(player, lsid, cd);
       if (isExSlot && (cd.color === '#111111' || cd.name === 'Darkschah EX')) checkDarkschahWin(player);
-      // Originale Karte aus DOM entfernen (sie ist jetzt als docked-card im Slot)
-      el.remove(); G.cards = G.cards.filter(c => c !== el);
+      // Hier gibt es KEINE DOM-Karte zu entfernen: die Karte kam aus einem Stapel-Popup
+      // und klebte nur am Cursor (carryData). Ein el.remove() wie in tryDockCard wuerde
+      // einen ReferenceError werfen und das netSendState() darunter verhindern.
       if (NET.mode==='multi') { zoneSuffix2 ? netSendState4() : netSendState(); }
       return;
     }
@@ -7086,10 +7264,11 @@ function renderSlot(slotId) {
   // Dauerfähigkeits-Schimmer wiederherstellen (Overlay neu hinzufügen nach renderSlot)
   // Legilimens: wenn Alexerus seinen Slot verlassen hat, Fähigkeit beenden
   if (legilimensSlotId && (legilimensSlotId === slotId || legilimensSlotId.replace('-4','') === slotId.replace('-4','')) && !G.slots[legilimensSlotId]) clearLegilimens();
-  if (activePermanentAbilities && activePermanentAbilities.has(slotId) && !dinkelmehlSuppressed.has(slotId)) {
+  if (abilActive(slotId) && !dinkActive(slotId)) {
     // kurz warten damit das DOM fertig gebaut ist
     setTimeout(() => setAbilityShimmer(slotId, true), 10);
   }
+  restoreGlibberIfActive(slotId);
 }
 
 function imgFileFor(name) {
@@ -7160,13 +7339,18 @@ function onCardDockedToEffSlot(player, slotId, cd) {
     fake.dataset.name = cd.name; fake.dataset.color = cd.color;
     fake.dataset.ctype = cd.type || 'eff'; fake.dataset.uid = cd.uid || 0;
     fake.dataset.slotId = slotId;
+    // Die RGB-Karte wandert SOFORT auf den Friedhof - unabhaengig davon, ob die
+    // Kampfsituation die Wirkung durchlaesst oder sie abgelehnt wird. Frueher lag das
+    // Aufraeumen nur in der resolveFn, die bei Ablehnung nie lief -> Karte blieb im Feld.
+    G.slots[slotId] = null; renderSlot(slotId);
+    {
+      const pfx = 'p'+ownerP;
+      const bcd = {name:cd.name,color:cd.color,type:'eff',file:cd.file||''};
+      if (is4) { G4.graves[pfx].push(bcd); updGrave4(pfx); } else { G.graves[pfx].push(bcd); updGrave(pfx); }
+      if (NET.mode==='multi') { is4 ? netSendState4() : netSendState(); }
+    }
     beginAbilityActivation(fake, 'RGB', 'RGB', () => {
       resolveRGB(slotId, is4, ownerP);
-      // Karte auf Friedhof des Besitzers
-      G.slots[slotId] = null; renderSlot(slotId);
-      const pfx = 'p'+ownerP;
-      const bcd = {name:cd.name,color:cd.color,type:'eff',file:''};
-      if (is4) { G4.graves[pfx].push(bcd); updGrave4(pfx); } else { G.graves[pfx].push(bcd); updGrave(pfx); }
       if (NET.mode==='multi') { is4 ? netSendState4() : netSendState(); }
     });
     return;
@@ -7345,7 +7529,11 @@ function onCardDockedToEffSlot(player, slotId, cd) {
       fake.dataset.ctype = cd.type||'eff'; fake.dataset.uid = cd.uid||0; fake.dataset.slotId = slotId;
       beginAbilityActivation(fake, 'Nachschlag', 'Nachschlag', () => {
         if (!sandboxMode && !debugMode) {
-          turnActionsAllowed = Math.max(turnActionsAllowed, turnActionsUsed + 2); // max 2 weitere
+          // Genau EINE zusaetzliche Buwemonaktion (mehrere Nachschlaege stapeln sich).
+          // Funktioniert auch, wenn die Aktion dieses Zuges bereits verbraucht war.
+          turnActionsAllowed = Math.max(turnActionsAllowed, turnActionsUsed) + 1;
+          // Fuer den Rest des Zuges duerfen auch bereits verbrauchte Faehigkeiten erneut genutzt werden
+          nachschlagActiveThisTurn = true;
         }
         // Nachschlag hebt die Giraffael/Clarry-Selbstverschiebungs-Sperre der eigenen Buwemon auf
         ['buw1','buw2','buw3'].forEach(bs => {
@@ -7355,7 +7543,8 @@ function onCardDockedToEffSlot(player, slotId, cd) {
             if (NET.mode === 'multi') netSend({t:'self_moved_unblock', uid: String(_bcd.uid)});
           }
         });
-        showOutcomeToast('Nachschlag: Eine weitere Buwemonaktion erlaubt!', is4);
+        showOutcomeToast('Nachschlag: Eine weitere Buwemonaktion erlaubt – auch bereits genutzte Fähigkeiten!', is4);
+        if (typeof updateAbilityButtonStates === 'function') updateAbilityButtonStates();
         // Karte bleibt im Effektfeld bis Zug-Ende (wird in endTurn auf Friedhof verschoben)
         if (NET.mode==='multi') { is4?netSendState4():netSendState(); }
       });
@@ -7702,6 +7891,9 @@ function tryDockCard(el) {
         return true;
       }
       if (isExSlot && ctype !== 'ex' && ctype !== 'ex-ereignis' && ctype !== 'ex-auto') continue;
+      // Reine Ausruestungskarten gehoeren NUR an ein Buwemon, nie in ein Effektfeld
+      const EQUIP_ONLY_NAMES = ['Clubmate', '13er Bogen'];
+      if (isEffSlot && EQUIP_ONLY_NAMES.includes(cname)) continue;
       if (isEffSlot && !(ctype === 'eff' || EFF_EREIGNIS_NAMES.includes(cname))) continue;
       // ── EFFEKTKARTEN-DOCKING-REGELN (nur Automatik-Modus) ──
       if (isEffSlot && !sandboxMode) {
@@ -8598,11 +8790,11 @@ function checkLPWin(p) {
 
 // ── TOXISCHE MÄNNLICHKEIT ──
 const MAENNLICHE_BUWEMON = ["Gilip der Glibbrige", "Lord Phillipp of Glencoe", "Phülügülüm", "Baby Niko", "Marzo der Gott", "Marcopter", "Marco der Hund", "Kax Maufmann", "Maxodia der Verbotene", "Maxibu", "Hoffi der rasierte Karnevalsprinz", "Glorian", "Flosama", "Klorian", "Luis Münsters", "Cedzilla", "Griechischer ApoRed", "Fabio das Berlin-City-Girl", "Giraffael"];
-const GENDER_MAP = {'Gilip der Glibbrige':'m','Lord Phillipp of Glencoe':'m','Phülügülüm':'m','Baby Niko':'m','Grünika':'f','Schwammika':'f','Antika':'f','Marie die Königsgardistin':'f','Marzo der Gott':'m','Marcopter':'m','Marco der Hund':'m','Leo Norris':'f','Kax Maufmann':'m','Maxodia der Verbotene':'m','Maxibu':'m','Hoffi der rasierte Karnevalsprinz':'m','Clarry Pather der Maincharacter':'f','Barista Clarista der Mister-Fister':'f','ClariSSIO':'f','Alicia die ehrenlose Fettsau':'f','Glorian':'m','Flosama':'m','Klorian':'m','Lisa aus Australien':'f','Suffia':'f','Luis Münsters':'m','Cedzilla':'m','Griechischer ApoRed':'m','Fabio das Berlin-City-Girl':'m','Giraffael':'m','Hannah im Bach':'f','Alexerus Snape':'f','Die Pogofanten':'n','L\'Enderdragon':'n','Golop der Grobe':'n','Der Zeitführer':'n','BOOM Clan':'n'};
+const GENDER_MAP = {'Big Mama die Buwemon-Trainerin':'f','Leonie die Schäferin':'f','Finn der Peniskopf':'m','AnniKKKa':'f','Bierre':'m','Ramon der Schinken':'m','Cediboy':'m','Dr. Stirli':'m','Gilip der Glibbrige':'m','Lord Phillipp of Glencoe':'m','Phülügülüm':'m','Baby Niko':'m','Grünika':'f','Schwammika':'f','Antika':'f','Marie die Königsgardistin':'f','Marzo der Gott':'m','Marcopter':'m','Marco der Hund':'m','Leo Norris':'f','Kax Maufmann':'m','Maxodia der Verbotene':'m','Maxibu':'m','Hoffi der rasierte Karnevalsprinz':'m','Clarry Pather der Maincharacter':'f','Barista Clarista der Mister-Fister':'f','ClariSSIO':'f','Alicia die ehrenlose Fettsau':'f','Glorian':'m','Flosama':'m','Klorian':'m','Lisa aus Australien':'f','Suffia':'f','Luis Münsters':'m','Cedzilla':'m','Griechischer ApoRed':'m','Fabio das Berlin-City-Girl':'m','Giraffael':'m','Hannah im Bach':'f','Alexerus Snape':'f','Die Pogofanten':'n','L\'Enderdragon':'n','Golop der Grobe':'n','Der Zeitführer':'n','BOOM Clan':'n'};
 
-const CARD_ATTACKS = {'Gilip der Glibbrige':'Gulaschkanone','Lord Phillipp of Glencoe':'Todesstrafe','Phülügülüm':'Kinderkeller','Baby Niko':'Apple Vergötterung','Grünika':'Oh mein Gott','Schwammika':'Juradebatte','Antika':'TOD TOD TOD','Marie die Königsgardistin':'Schwalmtal Schlag','Marzo der Gott':'Rage Anfall','Marcopter':'Propeller Schredder','Marco der Hund':'Robbenlachen','Leo Norris':'Überfahren','Kax Maufmann':'Loch buddeln','Maxodia der Verbotene':'Factorio Verführung','Maxibu':'Tornado','Hoffi der rasierte Karnevalsprinz':'Rasur','Clarry Pather der Maincharacter':'Ultraschall AH','Barista Clarista der Mister-Fister':'Sei mal ehrlich','ClariSSIO':'Nuttööö','Alicia die ehrenlose Fettsau':'Nazimusik','Glorian':'Feuerball','Flosama':'Baconbombe','Klorian':'Imagine Dragons','Lisa aus Australien':'Attacke_v3_final','Suffia':'Ferien in Algerien','Luis Münsters':'Sniper','Cedzilla':'Ehrenschlag','Griechischer ApoRed':'Insi-Modus','Fabio das Berlin-City-Girl':'Politik Diskussion','Giraffael':'Hals Hieb','Hannah im Bach':'Plantschen','Alexerus Snape':'Lego Falle','Die Pogofanten':'Pogo Zertramplung','L\'Enderdragon':'Baguette Schelle','Golop der Grobe':'Sigma Schlag','Der Zeitführer':'Zeitreisen Abtreibung','BOOM Clan':'Bowspam','Drakkschah EX':'Gottloser Bowspam','Schahco EX':'Rage','Drukkschah EX':'Unsichtbarkeit','Annischah EX':'Intellenz','Drikkschah EX':'Feuerball Jump','Schahbio EX':'Gigantische Glaskuppel','Drokkschah EX':'Von hinten Taktik','Clarischah EX':'Rumschreien','Darkschah EX':'Vernichtung'};
-const CARD_ATTACK_POWER = {'Gilip der Glibbrige':200,'Lord Phillipp of Glencoe':160,'Phülügülüm':140,'Baby Niko':160,'Grünika':160,'Schwammika':140,'Antika':160,'Marie die Königsgardistin':120,'Marzo der Gott':120,'Marcopter':180,'Marco der Hund':160,'Leo Norris':160,'Kax Maufmann':160,'Maxodia der Verbotene':120,'Maxibu':180,'Hoffi der rasierte Karnevalsprinz':160,'Clarry Pather der Maincharacter':180,'Barista Clarista der Mister-Fister':160,'ClariSSIO':140,'Alicia die ehrenlose Fettsau':160,'Glorian':160,'Flosama':180,'Klorian':140,'Lisa aus Australien':140,'Suffia':180,'Luis Münsters':140,'Cedzilla':140,'Griechischer ApoRed':160,'Fabio das Berlin-City-Girl':140,'Giraffael':140,'Hannah im Bach':160,'Alexerus Snape':160,'Die Pogofanten':300,'L\'Enderdragon':300,'Golop der Grobe':300,'Der Zeitführer':300,'BOOM Clan':320,'Drakkschah EX':300,'Schahco EX':300,'Drukkschah EX':300,'Annischah EX':300,'Drikkschah EX':300,'Schahbio EX':300,'Drokkschah EX':300,'Clarischah EX':300,'Darkschah EX':1000};
-const CARD_ABILITIES = {'Gilip der Glibbrige':'Glibbern','Lord Phillipp of Glencoe':'Mecces Pakt','Phülügülüm':'Döner schneiden','Baby Niko':'Schicksal','Grünika':'Drogen','Schwammika':'Saugkraft','Antika':'Quit livin\' on dreams','Marie die Königsgardistin':'Marie hat recht','Marzo der Gott':'Gottkomplex','Marcopter':'Rotation','Marco der Hund':'Treue','Leo Norris':'Toxische Männlichkeit','Kax Maufmann':'Meme Belästigung','Maxodia der Verbotene':'Würd\' mir stinken','Maxibu':'Ein Problem mit Alkohol','Hoffi der rasierte Karnevalsprinz':'Ein Drink zu viel','Clarry Pather der Maincharacter':'Recast','Barista Clarista der Mister-Fister':'Hühnchen Spam','ClariSSIO':'Arsch anfassen','Alicia die ehrenlose Fettsau':'Mecces Völlerei','Glorian':'Florianopolis Dominanz','Flosama':'Bett abbauen','Klorian':'Spülung','Lisa aus Australien':'Vollrauchen','Suffia':'Killsteal','Luis Münsters':'Münster','Cedzilla':'Picky Eating','Griechischer ApoRed':'Zwillingsattacke','Fabio das Berlin-City-Girl':'Clubmate Hamsterung','Giraffael':'Liiinks','Hannah im Bach':'Gossip','Alexerus Snape':'Legilimens','Die Pogofanten':'Überspringen','L\'Enderdragon':'Ohohoho','Golop der Grobe':'Pumpen','Der Zeitführer':'Raum-Zeit-Genozid','BOOM Clan':'Goldrausch'};
+const CARD_ATTACKS = {'Big Mama die Buwemon-Trainerin':'Hausputz','Leonie die Schäferin':'Konsequenzen','Finn der Peniskopf':'Zulabern','AnniKKKa':'Urlaub','Bierre':'Alkoholvergiftung','Ramon der Schinken':'Destructor Disk','Cediboy':'400€ Auto','Dr. Stirli':'Stirled','Gilip der Glibbrige':'Gulaschkanone','Lord Phillipp of Glencoe':'Todesstrafe','Phülügülüm':'Kinderkeller','Baby Niko':'Apple Vergötterung','Grünika':'Oh mein Gott','Schwammika':'Juradebatte','Antika':'TOD TOD TOD','Marie die Königsgardistin':'Schwalmtal Schlag','Marzo der Gott':'Rage Anfall','Marcopter':'Propeller Schredder','Marco der Hund':'Robbenlachen','Leo Norris':'Überfahren','Kax Maufmann':'Loch buddeln','Maxodia der Verbotene':'Factorio Verführung','Maxibu':'Tornado','Hoffi der rasierte Karnevalsprinz':'Rasur','Clarry Pather der Maincharacter':'Ultraschall AH','Barista Clarista der Mister-Fister':'Sei mal ehrlich','ClariSSIO':'Nuttööö','Alicia die ehrenlose Fettsau':'Nazimusik','Glorian':'Feuerball','Flosama':'Baconbombe','Klorian':'Imagine Dragons','Lisa aus Australien':'Attacke_v3_final','Suffia':'Ferien in Algerien','Luis Münsters':'Sniper','Cedzilla':'Ehrenschlag','Griechischer ApoRed':'Insi-Modus','Fabio das Berlin-City-Girl':'Politik Diskussion','Giraffael':'Hals Hieb','Hannah im Bach':'Plantschen','Alexerus Snape':'Lego Falle','Die Pogofanten':'Pogo Zertramplung','L\'Enderdragon':'Baguette Schelle','Golop der Grobe':'Sigma Schlag','Der Zeitführer':'Zeitreisen Abtreibung','BOOM Clan':'Bowspam','Drakkschah EX':'Gottloser Bowspam','Schahco EX':'Rage','Drukkschah EX':'Unsichtbarkeit','Annischah EX':'Intellenz','Drikkschah EX':'Feuerball Jump','Schahbio EX':'Gigantische Glaskuppel','Drokkschah EX':'Von hinten Taktik','Clarischah EX':'Rumschreien','Darkschah EX':'Vernichtung'};
+const CARD_ATTACK_POWER = {'Big Mama die Buwemon-Trainerin':160,'Leonie die Schäferin':160,'Finn der Peniskopf':160,'AnniKKKa':180,'Bierre':160,'Ramon der Schinken':160,'Cediboy':160,'Dr. Stirli':140,'Gilip der Glibbrige':200,'Lord Phillipp of Glencoe':160,'Phülügülüm':140,'Baby Niko':160,'Grünika':160,'Schwammika':140,'Antika':160,'Marie die Königsgardistin':120,'Marzo der Gott':120,'Marcopter':180,'Marco der Hund':160,'Leo Norris':160,'Kax Maufmann':160,'Maxodia der Verbotene':120,'Maxibu':180,'Hoffi der rasierte Karnevalsprinz':160,'Clarry Pather der Maincharacter':180,'Barista Clarista der Mister-Fister':160,'ClariSSIO':140,'Alicia die ehrenlose Fettsau':160,'Glorian':160,'Flosama':180,'Klorian':140,'Lisa aus Australien':140,'Suffia':180,'Luis Münsters':140,'Cedzilla':140,'Griechischer ApoRed':160,'Fabio das Berlin-City-Girl':140,'Giraffael':140,'Hannah im Bach':160,'Alexerus Snape':160,'Die Pogofanten':300,'L\'Enderdragon':300,'Golop der Grobe':300,'Der Zeitführer':300,'BOOM Clan':320,'Drakkschah EX':300,'Schahco EX':300,'Drukkschah EX':300,'Annischah EX':300,'Drikkschah EX':300,'Schahbio EX':300,'Drokkschah EX':300,'Clarischah EX':300,'Darkschah EX':1000};
+const CARD_ABILITIES = {'Big Mama die Buwemon-Trainerin':'Kontrollfreak','Leonie die Schäferin':'Grasen','Finn der Peniskopf':'Chemie Unfall','AnniKKKa':'Rassismus','Bierre':'System neustarten','Ramon der Schinken':'Der Schutz des Katers','Cediboy':'Glaskuppel 3D-Druck','Dr. Stirli':'Verarztung','Gilip der Glibbrige':'Glibbern','Lord Phillipp of Glencoe':'Mecces Pakt','Phülügülüm':'Döner schneiden','Baby Niko':'Schicksal','Grünika':'Drogen','Schwammika':'Saugkraft','Antika':'Quit livin\' on dreams','Marie die Königsgardistin':'Marie hat recht','Marzo der Gott':'Gottkomplex','Marcopter':'Rotation','Marco der Hund':'Treue','Leo Norris':'Toxische Männlichkeit','Kax Maufmann':'Meme Belästigung','Maxodia der Verbotene':'Würd\' mir stinken','Maxibu':'Ein Problem mit Alkohol','Hoffi der rasierte Karnevalsprinz':'Ein Drink zu viel','Clarry Pather der Maincharacter':'Recast','Barista Clarista der Mister-Fister':'Hühnchen Spam','ClariSSIO':'Arsch anfassen','Alicia die ehrenlose Fettsau':'Mecces Völlerei','Glorian':'Florianopolis Dominanz','Flosama':'Bett abbauen','Klorian':'Spülung','Lisa aus Australien':'Vollrauchen','Suffia':'Killsteal','Luis Münsters':'Münster','Cedzilla':'Picky Eating','Griechischer ApoRed':'Zwillingsattacke','Fabio das Berlin-City-Girl':'Clubmate Hamsterung','Giraffael':'Liiinks','Hannah im Bach':'Gossip','Alexerus Snape':'Legilimens','Die Pogofanten':'Überspringen','L\'Enderdragon':'Ohohoho','Golop der Grobe':'Pumpen','Der Zeitführer':'Raum-Zeit-Genozid','BOOM Clan':'Goldrausch'};
 function genderSymbolHtml(name) {
   const g = GENDER_MAP[name];
   if (g === 'm') return '<span style="color:#4a90e2;font-size:1.1em;" title="Männlich">♂</span>';
@@ -8942,14 +9134,16 @@ function doLiiinks() {
     renderSlot(s);
   });
 
-  // Giraffael die Liiinks ausgelöst hat → Fähigkeit bleibt geblockt nach Verschiebung
+  // Giraffael die Liiinks ausgelöst hat → Fähigkeit bleibt geblockt nach Verschiebung.
+  // Die Netz-Nachricht folgt WEITER UNTEN (nach recast_slots), damit der Empfänger die
+  // Karte in ihrem neuen Slot bereits kennt und seine LOKALE uid nachschlagen kann.
+  let _giNowSlot = null;
   if (_giraffaelPreCd && _giraffaelPreCd.name === 'Giraffael' && _giraffaelPreCd.uid) {
     selfMovedBlockedUids.add(String(_giraffaelPreCd.uid));
-    if (NET.mode === 'multi') netSend({t:'self_moved_block', uid: String(_giraffaelPreCd.uid)});
+    _giNowSlot = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'].find(s => G.slots[s] && String(G.slots[s].uid) === String(_giraffaelPreCd.uid)) || null;
   }
   checkExBuwemon('p1');
   checkExBuwemon('p2');
-  checkPermanentAbilitiesAfterMove();
   checkPermanentAbilitiesAfterMove();
   if (NET.mode === 'multi') {
     const allBuwSlots = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'];
@@ -8957,6 +9151,7 @@ function doLiiinks() {
     allBuwSlots.forEach(s => { liiinksSlots[s] = G.slots[s] || null; });
     netSend({t:'recast_slots', slots: liiinksSlots});
     netSendState();
+    if (_giNowSlot) netSend({t:'self_moved_block', uid: String(_giraffaelPreCd.uid), slotId: _giNowSlot, ability:'Liiinks'});
   }
 }
 
@@ -8996,9 +9191,10 @@ function doRecast() {
   const _recastActivatorSlot = _lastActivatorSlotId;
   const _recastCd = _clarryPreCd; // bereits vor dem Shuffle gespeichert
   window._rcPreOwners = null;
+  let _clNowSlot = null;
   if (_recastCd && _recastCd.name === 'Clarry Pather der Maincharacter' && _recastCd.uid) {
     selfMovedBlockedUids.add(String(_recastCd.uid));
-    if (NET.mode === 'multi') netSend({t:'self_moved_block', uid: String(_recastCd.uid)});
+    _clNowSlot = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'].find(s => G.slots[s] && String(G.slots[s].uid) === String(_recastCd.uid)) || null;
   }
   checkExBuwemon('p1'); checkExBuwemon('p2');
   checkZoneColor('p1'); checkZoneColor('p2');
@@ -9010,6 +9206,7 @@ function doRecast() {
     allBuwSlots.forEach(s => { recastSlots[s] = G.slots[s] || null; });
     netSend({t:'recast_slots', slots: recastSlots});
     netSendState();
+    if (_clNowSlot) netSend({t:'self_moved_block', uid: String(_recastCd.uid), slotId: _clNowSlot, ability:'Recast'});
   }
 }
 
@@ -9018,22 +9215,27 @@ function doRecast() {
 function checkPermanentAbilitiesAfterMove() {
   const allBuw = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'];
   // Für jede aktive Dauerfähigkeit: prüfen ob Karte noch beim selben Spieler
-  [...activePermanentAbilities].forEach(slotId => {
-    const origOwner = parseInt((slotId.match(/^p(\d)/)||[])[1]||'0');
-    const cd = G.slots[slotId];
-    if (!cd) { setAbilityShimmer(slotId, false); return; }
-    // Karte jetzt wo?
-    const nowSlot = allBuw.find(s => G.slots[s] && G.slots[s].name === cd.name && G.slots[s].uid === cd.uid);
-    if (!nowSlot) { setAbilityShimmer(slotId, false); return; }
+  // Effekte haengen an der KARTE: liegt sie nicht mehr auf dem Feld -> Effekt weg.
+  // Hat sie den Besitzer gewechselt -> Effekt ebenfalls weg.
+  [...activePermanentAbilities].forEach(uid => {
+    const nowSlot = _slotOfUid(uid);
+    if (!nowSlot) { activePermanentAbilities.delete(uid); delete _abilOwnerByUid[uid]; dinkelmehlSuppressed.delete(uid); glorianSuppressed.delete(uid); return; }
+    const origOwner = _abilOwnerByUid[uid];
     const nowOwner = parseInt((nowSlot.match(/^p(\d)/)||[])[1]||'0');
-    if (nowOwner !== origOwner) setAbilityShimmer(slotId, false);
+    if (origOwner !== undefined && nowOwner !== origOwner) {
+      // Karte hat den Besitzer gewechselt (Liiinks/Recast): Dauerfaehigkeit endet und der
+      // Glanz hoert auf. Muss AUCH beim Mitspieler passieren, sonst wirkt die Faehigkeit
+      // dort weiter (z.B. Lisas Umlenkung, Luis' 4/6-Schutz).
+      setAbilityShimmer(nowSlot, false);
+      if (NET.mode === 'multi') netSend({t:'ability_shimmer', slotId: nowSlot, active: false});
+    }
   });
   // Glorian
   if (glorianActiveSlot) {
-    const gs = allBuw.find(s => G.slots[s] && G.slots[s].name === 'Glorian' && activePermanentAbilities.has(s));
+    const gs = allBuw.find(s => G.slots[s] && G.slots[s].name === 'Glorian' && abilActive(s));
     if (!gs || parseInt((gs.match(/^p(\d)/)||[])[1]) !== glorianActiveSlot.ownerP) {
       glorianActiveSlot = null;
-      glorianSuppressed.forEach(s => { dinkelmehlSuppressed.delete(s); if(activePermanentAbilities.has(s)&&G.slots[s]) setAbilityShimmer(s,true); });
+      glorianSuppressedSlots().forEach(s => { dinkSet(s, false); if (abilActive(s)) setAbilityShimmer(s, true); });
       glorianSuppressed.clear();
     }
   }
@@ -9047,10 +9249,17 @@ function checkPermanentAbilitiesAfterMove() {
   });
   // Barista
   if (baristaActiveSlot) {
-    const bs = allBuw.find(s => G.slots[s] && G.slots[s].name === 'Barista Clarista der Mister-Fister' && activePermanentAbilities.has(s));
-    if (!bs || parseInt((bs.match(/^p(\d)/)||[])[1]) !== baristaActiveSlot.ownerP) {
+    const bs = allBuw.find(s => G.slots[s] && G.slots[s].name === 'Barista Clarista der Mister-Fister' && abilActive(s));
+    // Zusaetzlich: ist die betaeubte KARTE selbst weg, endet die Betaeubung ebenfalls
+    const _btSlot = baristaTargetUid ? _slotOfUid(baristaTargetUid) : null;
+    if (!bs || parseInt((bs.match(/^p(\d)/)||[])[1]) !== baristaActiveSlot.ownerP || !_btSlot) {
+      setBaristaFade(_btSlot || baristaTargetSlot, false);
+      baristaActiveSlot = null; baristaTargetSlot = null; baristaTargetName = null; baristaTargetUid = null;
+    } else if (_btSlot !== baristaTargetSlot) {
+      // Karte hat das Feld gewechselt: Fade wandert mit
       setBaristaFade(baristaTargetSlot, false);
-      baristaActiveSlot = null; baristaTargetSlot = null; baristaTargetName = null;
+      baristaTargetSlot = _btSlot;
+      setBaristaFade(_btSlot, true);
     }
   }
 }
@@ -9176,12 +9385,16 @@ function doLiiinks4() {
   });
 
   // Giraffael die Liiinks ausgelöst hat → Fähigkeit bleibt geblockt nach Verschiebung
+  let _giNowSlot4 = null;
   if (_giraffaelPreCd4 && _giraffaelPreCd4.name === 'Giraffael' && _giraffaelPreCd4.uid) {
     selfMovedBlockedUids.add(String(_giraffaelPreCd4.uid));
-    if (NET.mode === 'multi') netSend({t:'self_moved_block', uid: String(_giraffaelPreCd4.uid)});
+    _giNowSlot4 = _allSlots4Li.find(s => G.slots[s] && String(G.slots[s].uid) === String(_giraffaelPreCd4.uid)) || null;
   }
 
-  if (NET.mode === 'multi' && fourPlayerMode) netSendState4();
+  if (NET.mode === 'multi' && fourPlayerMode) {
+    netSendState4();
+    if (_giNowSlot4) netSend({t:'self_moved_block', uid: String(_giraffaelPreCd4.uid), slotId: _giNowSlot4, ability:'Liiinks'});
+  }
 }
 
 function confirmRecast4(btnEl) {
@@ -9248,12 +9461,16 @@ function doRecast4() {
   });
 
   // Clarry Pather die Recast ausgelöst hat → Fähigkeit bleibt geblockt nach Verschiebung
+  let _clNowSlot4 = null;
   if (_clarryPreCd4 && _clarryPreCd4.name === 'Clarry Pather der Maincharacter' && _clarryPreCd4.uid) {
     selfMovedBlockedUids.add(String(_clarryPreCd4.uid));
-    if (NET.mode === 'multi') netSend({t:'self_moved_block', uid: String(_clarryPreCd4.uid)});
+    _clNowSlot4 = allSlots.find(s => G.slots[s] && String(G.slots[s].uid) === String(_clarryPreCd4.uid)) || null;
   }
 
-  if (NET.mode === 'multi' && fourPlayerMode) netSendState4();
+  if (NET.mode === 'multi' && fourPlayerMode) {
+    netSendState4();
+    if (_clNowSlot4) netSend({t:'self_moved_block', uid: String(_clarryPreCd4.uid), slotId: _clNowSlot4, ability:'Recast'});
+  }
 }
 
 function shuffleHand(player) {
@@ -9535,7 +9752,15 @@ function dealStartCards2() {
   startGameTimer();
 
   if (NET.mode === 'multi') {
-    netSendState();
+    // NICHT sofort senden: netSendState() bestimmt ueber getBoundingClientRect(), ob eine
+    // Karte in der eigenen Handzone liegt (und damit verdeckt uebertragen werden muss).
+    // Direkt nach spawnCard() ist das Layout noch nicht berechnet -> alle frisch
+    // ausgeteilten Karten gingen OFFEN raus und der Gegner sah sie kurz, bis der
+    // 300ms-Timer von applyP1HandVisibility sie wieder verdeckte.
+    requestAnimationFrame(() => {
+      applyP1HandVisibility();
+      netSendState();
+    });
   }
 }
 
@@ -10330,7 +10555,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div id="game-version-label" style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v52s
+    v52x
   </div>
 </div>
 
@@ -10661,6 +10886,16 @@ function netSendState() {
     reveal: G.reveal[NET.myPlayer===2 ? 2 : 1],
     verbotenFlags,
     permAbilityUsed: [...permanentAbilityUsed],
+    // Dauereffekt-Zustand mitschicken, damit er einen Verbindungsabbruch/Reconnect
+    // ueberlebt. UEBER NETZ IMMER LOGISCHE SLOT-IDs (UIDs divergieren zwischen Clients).
+    abilSlots: activeAbilitySlots(),
+    dinkSlots: [...dinkelmehlSuppressed].map(u => _slotOfUid(u)).filter(Boolean),
+    glorSlots: glorianSuppressedSlots(),
+    glorianActive: glorianActiveSlot ? {slotId: glorianActiveSlot.slotId, ownerP: glorianActiveSlot.ownerP} : null,
+    baristaActive: (baristaActiveSlot && baristaTargetUid) ? {
+      slotId: baristaActiveSlot.slotId, ownerP: baristaActiveSlot.ownerP,
+      targetSlot: _slotOfUid(baristaTargetUid), targetName: baristaTargetName
+    } : null,
   });
 }
 
@@ -10671,6 +10906,9 @@ function netSend(obj) {
     if (!fourPlayerMode) {
       if (obj.senderColor === undefined) obj.senderColor = NET.myColor;
       if (obj.senderName === undefined) obj.senderName = NET.myName;
+      // senderPlayer auch im 2-Spieler-Modus mitschicken: ohne ihn ist ein Echo
+      // (Server spiegelt an den Absender zurueck) nicht erkennbar.
+      if (obj.senderPlayer === undefined) obj.senderPlayer = NET.myPlayer;
     } else {
       if (obj.senderColor === undefined) obj.senderColor = G4.playerColors[NET.myPlayer];
       if (obj.senderName === undefined) obj.senderName = G4.names[NET.myPlayer];
@@ -10692,8 +10930,17 @@ function onNetData(d) {
     const col = d.senderColor || d.myColor;
     const nm = d.senderName || d.myName;
     if (!fourPlayerMode) {
-      if (col && NET.enemyColor !== col) { NET.enemyColor = col; applyAllPlayerBorderColors(false); }
-      if (nm && NET.enemyName !== nm) { NET.enemyName = nm; updateHandLabels(); updateTopbarScore(); }
+      // ECHO-SCHUTZ: Der Server spiegelt Nachrichten auch an den Absender zurueck.
+      // netSend haengt an JEDE Nachricht senderColor/senderName des ABSENDERS an - beim
+      // Echo waere das die EIGENE Farbe. Ohne diese Pruefung setzt sich jeder Client
+      // seine eigene Farbe als enemyColor (beide Zonen gleich) bzw. faellt auf 'grau'
+      // zurueck, was als schwarze Zug-Kontur erscheint.
+      const _isEcho = (d.senderPlayer !== undefined && d.senderPlayer === NET.myPlayer)
+                   || (d.sender !== undefined && d.sender === NET.myPlayer);
+      if (!_isEcho) {
+        if (col && NET.enemyColor !== col) { NET.enemyColor = col; applyAllPlayerBorderColors(false); }
+        if (nm && NET.enemyName !== nm) { NET.enemyName = nm; updateHandLabels(); updateTopbarScore(); }
+      }
     } else {
       const sp = d.senderPlayer || d.myPlayer;
       if (sp && sp !== NET.myPlayer) {
@@ -10851,14 +11098,26 @@ function onNetData(d) {
     }
     // Full state snapshot from peer - apply directly, no mirroring
     G.deck = d.deck; updDeck();
+    // Dauereffekt-Zustand uebernehmen (Selbstheilung nach Reconnect). Erst NACH dem
+    // Slot-Update anwenden, weil die Slot-IDs lokal in uids aufgeloest werden muessen.
+    if (Array.isArray(d.abilSlots)) {
+      window._pendingAbilSync = {
+        abil: d.abilSlots, dink: d.dinkSlots || [], glor: d.glorSlots || [],
+        glorianActive: d.glorianActive || null, baristaActive: d.baristaActive || null
+      };
+    }
     // Barista Fade wiederherstellen nach State-Update
-    if (baristaTargetSlot && baristaActiveSlot && !dinkelmehlSuppressed.has(baristaActiveSlot.slotId)) {
-      setTimeout(() => setBaristaFade(baristaTargetSlot, true), 50);
+    if (baristaTargetUid && baristaActiveSlot && !dinkActive(baristaActiveSlot.slotId)) {
+      setTimeout(() => {
+        const _bs = _slotOfUid(baristaTargetUid);
+        if (_bs) { baristaTargetSlot = _bs; setBaristaFade(_bs, true); }
+        else { baristaActiveSlot = null; baristaTargetSlot = null; baristaTargetName = null; baristaTargetUid = null; }
+      }, 50);
     }
     // Glorian-Slot aktualisieren: prüfen ob Glorian mit Shimmer noch im Slot
     if (glorianActiveSlot) {
       const buwSlots2p = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'];
-      const newGlorianSlot = buwSlots2p.find(s => d.slots && d.slots[s] && d.slots[s].name === 'Glorian' && activePermanentAbilities.has(s));
+      const newGlorianSlot = buwSlots2p.find(s => d.slots && d.slots[s] && d.slots[s].name === 'Glorian' && abilActive(s));
       if (!newGlorianSlot) { glorianActiveSlot = null; }
       else if (newGlorianSlot !== glorianActiveSlot.slotId) {
         glorianActiveSlot.slotId = newGlorianSlot;
@@ -10879,6 +11138,7 @@ function onNetData(d) {
         while (handOrderByPlayer2p[senderLogP] && handOrderByPlayer2p[senderLogP].length > d.handCards.length) handOrderByPlayer2p[senderLogP].pop();
         while ((handOrderByPlayer2p[senderLogP]||[]).length < d.handCards.length) { if (!handOrderByPlayer2p[senderLogP]) handOrderByPlayer2p[senderLogP]=[]; handOrderByPlayer2p[senderLogP].push(-1 - Math.random()); }
       }
+      cacheHandCardData(d.handCards);
       renderSimulatedHand(sPfx, d.handCards, false);
     }
     if (d.graves) {
@@ -10901,9 +11161,17 @@ function onNetData(d) {
       // Volle Slots nur vom Sender übernehmen.
       // Leere Slots (null) von allen übernehmen – so werden getötete Buwemon überall entfernt.
       Object.keys(d.slots).forEach(slot => {
-        if (slot.startsWith(sPfx)) {
-          G.slots[slot] = d.slots[slot] || null;
-          renderSlot(slot);
+        // Sandbox-Modus: dort darf JEDER in JEDES Feld docken (freies Spielen), also den
+        // kompletten Slot-Stand des Absenders uebernehmen. Frueher wurden volle Slots nur
+        // fuer das eigene Praefix des Absenders uebernommen - legte P1 etwas in ein Feld
+        // von P2, verwarf P2 genau diese Information und die Karte blieb dort unsichtbar.
+        // Im Automatik-Modus bleibt es bei der strengen Regel (jeder ist Herr seiner Felder).
+        if (sandboxMode || slot.startsWith(sPfx)) {
+          const _newCd = d.slots[slot] || null;
+          const _oldCd = G.slots[slot] || null;
+          const _changed = (!_newCd !== !_oldCd)
+            || (_newCd && _oldCd && (String(_newCd.uid) !== String(_oldCd.uid) || _newCd.name !== _oldCd.name));
+          if (_changed || slot.startsWith(sPfx)) { G.slots[slot] = _newCd; renderSlot(slot); }
         } else if (d.slots[slot] === null || d.slots[slot] === undefined) {
           if (G.slots[slot]) { G.slots[slot] = null; renderSlot(slot); }
         }
@@ -10952,6 +11220,37 @@ function onNetData(d) {
     // Hand count label (echte Zählung statt gesendeter Zahl)
     updateHandLabels();
 
+    // Dauereffekt-Zustand jetzt anwenden - die Slots sind aktualisiert, die logischen
+    // Slot-IDs koennen also in unsere lokalen uids aufgeloest werden (Selbstheilung).
+    if (window._pendingAbilSync) {
+      const _s = window._pendingAbilSync; window._pendingAbilSync = null;
+      _s.abil.forEach(sid => { if (G.slots[sid]) abilSet(sid, true); });
+      _s.dink.forEach(sid => { if (G.slots[sid]) dinkSet(sid, true); });
+      _s.glor.forEach(sid => { if (G.slots[sid]) glorSuppSet(sid, true); });
+      // WICHTIG: Der Abgleich muss auch LOESCHEN koennen. Meldet der Sender glorianActive
+      // bzw. baristaActive als null (z.B. weil die Karte gestorben ist), muss der lokale
+      // Zustand ebenfalls weg - sonst stellt der naechste State-Sync die Betaeubung sofort
+      // wieder her (Symptom: geblocktes Buwemon flackert kurz und bleibt dann verblasst).
+      if (_s.glorianActive && G.slots[_s.glorianActive.slotId]) {
+        glorianActiveSlot = {slotId: _s.glorianActive.slotId, ownerP: _s.glorianActive.ownerP};
+      } else if (!_s.glorianActive) {
+        glorianActiveSlot = null;
+      }
+      if (_s.baristaActive && _s.baristaActive.targetSlot && G.slots[_s.baristaActive.targetSlot]) {
+        baristaActiveSlot = {slotId: _s.baristaActive.slotId, ownerP: _s.baristaActive.ownerP};
+        baristaTargetSlot = _s.baristaActive.targetSlot;
+        baristaTargetUid = _uidAt(_s.baristaActive.targetSlot);
+        baristaTargetName = _s.baristaActive.targetName || (G.slots[baristaTargetSlot]||{}).name || null;
+      } else if (!_s.baristaActive) {
+        if (baristaTargetSlot) setBaristaFade(baristaTargetSlot, false);
+        baristaActiveSlot = null; baristaTargetSlot = null; baristaTargetName = null; baristaTargetUid = null;
+      }
+      // Schimmer fuer alle aktiven, nicht pausierten Effekte neu aufbauen
+      activeAbilitySlots().forEach(sid => { if (!dinkActive(sid)) setAbilityShimmer(sid, true); });
+      // Raeumt Effekte auf, deren Karte das Feld verlassen hat (z.B. Barista gestorben)
+      checkPermanentAbilitiesAfterMove();
+    }
+
     // Reveal state handled via separate event
   }
 if (d.t === 'state4') {
@@ -10964,6 +11263,7 @@ if (d.t === 'state4') {
       if (!handOrderByPlayer4p[senderP]) handOrderByPlayer4p[senderP] = [];
       while (handOrderByPlayer4p[senderP].length > d.handCards.length) handOrderByPlayer4p[senderP].pop();
       while (handOrderByPlayer4p[senderP].length < d.handCards.length) handOrderByPlayer4p[senderP].push(-1 - Math.random());
+      cacheHandCardData(d.handCards);
       renderSimulatedHand(senderPfx, d.handCards, true);
       scheduleHandLabelUpdate();
     }
@@ -10976,6 +11276,21 @@ if (d.t === 'state4') {
     // Sperren bei anderen Spielern durch fehlende Sync-Pakete "vergessen" werden
     if (d.permAbilityUsed && Array.isArray(d.permAbilityUsed)) {
       d.permAbilityUsed.forEach(uid => permanentAbilityUsed.add(uid));
+    }
+    if (Array.isArray(d.abilSlots)) {
+      setTimeout(() => {
+        d.abilSlots.forEach(sid => { if (G.slots[sid]) abilSet(sid, true); });
+        (d.dinkSlots||[]).forEach(sid => { if (G.slots[sid]) dinkSet(sid, true); });
+        (d.glorSlots||[]).forEach(sid => { if (G.slots[sid]) glorSuppSet(sid, true); });
+        if (d.glorianActive && G.slots[d.glorianActive.slotId]) glorianActiveSlot = {slotId: d.glorianActive.slotId, ownerP: d.glorianActive.ownerP};
+        if (d.baristaActive && d.baristaActive.targetSlot && G.slots[d.baristaActive.targetSlot]) {
+          baristaActiveSlot = {slotId: d.baristaActive.slotId, ownerP: d.baristaActive.ownerP};
+          baristaTargetSlot = d.baristaActive.targetSlot;
+          baristaTargetUid = _uidAt(d.baristaActive.targetSlot);
+          baristaTargetName = d.baristaActive.targetName || (G.slots[baristaTargetSlot]||{}).name || null;
+        }
+        activeAbilitySlots().forEach(sid => { if (!dinkActive(sid)) setAbilityShimmer(sid, true); });
+      }, 60);
     }
 
     // Sender's grave
@@ -11225,6 +11540,11 @@ if (d.t === 'state4') {
   if (d.t === 'barista_activate') {
     baristaActiveSlot = {slotId: d.baristaSlotId, ownerP: d.ownerP};
     baristaTargetSlot = d.targetLsid;
+    // baristaTargetName MUSS gesetzt werden: die Block-Bedingung in renderPopupActionButtons
+    // vergleicht targetCd.name mit baristaTargetName und verwirft den Block sofort, wenn der
+    // Name fehlt. Ohne das bleibt nur der Fade sichtbar, die Buttons funktionieren weiter.
+    baristaTargetName = d.targetName || (G.slots[d.targetLsid]||{}).name || null;
+    baristaTargetUid = _uidAt(d.targetLsid);
     setAbilityShimmer(d.baristaSlotId, true);
     setBaristaFade(d.targetLsid, true);
   }
@@ -11233,10 +11553,10 @@ if (d.t === 'state4') {
     setAbilityShimmer(d.slotId, true);
     glorianSuppressed.clear();
     (d.glorianSuppressedSlots||[]).forEach(s => {
-      glorianSuppressed.add(s);
-      dinkelmehlSuppressed.add(s);
+      glorSuppSet(s, true);
+      dinkSet(s, true);
       setAbilityShimmer(s, false);
-      activePermanentAbilities.add(s);
+      abilSet(s, true);
     });
   }
   if (d.t === 'killsteal_move') {
@@ -11362,7 +11682,7 @@ if (d.t === 'state4') {
     if (!d.active && legilimensSlotId === d.slotId) clearLegilimens();
   }
   if (d.t === 'dinkelmehl_suppress') {
-    dinkelmehlSuppressed.add(d.slotId);
+    dinkSet(d.slotId, true);
     const slotEl3 = document.getElementById(physId(d.slotId));
     if (slotEl3) { const ov = slotEl3.querySelector('.ability-shimmer-overlay'); if (ov) ov.remove(); }
     // Barista: Shimmer + Fade entfernen wenn Barista supprimiert
@@ -11465,7 +11785,17 @@ if (d.t === 'state4') {
     if (!_stillOn) permanentAbilityUsed.delete(d.uid);
   }
   if (d.t === 'self_moved_block') {
+    // Die uid des Absenders kann bei UNS zu einer anderen Karte gehoeren (Host und Gast
+    // zaehlen G.nid unabhaengig hoch). Deshalb zusaetzlich ueber die LOGISCHE slotId die
+    // bei uns gueltige uid nachschlagen - die slotId ist fuer beide Clients identisch.
     selfMovedBlockedUids.add(String(d.uid));
+    const _smCd = d.slotId ? G.slots[d.slotId] : null;
+    if (_smCd && _smCd.uid !== undefined) {
+      selfMovedBlockedUids.add(String(_smCd.uid));
+      // Liiinks/Recast sind einmalige Faehigkeiten (ABILITY_LIMITS = 1) - der eigentliche
+      // Block laeuft ueber permanentAbilityUsed. Diese Karte hat sie gerade verbraucht.
+      permanentAbilityUsed.add(String(_smCd.uid));
+    }
   }
   if (d.t === 'self_moved_unblock') {
     selfMovedBlockedUids.delete(String(d.uid));
@@ -11690,6 +12020,7 @@ window.addEventListener('DOMContentLoaded', () => {
 let debugMode = false; // Debug-Modus: Zug-Regeln deaktiviert
 
 // Zug-Status
+let nachschlagActiveThisTurn = false; // Nachschlag hebt Verbrauchs-Limits fuer diesen Zug auf
 let turnActionsUsed = 0; // Anzahl genutzter Angriffe/Fähigkeiten in diesem Zug
 let turnActionsAllowed = 1; // Grundregel: 1 pro Zug (erhöht durch Nachschlag)
 let turnBuwemonPlaced = false; // wurde in diesem Zug schon ein normales Buwemon gelegt?
@@ -11699,7 +12030,7 @@ const abilityUsesThisLife = {}; // Zähler pro Slot/UID (wird bei Zugwechsel zur
 const permanentAbilityUsed = new Set(); // UIDs von Karten die ihre einmalige Fähigkeit verbraucht haben - NIEMALS automatisch zurückgesetzt
 
 // Fähigkeits-Limits pro Karte (Unendlich = null, Einmal = 1)
-const ABILITY_LIMITS = {
+const ABILITY_LIMITS = { 'Kontrollfreak': 1, 'Grasen': 1, 'Chemie Unfall': 1, 'Rassismus': 1, 'System neustarten': 1, 'Der Schutz des Katers': 1, 'Glaskuppel 3D-Druck': null, 'Verarztung': null,
   'Glibbern': null, 'Döner schneiden': null, 'Quit livin\' on dreams': null,
   'Klorian': null, 'Meme Belästigung': null, 'Ein Drink zu viel': null,
   'Clubmate Hamsterung': null, 'Killsteal': null, 'Zwillingsattacke': null,
@@ -11727,6 +12058,8 @@ function canUseAbility(slotId, abilityName) {
         (_cdChk.name === 'Clarry Pather der Maincharacter' && abilityName === 'Recast')) return false;
   }
   if (turnActionsUsed >= turnActionsAllowed) return false;
+  // Nachschlag: in diesem Zug duerfen auch bereits verbrauchte Faehigkeiten erneut genutzt werden
+  if (nachschlagActiveThisTurn) return true;
   const limit = ABILITY_LIMITS[abilityName];
   if (limit === null || limit === undefined) return true;
   // UID-basiertes Tracking: Karte folgt der Karte, nicht dem Slot
@@ -11791,6 +12124,7 @@ function toggleDebugMode() {
 function resetTurnFlags() {
   turnActionsUsed = 0;
   turnActionsAllowed = 1;
+  nachschlagActiveThisTurn = false;
   turnBuwemonPlaced = false;
   // Fähigkeits-Zähler pro Slot beim Zug-Ende leeren (nur Einmal-Fähigkeiten die noch aktiv sind bleiben gesetzt)
   // Aber wir leeren alle damit neue Buwemon im selben Slot keine Sperre erben
@@ -11818,12 +12152,34 @@ function resetTurnFlags() {
 // ── SIMULIERTE GEGNER-HANDZONEN (nur Automatik-Modus, Mehrspieler) ──
 // Zeigt die korrekte Anzahl verdeckter Karten in der Handzone eines Gegners, unabhängig
 // von dessen tatsächlicher (uns unbekannter) Sortierung.
+// Kartendaten fremder Handkarten (uid -> Daten). Notwendig, weil Handkarten des Gegners
+// lokal NICHT als DOM-Element in G.cards existieren: handCardsFromUids fand sie deshalb
+// nicht und .filter(Boolean) warf sie raus - die Karten tauchten beim Gegner nur kurz auf
+// und verschwanden sofort wieder (betraf u.a. Ereigniskarten aus Alicia/Fabio/Mecces).
+const handCardDataCache = {};
+function cacheHandCardData(list) {
+  (list || []).forEach(h => {
+    if (h && h.uid !== undefined) {
+      handCardDataCache[String(h.uid)] = {
+        name: h.name || '', color: h.color || '#888888',
+        ctype: h.ctype || 'eff', file: h.file || ''
+      };
+    }
+  });
+}
+
 function handCardsFromUids(uidList) {
   return (uidList || []).map(uid => {
     const c = G.cards.find(x => parseInt(x.dataset.uid) === uid);
-    if (!c) return null;
-    return { uid: c.dataset.uid, name: c.dataset.name, color: c.dataset.color, ctype: c.dataset.ctype, file: c.dataset.file || '' };
-  }).filter(Boolean);
+    if (c) {
+      return { uid: c.dataset.uid, name: c.dataset.name, color: c.dataset.color, ctype: c.dataset.ctype, file: c.dataset.file || '' };
+    }
+    const cached = handCardDataCache[String(uid)];
+    if (cached) return { uid: String(uid), name: cached.name, color: cached.color, ctype: cached.ctype, file: cached.file };
+    // Unbekannt: Platzhalter zurueckgeben statt die Karte zu verschlucken - so stimmt
+    // wenigstens die Kartenanzahl in der simulierten Hand des Gegners.
+    return { uid: String(uid), name: '', color: '#888888', ctype: 'eff', file: '' };
+  });
 }
 
 function renderSimulatedHand(logicalPfx, cards, is4) {
