@@ -31,7 +31,7 @@ body{background:linear-gradient(160deg,#5c6680 0%,#eef1f7 45%,#838fac 75%,#f8f9f
 .row-center{flex:14;display:flex;align-items:center;justify-content:center;min-height:0;gap:10px;}
 
 .zone{background:rgba(0,0,0,0.05);border:1.5px solid rgba(0,0,0,0.15);border-radius:7px;position:relative;}
-.zlbl{position:absolute;top:3px;left:5px;font-size:.75rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.4px;pointer-events:none;white-space:nowrap;z-index:2;font-weight:600;font-family:"AiSpec",sans-serif;font-style:italic;}
+.zlbl{position:absolute;top:3px;left:5px;font-size:.75rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.4px;pointer-events:none;white-space:nowrap;z-index:5000;font-weight:600;font-family:"AiSpec",sans-serif;font-style:italic;}
 .zone-hand{flex:1;}
 :root{--cw:63px;--ch:88px;--slot:80px;}
 .zone-effects{flex:1;min-width:0;}
@@ -525,7 +525,7 @@ body {
     <span id="topbar-score" style="font-family:'Kievit',sans-serif;font-size:1rem;font-weight:500;color:rgba(0,0,0,0.6);white-space:nowrap;line-height:1;"></span>
   </div>
   <span class="sp"></span>
-  <button class="tbtn" id="btn-deal" onclick="openDealConfirm()" style="color:#1a4a8a;border-color:rgba(30,80,200,0.3);">🃏 Startkarten ausgeben</button>
+  <button class="tbtn sandbox-only" id="btn-deal" onclick="openDealConfirm()" style="color:#1a4a8a;border-color:rgba(30,80,200,0.3);">🃏 Startkarten ausgeben</button>
   <button class="tbtn" onclick="openDebugMenu()" style="color:#666;border-color:rgba(0,0,0,0.2);">🛠️ Debug</button>
   <button class="tbtn" id="btn-switch-perspective" onclick="openPerspectiveSwitch()" style="display:none;color:#8a3ab0;border-color:rgba(138,58,176,0.3);">🔄 Spieler wechseln</button>
   <button class="tbtn danger" id="btn-reset" onclick="openConfirm()">↺ Neue Runde</button>
@@ -1468,6 +1468,38 @@ function myLogicalPlayer2p() {
   return (NET.mode === 'multi') ? NET.myPlayer : myPerspective;
 }
 
+// Positioniert eine Hand-Reihe mit UEBERLAUF-Logik: bis zu 'perRow' Karten normal
+// nebeneinander; darueber hinaus eine zweite, versetzte Reihe die ueber der ersten liegt
+// (deckt deren unteren Teil ab), horizontal zentriert unter der jeweils ERSTEN Karte
+// der ersten Reihe. Gibt den z-index-Offset zurueck, ab dem die Ueberlauf-Karten liegen
+// (hoeher als die Basisreihe, damit sie sichtbar darueber erscheinen).
+function layoutHandRowWithOverflow(cardsInOrder, opts) {
+  const { baseX, baseY, step, perRow, overflowYOffset, getEl, zoneTop } = opts;
+  // Zaehlen, wie viele Karten wirklich vorhanden sind - erst daraus ergibt sich, ob
+  // ueberhaupt eine zweite Reihe noetig ist.
+  const present = cardsInOrder.filter(uid => !!getEl(uid));
+  // Sobald die Basisreihe voll ist, rueckt die GESAMTE Reihe an den oberen Rand der
+  // Handzone, damit die Ueberlauf-Reihe darunter Platz hat.
+  const hasOverflow = present.length > perRow;
+  const rowY = hasOverflow ? (zoneTop !== undefined ? zoneTop : baseY - overflowYOffset / 2) : baseY;
+  present.forEach((uid, _vi) => {
+    const el = getEl(uid);
+    if (!el) return;
+    el.style.display = '';
+    if (_vi < perRow) {
+      el.style.left = clampX(baseX + _vi*step) + 'px';
+      el.style.top = clampY(rowY) + 'px';
+      el.style.zIndex = String(200 + _vi);
+    } else {
+      const oi = _vi - perRow; // Index innerhalb der Ueberlauf-Reihe
+      el.style.left = clampX(baseX + oi*step) + 'px';
+      el.style.top = clampY(rowY + overflowYOffset) + 'px';
+      el.style.zIndex = String(400 + oi); // ueber der Basisreihe
+    }
+  });
+}
+
+const HAND_ROW_2P = 46; // Karten pro Reihe, danach beginnt die versetzte Ueberlauf-Reihe
 function layoutMyHand() {
   if (sandboxMode) return;
   if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) return; // 4p folgt später
@@ -1478,21 +1510,48 @@ function layoutMyHand() {
   const zr = screenToGameRect(handEl.getBoundingClientRect());
   const cw = 63, ch = 88, step = 40, padding = 10;
   const y = zr.top + Math.max(0, (zr.bottom - zr.top - ch) / 2);
-  (handOrderByPlayer2p[myP] || []).forEach((uid, i) => {
-    const el = G.cards.find(c => parseInt(c.dataset.uid) === uid);
-    if (!el) return;
-    el.style.display = '';
-    el.style.left = clampX(zr.left + padding + i*step) + 'px';
-    el.style.top = clampY(y) + 'px';
-    el.style.zIndex = String(200 + i);
+  layoutHandRowWithOverflow(handOrderByPlayer2p[myP] || [], {
+    baseX: zr.left + padding, baseY: y, step, perRow: HAND_ROW_2P,
+    overflowYOffset: Math.round(ch * 0.55),
+    zoneTop: zr.top + 4, // bei Ueberlauf rueckt die ganze Reihe an den oberen Zonenrand
+    getEl: (uid) => G.cards.find(c => parseInt(c.dataset.uid) === uid),
   });
 }
 
 // Bei Zugbeginn: automatisch die oberste Stapelkarte in die Handzone des ziehenden Spielers legen
 let _turnSeq2p = 0;
 let _lastAutoDrawSeq2p = -1;
+function showDealStartToast() {
+  if (sandboxMode) return; // im Sandbox-Modus bleibt der Topbar-Button die einzige Quelle
+  const t = document.getElementById('deal-start-toast');
+  if (!t) return;
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  // Gleiche Position wie die uebrigen Toasts (#abil-toast bzw. #abil-toast-4)
+  if (is4) {
+    const ref = document.getElementById('abil-toast-4');
+    if (ref && ref.parentElement) {
+      ref.parentElement.appendChild(t);
+      t.style.position = 'absolute';
+      t.style.left = '1283px'; t.style.right = '';
+      t.style.top = '50%'; t.style.transform = 'translateY(-50%)';
+      t.style.width = '220px';
+    }
+  } else {
+    document.documentElement.appendChild(t); // position:fixed haengt am <html> (Letterbox-Transform)
+    t.style.position = 'fixed';
+    t.style.right = '8px'; t.style.left = '';
+    t.style.top = '50%'; t.style.transform = 'translateY(-50%)';
+    t.style.width = '220px';
+  }
+  t.style.display = 'block';
+}
+function hideDealStartToast() {
+  const t = document.getElementById('deal-start-toast');
+  if (t) t.style.display = 'none';
+}
 let startCardsDealt2p = false;
 let startCardsDealt4p = false;
+const HAND_MAX_2P = 92; // 2 x 46 Karten (siehe layoutMyHand fuer die Ueberlauf-Logik)
 function autoDrawIfMyTurn2p(p, seq) {
   if (sandboxMode) return;
   if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) return;
@@ -1500,6 +1559,10 @@ function autoDrawIfMyTurn2p(p, seq) {
   if (_lastAutoDrawSeq2p === seq) return; // für DIESEN konkreten Zug wurde schon gezogen (nicht nur "für diesen Spieler")
   _lastAutoDrawSeq2p = seq;
   if (!G.deck.length) return;
+  if ((handOrderByPlayer2p[p]||[]).length >= HAND_MAX_2P) {
+    if (p === myLogicalPlayer2p()) showOutcomeToast('Du hast das Maximum an Handkarten erreicht!', false);
+    return;
+  }
   const cd = G.deck.shift();
   updDeck();
   const uid = G.nid++;
@@ -1608,6 +1671,7 @@ function setTurn2p(p) {
 // Jeder Spieler hat eine EIGENE Handliste (wichtig fürs Testen im Debug-Modus mit Perspektivenwechsel)
 let handOrderByPlayer4p = {1: [], 2: [], 3: [], 4: []};
 
+const HAND_ROW_4P = 41; // Karten pro Reihe im 4P (man sieht sich selbst immer unten = horizontal)
 function layoutMyHand4() {
   if (sandboxMode) return;
   const myP = myLogicalPlayer4p();
@@ -1616,24 +1680,27 @@ function layoutMyHand4() {
   const zr = screenToGameRect(handEl.getBoundingClientRect());
   const cw = 47, ch = 66, step = 30, padding = 8;
   const y = zr.top + Math.max(0, (zr.bottom - zr.top - ch) / 2);
-  (handOrderByPlayer4p[myP] || []).forEach((uid, i) => {
-    const el = G.cards.find(c => parseInt(c.dataset.uid) === uid);
-    if (!el) return;
-    el.style.display = '';
-    el.style.left = clampX(zr.left + padding + i*step) + 'px';
-    el.style.top = clampY(y) + 'px';
-    el.style.zIndex = String(200 + i);
+  layoutHandRowWithOverflow(handOrderByPlayer4p[myP] || [], {
+    baseX: zr.left + padding, baseY: y, step, perRow: HAND_ROW_4P,
+    overflowYOffset: Math.round(ch * 0.55),
+    zoneTop: zr.top + 3, // bei Ueberlauf rueckt die ganze Reihe an den oberen Zonenrand
+    getEl: (uid) => G.cards.find(c => parseInt(c.dataset.uid) === uid),
   });
 }
 
 let _turnSeq4p = 0;
 let _lastAutoDrawSeq4p = -1;
+const HAND_MAX_4P = 72; // 2 x 36 (horizontal) bzw. 3 x 24-Aequivalent (vertikal), siehe Spezifikation
 function autoDrawIfMyTurn4p(p, seq) {
   if (sandboxMode) return;
   if (NET.mode === 'multi' && p !== myLogicalPlayer4p()) return;
   if (_lastAutoDrawSeq4p === seq) return; // für DIESEN konkreten Zug wurde schon gezogen
   _lastAutoDrawSeq4p = seq;
   if (!G4.deck.length) return;
+  if ((handOrderByPlayer4p[p]||[]).length >= HAND_MAX_4P) {
+    if (p === myLogicalPlayer4p()) showOutcomeToast('Du hast das Maximum an Handkarten erreicht!', true);
+    return;
+  }
   const cd = G4.deck.shift();
   updDeck4();
   const uid = G.nid++;
@@ -1719,8 +1786,24 @@ function setTurn4p(p) {
 function resetTurnState() {
   TURN_2P = null;
   TURN_4P = null;
+  // Automatik-Modus: statt des Topbar-Buttons erscheint jetzt bei allen Spielern ein Toast
+  // zum Austeilen der Startkarten - bei jedem Rundenbeginn (Spielstart UND "Neue Runde").
+  showDealStartToast();
   updateTurnUI2p();
   updateTurnUI4p();
+  // "Neue Runde" muss den kompletten Zug-Zustand zuruecksetzen - sonst blieb z.B.
+  // turnActionsUsed/Allowed auf dem Stand vom Rundenende stehen und die Buwemonaktion
+  // verbrauchte sich beim Gast danach nicht mehr (er hatte ja schon "verbraucht" > 0).
+  turnActionsUsed = 0; turnActionsAllowed = 1; nachschlagActiveThisTurn = false;
+  firstRoundOver = false; firstRoundSeenPlayers.clear();
+  // Dauereffekte (Glorian, Barista, Finn, AnniKKKa, Lisa/Luis-Schimmer, Dinkelmehl-Pause)
+  activePermanentAbilities.clear(); dinkelmehlSuppressed.clear(); glorianSuppressed.clear();
+  glorianActiveSlot = null; baristaActiveSlot = null; baristaTargetSlot = null;
+  baristaTargetName = null; baristaTargetUid = null;
+  Object.keys(baristaBlocks).forEach(k => delete baristaBlocks[k]);
+  selfMovedBlockedUids.clear(); permanentAbilityUsed.clear();
+  window._pendingCardCleanup = []; window._pendingSummonCard = null;
+  pendingAbility = null; pendingAttackSelection = null;
 }
 
 // Erste manuell gezogene Karte startet den Zug
@@ -1782,6 +1865,15 @@ function endTurn4(p) {
   clearDinkelmehlSuppression();
   ragequitBlockedUids.clear();
   resetTurnFlags();
+  // Nachschlag-Karten auf Friedhof - fehlte hier komplett (nur die 2P-Variante endTurn()
+  // hatte diese Aufraeumung), deshalb blieb Nachschlag im 4-Spieler-Board liegen.
+  if (!sandboxMode) {
+    const pfx = 'p'+p;
+    ['eff1','eff2','eff3','eff4'].forEach(es => {
+      const sid = pfx+'-'+es+'-4'; const nc = G.slots[sid];
+      if (nc && nc.name === 'Nachschlag') { G.slots[sid]=null; renderSlot(sid); G4.graves[pfx].push({name:'Nachschlag',color:nc.color,type:'eff',file:''}); updGrave4(pfx); }
+    });
+  }
   const next = nextTurnPlayer4(p);
   setTurn4p(next);
   if (NET.mode === 'multi' && fourPlayerMode) netSend({t:'turn4', p: next, myPlayer: NET.myPlayer, myColor: G4.playerColors[NET.myPlayer], myName: G4.names[NET.myPlayer], sender: NET.myPlayer});
@@ -2268,10 +2360,13 @@ function sendToGrave(el,player){
 }
 
 function updGrave(player){
-  const grave=G.graves[player];
+  const grave=G.graves[player]||[];
   const physP = physId(player);
   const preview=document.getElementById(physP+'-grave-preview');
   const badge=document.getElementById(physP+'-grave-count');
+  // Im 4-Spieler-Board existieren die 2P-Elemente nicht -> ohne diese Pruefung wirft
+  // z.B. "Neue Runde" beim Mitspieler: can't access property "innerHTML", preview is null
+  if(!preview||!badge) return;
   if(!grave.length){preview.innerHTML='';badge.style.display='none';return;}
   const top=grave[grave.length-1];
   preview.innerHTML=`<img src="${thumbFor(top.name)}" style="width:100%;height:100%;object-fit:cover;" alt="${top.name}">`;
@@ -2696,7 +2791,11 @@ function abilityGlowEl(slotId) {
   if (!slotEl) return null;
   const card = slotEl.querySelector('.docked-card');
   if (!card) return slotEl;
-  return card.querySelector('img') || card;
+  // Das HAUPT-Kartenbild waehlen und Bilder ausgeruesteter Effektkarten (.equip-wrap)
+  // ausschliessen - sonst landet der Kampf-Schein auf der Clubmate statt am Buwemon.
+  const imgs = Array.prototype.slice.call(card.querySelectorAll('img'))
+    .filter(im => !(im.closest && im.closest('.equip-wrap')));
+  return imgs[0] || card;
 }
 
 // Färbt einen Namen (Buwemon/Fähigkeit/Angriff) in der Farbe seines Buwemons ein.
@@ -2731,7 +2830,7 @@ function beginAbilityActivation(el, abilityKey, abilityName, resolveFn, defender
   // (da markAbilityUsed jedes Mal hochzaehlte) blieb die Sperre wirkungslos.
   const _isTurnAction = isBuwAbility || (abilityKey === 'angriff' &&
     (el.dataset.ctype === 'buw' || el.dataset.ctype === 'spec' || el.dataset.ctype === 'ex-ereignis' || el.dataset.ctype === 'ex-auto'));
-  if (_isTurnAction && !sandboxMode && !debugMode) {
+  if (_isTurnAction && !sandboxMode && !debugMode && !window._claripassBypass) {
     if (turnActionsUsed >= turnActionsAllowed) { showOutcomeToast('⚠ Du hast in diesem Zug bereits angegriffen oder eine Fähigkeit genutzt!', is4); return; }
     if (isBuwAbility && !canUseAbility(slotId, abilityKey)) { showOutcomeToast('⚠ Diese Fähigkeit wurde bereits ausgeschöpft!', is4); return; }
   }
@@ -2753,7 +2852,7 @@ function beginAbilityActivation(el, abilityKey, abilityName, resolveFn, defender
   };
   if (NET.mode === 'multi') netSend({t:'ability_pending', ...data, sender: NET.myPlayer});
   // Zug-Regel: Fähigkeit ODER Angriff als genutzt markieren (verbraucht die Buwemonaktion)
-  if ((isBuwAbility || abilityKey === 'angriff') && !sandboxMode && !debugMode) markAbilityUsed(slotId, abilityKey);
+  if ((isBuwAbility || abilityKey === 'angriff') && !sandboxMode && !debugMode && !window._claripassBypass) markAbilityUsed(slotId, abilityKey);
   startAbilityReactionWindow(data, true, resolveFn);
 }
 
@@ -3129,6 +3228,12 @@ function finalizeAbilityChain(killsBuwemon) {
 
   clearAbilityUI();
   pendingAbility = null;
+  // Karten, die bis zum Ende der Kampfsituation liegen bleiben sollten (z.B. RGB),
+  // jetzt aufraeumen - auch wenn die Wirkung abgewehrt wurde und die resolveFn nie lief.
+  if (window._pendingCardCleanup && window._pendingCardCleanup.length) {
+    const _cl = window._pendingCardCleanup; window._pendingCardCleanup = [];
+    setTimeout(() => _cl.forEach(fn => { try { fn(); } catch(e) {} }), 250);
+  }
 
   // Glaskuppel bleibt liegen (bis zum nächsten Zug ihres Besitzers), wenn sie am Ende die
   // aktive/gewinnende Verteidigung ist - sie darf NICHT wie die anderen gespielten Karten
@@ -3236,7 +3341,7 @@ function confirmAttackTarget(lsid, targetCd) {
   document.getElementById('abil-toast'+suf).classList.remove('open');
   document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
   const defenderP = parseInt((lsid.match(/^p(\d)/)||[])[1] || '0');
-  // Lisas Schutzwall: per Zufall wird entschieden, welches Buwemon wirklich getroffen wird
+  // Lisas Rauch: per Zufall wird entschieden, welches Buwemon wirklich getroffen wird
   // (null = der Angriff geht komplett ins Leere).
   const { chosen: _lisaTarget, txt: _lisaTxt } = applyLisaRedirect(lsid, defenderP, sel.is4);
   if (_lisaTarget === null) {
@@ -3265,10 +3370,16 @@ function confirmAttackTargetLP(defenderP, is4) {
   if (!pendingAttackSelection) return;
   const sel = pendingAttackSelection;
   const suf = is4 ? '-4' : '';
+  // Mit einer durch Nachschlag gewonnenen ZUSATZaktion sind Direktangriffe auf die
+  // Lebenspunkte nicht erlaubt - nur die regulaere erste Buwemonaktion darf das.
+  if (!sandboxMode && !debugMode && nachschlagActiveThisTurn && turnActionsUsed >= 1) {
+    showOutcomeToast('Mit einer Nachschlag-Zusatzaktion darfst du die LP nicht direkt angreifen!', is4);
+    return;
+  }
   document.getElementById('abil-toast'+suf).classList.remove('open');
   document.getElementById('abil-toast-bar-wrap'+suf).style.display = '';
   pendingAttackSelection = null;
-  beginAbilityActivation(sel.cardEl, 'angriff', sel.attackName, (resolveInfo) => resolveAttack(sel, null, defenderP, true, resolveInfo), null, { extraText: ' (Direktangriff auf Spieler ' + defenderP + ')' });
+  beginAbilityActivation(sel.cardEl, 'angriff', sel.attackName, (resolveInfo) => resolveAttack(sel, null, defenderP, true, resolveInfo), null, { extraText: ' (Direktangriff auf ' + lpOptPlayerName(defenderP, is4) + ')' });
 }
 
 // Klick auf eine gegnerische LP-Anzeige während der Zielauswahl (nur wenn dieser Spieler kein Buwemon hat)
@@ -3340,8 +3451,22 @@ function annikkkaActive() {
   });
 }
 
+// Ereigniskarten gehoeren nie in den Friedhof - stirbt ein Buwemon, verschwinden an ihm
+// ausgeruestete Ereigniskarten (Clubmate Ereignis, Plus 20 ...) ersatzlos.
+function stripEreignisEquip(cd) {
+  if (!cd || !cd.equipped) return cd;
+  cd.equipped = cd.equipped.filter(eq => {
+    const t = eq.ctype || eq.type || '';
+    const isEreignis = t === 'ereignis' || t === 'ex-ereignis' ||
+      (typeof EREIGNIS_CARDS !== 'undefined' && EREIGNIS_CARDS.some(e => e.name === eq.name));
+    return !isEreignis;
+  });
+  return cd;
+}
+
 function moveToGraveLogical(slotId, cd, is4) {
   if (!cd) return;
+  stripEreignisEquip(cd);
   const p = parseInt((slotId.match(/^p(\d)/)||[])[1] || '0');
   const pfx = 'p'+p;
   // AnniKKKas Rassismus: sterbende Buwemon wandern auf den Entfernt-Stapel statt in den
@@ -3765,6 +3890,9 @@ function resetOwnerChangedCards(slots, preOwners) {
     const pre = preOwners[uid];
     const now = (s.match(/^p\d/)||[''])[0];
     if (!pre || pre === now) return;
+    // Ausgeruestete EREIGNISKARTEN gehen beim Besitzerwechsel verloren
+    stripEreignisEquip(cd);
+    renderSlot(s);
     if (selfMovedBlockedUids.has(uid)) return; // Selbstverschiebung: bleibt gesperrt
     permanentAbilityUsed.delete(uid);
     delete abilityUsesThisLife['uid:'+uid];
@@ -3800,6 +3928,7 @@ function _resetMovedOwnerAbilities(slots, preOwners) {
 let firstRoundOver = false; // wird true nachdem der erste Spieler zum zweiten Mal dran war
 const firstRoundSeenPlayers = new Set(); // welche Spieler hatten schon einen Zug
 let pendingClariSSIO = null;
+let pendingAntika = null;
 let baristaActiveSlot = null; // {slotId, ownerP}
 let baristaTargetSlot = null; // logische SlotId des betäubten Buwemon
 let baristaTargetName = null;
@@ -4131,6 +4260,53 @@ function clearLegilimens() {
   legilimensRevealedPlayers = [];
 }
 
+function beginClariSSIO(btn, cardEl) {
+  closePopup();
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const ownSlot = cardEl.dataset.slotId; // bereits LOGISCH - kein toLogicalId!
+  const activatorP = parseInt((ownSlot.match(/^p(\d)/)||[])[1]||'1');
+  const activePlayers = is4 ? [1,2,3,4].filter(p => G4.active[p]) : [1,2];
+  const opponents = activePlayers.filter(p => p !== activatorP);
+
+  const startAgainst = (targetP) => {
+    beginAbilityActivation(cardEl, 'clari_phase1', 'Arsch anfassen', () => {
+      const hit = Math.random() < 0.5;
+      const txt = hit ? 'ClariSSIO: Fähigkeitsangriff gelingt! (50%)' : 'ClariSSIO: Fähigkeitsangriff schlägt fehl! (50%)';
+      showOutcomeToast(txt, is4);
+      if (NET.mode === 'multi') netSend({t:'outcome_toast', text: txt, is4});
+      if (!hit) return;
+      setTimeout(() => {
+        const clariCd = G.slots[ownSlot];
+        const clariPower = clariCd ? (CARD_ATTACK_POWER[clariCd.name] || 140) + computeEquipBonus(clariCd.color, clariCd.equipped, activatorP) : 140;
+        pendingAttackSelection = {
+          cardEl, slotId: ownSlot, is4,
+          attackerP: activatorP, attackPower: clariPower,
+          attackName: 'Arsch anfassen – Direktangriff (' + clariPower + ' AP)',
+          isDirectLP: true, directLPTarget: targetP,
+        };
+        // Der LP-Angriff ist Teil derselben Faehigkeit (clari_phase1 hat die Buwemonaktion
+        // bereits verbraucht) - NUR fuer ClariSSIO wird das Zug-Limit hier kurz umgangen,
+        // sonst blockt beginAbilityActivation mit "schon mal angegriffen".
+        window._claripassBypass = true;
+        confirmAttackTargetLP(targetP, is4);
+        window._claripassBypass = false;
+      }, 1200);
+    }, null, { extraText: ' (Ziel: ' + lpOptPlayerName(targetP, is4) + ')' });
+  };
+
+  if (opponents.length <= 1) { startAgainst(opponents[0]); return; }
+  pendingClariSSIO = { cardEl, activatorP, is4, opponents, startAgainst };
+  const suf = is4 ? '-4' : '';
+  const toast = document.getElementById('abil-toast'+suf);
+  document.getElementById('abil-toast-title'+suf).innerHTML = '<b>Arsch anfassen</b>';
+  document.getElementById('abil-toast-sub'+suf).textContent = 'Klicke auf einen Gegner (Buwemon, Handzone oder LP)';
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = 'none';
+  const skipBtn = document.getElementById('abil-toast-skip'+suf);
+  skipBtn.textContent = 'Abbrechen'; skipBtn.style.display = 'inline-block';
+  skipBtn.onclick = () => { toast.classList.remove('open'); document.getElementById('abil-toast-bar-wrap'+suf).style.display=''; pendingClariSSIO=null; };
+  toast.classList.add('open');
+}
+
 function beginAntika(btn, cardEl) {
   closePopup();
   const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
@@ -4141,7 +4317,7 @@ function beginAntika(btn, cardEl) {
   const startAgainst = (targetP) => {
     beginAbilityActivation(cardEl, "Quit livin' on dreams", "Quit livin' on dreams", () => {
       resolveAntika(activatorP, targetP, is4);
-    });
+    }, null, { extraText: ' (Ziel: ' + lpOptPlayerName(targetP, is4) + ')' });
   };
 
   if (opponents.length <= 1) {
@@ -4165,8 +4341,12 @@ function beginAntika(btn, cardEl) {
 function resolveAntika(activatorP, targetP, is4) {
   const hand = is4 ? (handOrderByPlayer4p[targetP]||[]) : (handOrderByPlayer2p[targetP]||[]);
   if (!hand.length) { showOutcomeToast('Gegner hat keine Handkarten!', is4); return; }
-  const randIdx = Math.floor(Math.random() * hand.length);
-  const stolenUid = hand[randIdx];
+  // NUR aus Karten waehlen, zu denen es hier auch wirklich ein Element gibt. Frueher
+  // konnte eine UID ohne DOM-Element gezogen werden -> cd blieb null und es passierte
+  // gar nichts (fiel besonders bei vielen Handkarten auf).
+  const drawable = hand.filter(u => G.cards.some(c => parseInt(c.dataset.uid) === u));
+  if (!drawable.length) { showOutcomeToast('Keine klaubare Handkarte gefunden!', is4); return; }
+  const stolenUid = drawable[Math.floor(Math.random() * drawable.length)];
   // Karte finden für Kartendaten
   const stolenEl = G.cards.find(c => parseInt(c.dataset.uid) === stolenUid);
   const cd = stolenEl ? { name: stolenEl.dataset.name, color: stolenEl.dataset.color, type: stolenEl.dataset.ctype, file: stolenEl.dataset.file||'' } : null;
@@ -4328,7 +4508,7 @@ function doWuerdMirStinkenWithFeedback(el) {
   }
 }
 
-// ── LISA AUS AUSTRALIEN – Lisas Schutzwall ──
+// ── LISA AUS AUSTRALIEN – Lisas Rauch ──
 // Nach Aktivierung: Schimmer, Dauerfähigkeit. Bei jedem Angriff auf ein Buwemon dieses Spielers
 // wird per Zufall entschieden welches wirklich getroffen wird (inkl. "niemand" als Option).
 function beginLisaAbility(btn, el) {
@@ -4359,7 +4539,7 @@ function applyLisaRedirect(originalDefenderSlotId, defenderP, is4) {
   const options = [...buwSlots, null]; // null = ins Leere
   const chosen = options[Math.floor(Math.random() * options.length)];
   const chosenName = chosen ? (G.slots[chosen] ? G.slots[chosen].name : '?') : null;
-  const txt = chosen ? 'Lisas Schutzwall: ' + chosenName + ' wurde getroffen!' : 'Lisas Schutzwall: Angriff geht ins Leere!';
+  const txt = chosen ? 'Lisas Rauch: ' + chosenName + ' wurde getroffen!' : 'Lisas Rauch: Angriff geht ins Leere!';
   return { chosen, txt };
 }
 
@@ -4542,7 +4722,7 @@ function beginMarcopter(btn, cardEl) {
   const startAgainst = (targetP) => {
     beginAbilityActivation(cardEl, 'Rotation', 'Rotation', () => {
       resolveMarcopter(activatorP, targetP, is4);
-    });
+    }, null, { extraText: ' (Ziel: ' + lpOptPlayerName(targetP, is4) + ')' });
   };
 
   if (opponents.length <= 1) {
@@ -4615,7 +4795,7 @@ function resolveMarcopter(activatorP, targetP, is4) {
   const newTheirUids = myCds.map(cd => { const uid=G.nid++; const el2=spawnCard({...cd,uid},0,0,false); el2.style.display='none'; return uid; });
   if (is4) { handOrderByPlayer4p[activatorP]=newMyUids; handOrderByPlayer4p[targetP]=newTheirUids; layoutMyHand4(); renderSimulatedHand('p'+targetP,handCardsFromUids(newTheirUids),true); }
   else { handOrderByPlayer2p[activatorP]=newMyUids; handOrderByPlayer2p[targetP]=newTheirUids; layoutMyHand(); renderSimulatedHand('p'+targetP,handCardsFromUids(newTheirUids),false); }
-  showOutcomeToast('Rotation: Handkarten getauscht mit Spieler '+targetP, is4);
+  showOutcomeToast('Rotation: Handkarten getauscht mit ' + lpOptPlayerName(targetP, is4), is4);
   if (NET.mode==='multi') {
     netSend({t:'marcopter_swap', activatorP, targetP, is4, myCds, theirCds});
     is4?netSendState4():netSendState();
@@ -4636,7 +4816,7 @@ function beginMarie(btn, cardEl) {
   const startAgainst = (targetP) => {
     beginAbilityActivation(cardEl, 'Marie hat recht', 'Marie hat recht', () => {
       resolveMarie(activatorP, targetP, is4);
-    });
+    }, null, { extraText: ' (Ziel: ' + lpOptPlayerName(targetP, is4) + ')' });
   };
 
   if (opponents.length <= 1) {
@@ -4799,11 +4979,69 @@ function tryConfirmBarista(lsid, cd) {
   return true;
 }
 
+// ── BARISTA-BLOCKADEN (mehrere parallel moeglich) ─────────────────────────────
+// targetUid -> { baristaUid, ownerP, targetName }. Frueher gab es nur EINEN globalen
+// Zustand, sodass eine zweite Barista die erste Blockade zwangslaeufig geloescht hat.
+// Schluessel sind KARTEN-UIDs (Effekt haengt an der Karte, nicht am Feld).
+const baristaBlocks = {};
+
+function isBaristaBlocked(uid) {
+  if (uid === undefined || uid === null) return false;
+  return !!baristaBlocks[String(uid)];
+}
+
+// Prueft alle Blockaden: fehlt die zugehoerige Barista oder das Ziel, wird die Blockade
+// aufgehoben und die Karte wieder normal dargestellt.
+function refreshBaristaBlocks() {
+  Object.keys(baristaBlocks).forEach(tu => {
+    const e = baristaBlocks[tu];
+    const bSlot = _slotOfUid(e.baristaUid);
+    const tSlot = _slotOfUid(tu);
+    if (!bSlot || !tSlot) {
+      if (tSlot) setBaristaFade(tSlot, false);
+      delete baristaBlocks[tu];
+      return;
+    }
+    setBaristaFade(tSlot, !dinkActive(bSlot));
+  });
+}
+
+// Alle Blockaden als LOGISCHE Slot-IDs (fuer den Netzwerk-Abgleich)
+function baristaBlocksAsSlots() {
+  return Object.keys(baristaBlocks).map(tu => {
+    const e = baristaBlocks[tu];
+    const bSlot = _slotOfUid(e.baristaUid), tSlot = _slotOfUid(tu);
+    return (bSlot && tSlot) ? {targetSlot: tSlot, baristaSlot: bSlot, ownerP: e.ownerP, targetName: e.targetName} : null;
+  }).filter(Boolean);
+}
+
+// Uebernimmt eine gesendete Liste (Vollabgleich: entfernt auch, was nicht mehr gemeldet wird)
+function applyBaristaBlocksFromSlots(list) {
+  const keep = new Set();
+  (list||[]).forEach(b => {
+    const tu = _uidAt(b.targetSlot), bu = _uidAt(b.baristaSlot);
+    if (tu === null || bu === null) return;
+    baristaBlocks[tu] = {baristaUid: bu, ownerP: b.ownerP, targetName: b.targetName || (G.slots[b.targetSlot]||{}).name || null};
+    keep.add(tu);
+  });
+  Object.keys(baristaBlocks).forEach(tu => {
+    if (!keep.has(tu)) {
+      const tSlot = _slotOfUid(tu);
+      if (tSlot) setBaristaFade(tSlot, false);
+      delete baristaBlocks[tu];
+    }
+  });
+  refreshBaristaBlocks();
+}
+
 function applyBaristaEffect(baristaSlotId, ownerP, targetLsid, is4) {
   baristaActiveSlot = {slotId: baristaSlotId, ownerP};
   baristaTargetSlot = targetLsid;
   baristaTargetUid = _uidAt(targetLsid);
   baristaTargetName = (G.slots[targetLsid]||{}).name || null;
+  // Zusaetzlich in die Mehrfach-Map eintragen (mehrere Baristas parallel)
+  const _btu = _uidAt(targetLsid), _bbu = _uidAt(baristaSlotId);
+  if (_btu !== null && _bbu !== null) baristaBlocks[_btu] = {baristaUid: _bbu, ownerP, targetName: baristaTargetName};
   setAbilityShimmer(baristaSlotId, true);
   setBaristaFade(targetLsid, true);
   const tName = (G.slots[targetLsid]||{}).name || '?';
@@ -5067,7 +5305,7 @@ function beginSpuelung(btn, cardEl) {
   const startAgainst = (targetP) => {
     beginAbilityActivation(cardEl, 'Spülung', 'Spülung', () => {
       resolveSpuelung(activatorP, targetP, is4);
-    });
+    }, null, { extraText: ' (Ziel: ' + lpOptPlayerName(targetP, is4) + ')' });
   };
 
   if (opponents.length === 1) { startAgainst(opponents[0]); return; }
@@ -5215,7 +5453,7 @@ function beginNeueBessereKarte(cardEl, ownerP, is4, slotId, cd) {
   const startAgainst = (targetP) => {
     beginAbilityActivation(cardEl, 'Neue BESSERE Karte', 'Neue BESSERE Karte', () => {
       resolveNBK(ownerP, targetP, is4, cd);
-    });
+    }, null, { extraText: ' (Ziel: ' + lpOptPlayerName(targetP, is4) + ')' });
   };
 
   if (opponents.length === 1) { startAgainst(opponents[0]); return; }
@@ -5349,7 +5587,9 @@ function startNBKUI(ownerP, targetP, maxSelect, is4) {
 
     if (NET.mode === 'multi') {
       netSend({t:'nbk_confirm', ownerP, targetP, myCardData, count: myCardData.length, is4});
-      layoutMyHand(); // eigene Hand ohne die weggegebenen Karten
+      // 4P-Fix: layoutMyHand() positioniert nur die 2P-Hand - im 4-Spieler-Modus blieben
+      // die Karten bei (0,0) haengen ("oben links in der Ecke"). Je nach Modus verzweigen.
+      if (is4) layoutMyHand4(); else layoutMyHand();
     } else {
       // Solo: Gegner-Karten direkt holen
       const theirCardData = theirUids.map(uid => {
@@ -5901,6 +6141,11 @@ function grasenTakeCard(ownerP, graveP, idx, is4) {
   else { cardEl2.style.display='none'; renderSimulatedHand('p'+ownerP, handCardsFromUids(arr[ownerP]), is4); }
   document.getElementById('browser-modal').classList.remove('open');
   document.getElementById('verbot-target-modal').classList.remove('open');
+  // Der bestohlene Friedhof gehoert einem ANDEREN Spieler - netSendState uebertraegt nur
+  // den eigenen Friedhof, daher hier gezielt die neue Liste an alle schicken.
+  if (NET.mode === 'multi') {
+    netSend({t:'grave_update', player:'p'+graveP, grave: grv, is4, sender: NET.myPlayer});
+  }
   const txt = lpOptPlayerName(ownerP, is4) + ' hat eine Karte aus dem Friedhof von ' + lpOptPlayerName(graveP, is4) + ' genommen';
   showOutcomeToast(txt, is4);
   if (NET.mode === 'multi') {
@@ -6274,10 +6519,11 @@ const ABILITY_EFFECTS = {
     systemRestartClearHands(is4);
     showOutcomeToast('Bierre startet das System neu – alle Hände werden neu ausgeteilt!', is4);
     if (NET.mode==='multi') { netSend({t:'system_restart', is4, sender: NET.myPlayer}); }
-    // Neu austeilen loest genau EIN Client aus (Host bzw. Solo), damit nicht doppelt
-    // gezogen wird. Eigener Pfad statt dealStartCards(): dessen applyDealResult2p bricht
-    // wegen startCardsDealt2p sofort ab, weil zu Spielbeginn bereits ausgeteilt wurde.
-    if (NET.mode !== 'multi' || NET.myPlayer === 1) {
+    // Neu austeilen loest genau EIN Client aus, damit nicht doppelt gezogen wird.
+    // NET.isHost statt NET.myPlayer===1 - im 4-Spieler-Modus wird die Spielernummer
+    // manuell gewaehlt und ist NICHT zwangslaeufig 1 fuer den Host. Mit dem falschen
+    // Check loeste im 4P-Board oft NIEMAND das Neu-Austeilen aus.
+    if (NET.mode !== 'multi' || NET.isHost) {
       setTimeout(() => { systemRestartDeal(is4); }, 450);
     }
   },
@@ -6503,18 +6749,10 @@ function renderPopupActionButtons(el, fd) {
   const _is4fb = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
   const _isMyCard = !_buwOwner || _buwOwner === (_is4fb ? myLogicalPlayer4p() : myLogicalPlayer2p());
   const foreignCardBlock = !sandboxMode && !debugMode && !_isMyCard;
-  const baristaBlocksThis = !sandboxMode && !debugMode && baristaTargetUid && baristaActiveSlot &&
-    (() => {
-      // Die betaeubte KARTE ueber ihre UID suchen - sie kann das Feld gewechselt haben
-      const _btSlotNow = _slotOfUid(baristaTargetUid);
-      const targetCd = _btSlotNow ? G.slots[_btSlotNow] : null;
-      if (!targetCd) { baristaTargetSlot = null; baristaTargetName = null; baristaTargetUid = null; return false; }
-      baristaTargetSlot = _btSlotNow;
-      // UID-Vergleich: der Block haengt an der KARTE, nicht am Feld
-      return (baristaTargetUid !== null && String(el.dataset.uid) === String(baristaTargetUid)) &&
-        el.dataset.name === baristaTargetName &&
-        !dinkActive(baristaActiveSlot.slotId);
-    })();
+  // Ueber die Mehrfach-Map pruefen (Punkt-Fix): mit dem alten Einzelzustand
+  // (baristaTargetUid/baristaActiveSlot) galt bei ZWEI parallelen Blockaden nur noch die
+  // zuletzt eingetragene Karte als geblockt - die erste verlor ihren Button-Fade.
+  const baristaBlocksThis = !sandboxMode && !debugMode && isBaristaBlocked(el.dataset.uid);
   if (atkName) {
     const atkBtn = makeBtn('Angriff_Icon.png', atkName, (btn, cardEl) => beginAttackSelection(btn, cardEl), totalPower);
     if (turnBlocked || baristaBlocksThis || firstRoundBlocksAtk || foreignCardBlock) { atkBtn.style.opacity = '0.3'; atkBtn.style.pointerEvents = 'none'; }
@@ -6746,6 +6984,7 @@ function onCarryDrop(e) {
         // Beschwörungserlaubnis löschen nach erfolgreichem Docking
         const ownerPDock = parseInt((player.match(/p(\d)/)||[])[1]||'0');
         if (allowedSummons[ownerPDock] === cd.name) delete allowedSummons[ownerPDock];
+        if (cd.type === 'spec') summonCardToGrave(cd.name);
         checkExBuwemon(player, zoneSuffix2); checkZoneColor(player, zoneSuffix2);
       }
       if (isEffSlot || isVerbotSlot) checkVerbote(player, zoneSuffix2);
@@ -7702,6 +7941,11 @@ function renderSlot(slotId) {
   // Finns Chemie Unfall: geblockte Effektkarten muessen nach jedem Neuaufbau erneut
   // verblasst werden - renderSlot() baut das <img> neu und verwirft die Opacity.
   if (typeof applyFinnFade === 'function' && finnOwnerP() !== 0) setTimeout(applyFinnFade, 12);
+  // Barista-Blockaden nachziehen: stirbt die Barista oder verlaesst sie das Feld, muss
+  // das betaeubte Buwemon bei ALLEN Spielern wieder normal dargestellt werden.
+  if (typeof refreshBaristaBlocks === 'function' && Object.keys(baristaBlocks).length) {
+    setTimeout(refreshBaristaBlocks, 14);
+  }
 }
 
 function imgFileFor(name) {
@@ -7744,6 +7988,20 @@ function hasSummonCard(player, buwemonName, suffix) {
 }
 
 
+// Raeumt eine noch liegende Beschwoerungskarte auf den Friedhof - wird aufgerufen,
+// sobald das zugehoerige Spezialbuwemon wirklich in ein Buwemonfeld gedockt wurde.
+function summonCardToGrave(specName) {
+  const s = window._pendingSummonCard;
+  if (!s) return;
+  if (specName && s.specName && specName !== s.specName) return;
+  window._pendingSummonCard = null;
+  if (!G.slots[s.slotId] || G.slots[s.slotId].name !== s.cd.name) return;
+  G.slots[s.slotId] = null; renderSlot(s.slotId);
+  const pfx = 'p'+s.ownerP;
+  if (s.is4) { G4.graves[pfx].push(s.cd); updGrave4(pfx); } else { G.graves[pfx].push(s.cd); updGrave(pfx); }
+  if (NET.mode === 'multi') { s.is4 ? netSendState4() : netSendState(); }
+}
+
 function onCardDockedToEffSlot(player, slotId, cd) {
   const is4 = slotId.endsWith('-4');
   if (sandboxMode) return; // Im Sandbox-Modus keine Effekte auslösen
@@ -7752,11 +8010,11 @@ function onCardDockedToEffSlot(player, slotId, cd) {
   if (SUMMON_CARDS[cd.name]) {
     const cfg = SUMMON_CARDS[cd.name];
     const ownerP = parseInt(player.replace('p',''));
-    // Karte sofort auf Friedhof
-    const pfxS = 'p'+ownerP;
-    G.slots[slotId] = null; renderSlot(slotId);
-    const bcdS = {name:cd.name,color:cd.color,type:'eff',file:cd.file||''};
-    if (is4){G4.graves[pfxS].push(bcdS);updGrave4(pfxS);}else{G.graves[pfxS].push(bcdS);updGrave(pfxS);}
+    // Die Beschwoerungskarte bleibt im Effektfeld liegen, bis das zugehoerige
+    // Spezialbuwemon wirklich beschworen wurde (Docking in ein Buwemonfeld).
+    // Erst dann raeumt summonCardToGrave() sie auf den Friedhof.
+    window._pendingSummonCard = {slotId, ownerP, is4,
+      cd: {name:cd.name,color:cd.color,type:'eff',file:cd.file||''}, specName: cfg.specName};
     beginSummonSelection(ownerP, cfg, is4);
     if (NET.mode==='multi') {
       netSend({t:'summon_start', ownerP, specName:cfg.specName, is4, sender:NET.myPlayer});
@@ -7772,18 +8030,23 @@ function onCardDockedToEffSlot(player, slotId, cd) {
     fake.dataset.name = cd.name; fake.dataset.color = cd.color;
     fake.dataset.ctype = cd.type || 'eff'; fake.dataset.uid = cd.uid || 0;
     fake.dataset.slotId = slotId;
-    // Die RGB-Karte wandert SOFORT auf den Friedhof - unabhaengig davon, ob die
-    // Kampfsituation die Wirkung durchlaesst oder sie abgelehnt wird. Frueher lag das
-    // Aufraeumen nur in der resolveFn, die bei Ablehnung nie lief -> Karte blieb im Feld.
-    G.slots[slotId] = null; renderSlot(slotId);
-    {
+    // Die RGB-Karte bleibt bis zum ENDE der Kampfsituation im Effektfeld liegen und
+    // wandert danach auf den Friedhof - egal ob die Wirkung eintritt oder abgewehrt wird.
+    const _rgbToGrave = () => {
+      if (!G.slots[slotId] || G.slots[slotId].name !== 'RGB') return;
+      G.slots[slotId] = null; renderSlot(slotId);
       const pfx = 'p'+ownerP;
       const bcd = {name:cd.name,color:cd.color,type:'eff',file:cd.file||''};
       if (is4) { G4.graves[pfx].push(bcd); updGrave4(pfx); } else { G.graves[pfx].push(bcd); updGrave(pfx); }
       if (NET.mode==='multi') { is4 ? netSendState4() : netSendState(); }
-    }
+    };
+    // Auch bei Abwehr aufraeumen: die resolveFn laeuft dann nicht, daher zusaetzlich
+    // ueber den Abschluss-Hook der Kampfsituation.
+    window._pendingCardCleanup = window._pendingCardCleanup || [];
+    window._pendingCardCleanup.push(_rgbToGrave);
     beginAbilityActivation(fake, 'RGB', 'RGB', () => {
       resolveRGB(slotId, is4, ownerP);
+      _rgbToGrave();
       if (NET.mode==='multi') { is4 ? netSendState4() : netSendState(); }
     });
     return;
@@ -8065,10 +8328,21 @@ function applyColorHandRemove(hex, is4) {
   });
   toRemove.forEach(uid => {
     const el = G.cards.find(c=>parseInt(c.dataset.uid)===uid);
-    if (el) { el.remove(); G.cards = G.cards.filter(c=>parseInt(c.dataset.uid)!==uid); }
+    if (el) {
+      // Entfernte Handkarten gehoeren auf den ENTFERNT-Stapel, nicht ins Nichts.
+      // Frueher wurden sie hier nur geloescht - beim Aktivator landeten sie korrekt im
+      // Banish, beim Gegner verschwanden sie spurlos.
+      const _bcd = {name:el.dataset.name,color:el.dataset.color,type:el.dataset.ctype,file:el.dataset.file||''};
+      if (is4) { G4.banish.push(_bcd); G.banish = G4.banish; updBanish4(); }
+      else { G.banish.push(_bcd); updBanish(); }
+      el.remove(); G.cards = G.cards.filter(c=>parseInt(c.dataset.uid)!==uid);
+    }
     arr[myL] = (arr[myL]||[]).filter(u=>u!==uid);
   });
   if (is4) layoutMyHand4(); else layoutMyHand();
+  if (toRemove.length && NET.mode === 'multi') {
+    if (is4) netSend({t:'banish4_update', banish: G4.banish});
+  }
   // Simulierte Gegner-Hände aktualisieren (Anzahl anpassen, da wir Farbe der Gegner-Karten nicht kennen)
   // Der Gegner-Client wird via netSend seine eigenen Karten entfernen und State senden
   // Aber wir können die sim-Anzeige sofort aktualisieren indem wir das Deck prüfen
@@ -8484,7 +8758,10 @@ function tryDockCard(el) {
       const player = (lsid.match(/^p[1-4]/)||['p2'])[0];
       const zoneSuffix = lsid.endsWith('-4') ? '-4' : '';
       const isBuwSlot = !isExSlot && !isEffSlot && !isVerbotSlot;
-      if (isBuwSlot) { checkExBuwemon(player, zoneSuffix); checkZoneColor(player, zoneSuffix); }
+      if (isBuwSlot) {
+        if (cd.type === 'spec') summonCardToGrave(cd.name);
+        checkExBuwemon(player, zoneSuffix); checkZoneColor(player, zoneSuffix);
+      }
       if (isEffSlot || isVerbotSlot) checkVerbote(player, zoneSuffix);
       if (isEffSlot) onCardDockedToEffSlot(player, lsid, cd);
       if (isExSlot && (cd.color === '#111111' || cd.name === 'Darkschah EX')) checkDarkschahWin(player);
@@ -8527,6 +8804,19 @@ function releaseSlot(slotId, x, y) {
     const lsid = toLogicalId(sid);
     const cdNow = G.slots[lsid];
 
+    // Antika-Zielauswahl (fehlte komplett - pendingAntika wurde nie ausgewertet, deshalb
+    // passierte im 4-Spieler-Board beim Klick auf ein Gegnerfeld gar nichts).
+    if (!sandboxMode && pendingAntika) {
+      const targetPAn = parseInt((lsid.match(/^p(\d)/)||[])[1]||'0');
+      if (pendingAntika.opponents.includes(targetPAn)) {
+        const sufAn = pendingAntika.is4 ? '-4' : '';
+        document.getElementById('abil-toast'+sufAn).classList.remove('open');
+        document.getElementById('abil-toast-bar-wrap'+sufAn).style.display = '';
+        const savedAn = pendingAntika; pendingAntika = null;
+        savedAn.startAgainst(targetPAn);
+        e.stopPropagation(); return;
+      }
+    }
     // ClariSSIO Zielauswahl: Buwemon-Slot, Handzone oder LP eines Gegners
     if (!sandboxMode && pendingClariSSIO) {
       const targetP = parseInt((lsid.match(/^p(\d)/)||[])[1]||'0');
@@ -9673,6 +9963,7 @@ function doRecast() {
 function checkPermanentAbilitiesAfterMove() {
   const allBuw = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'];
   // Für jede aktive Dauerfähigkeit: prüfen ob Karte noch beim selben Spieler
+  if (typeof refreshBaristaBlocks === 'function') refreshBaristaBlocks();
   // Effekte haengen an der KARTE: liegt sie nicht mehr auf dem Feld -> Effekt weg.
   // Hat sie den Besitzer gewechselt -> Effekt ebenfalls weg.
   [...activePermanentAbilities].forEach(uid => {
@@ -9974,7 +10265,7 @@ function toggle4PMode() {
   fourPlayerMode = !fourPlayerMode;
   const btn = document.getElementById('lobby-4p-toggle');
   if (btn) {
-    btn.textContent = fourPlayerMode ? '2-4 Spieler Board' : '2 Spieler Board';
+    btn.textContent = fourPlayerMode ? '2 - 4 Spieler Board' : '2 Spieler Board';
     btn.style.background = 'rgba(0,150,80,0.7)';
     btn.style.color = '#fff';
   }
@@ -10247,6 +10538,7 @@ function dealStartCards2Automatik() {
 function applyDealResult2p(dealt) {
   if (startCardsDealt2p) return; // schon ausgeteilt - verhindert doppelte Anwendung (z.B. Echo der eigenen Nachricht)
   startCardsDealt2p = true;
+  hideDealStartToast();
   [1,2].forEach(p => {
     if (!handOrderByPlayer2p[p]) handOrderByPlayer2p[p] = [];
     (dealt[p] || []).forEach(cd => {
@@ -10349,6 +10641,7 @@ function dealStartCards4Automatik() {
 function applyDealResult4p(dealt) {
   if (startCardsDealt4p) return; // schon ausgeteilt - verhindert doppelte Anwendung
   startCardsDealt4p = true;
+  hideDealStartToast();
   const myP = myLogicalPlayer4p();
   Object.keys(dealt).forEach(pStr => {
     const p = parseInt(pStr);
@@ -11015,7 +11308,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div id="game-version-label" style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v52z
+    v53e
   </div>
 </div>
 
@@ -11356,6 +11649,7 @@ function netSendState() {
       slotId: baristaActiveSlot.slotId, ownerP: baristaActiveSlot.ownerP,
       targetSlot: _slotOfUid(baristaTargetUid), targetName: baristaTargetName
     } : null,
+    baristaBlockList: baristaBlocksAsSlots(),
   });
 }
 
@@ -11563,7 +11857,8 @@ function onNetData(d) {
     if (Array.isArray(d.abilSlots)) {
       window._pendingAbilSync = {
         abil: d.abilSlots, dink: d.dinkSlots || [], glor: d.glorSlots || [],
-        glorianActive: d.glorianActive || null, baristaActive: d.baristaActive || null
+        glorianActive: d.glorianActive || null, baristaActive: d.baristaActive || null,
+        baristaBlockList: d.baristaBlockList || []
       };
     }
     // Barista Fade wiederherstellen nach State-Update
@@ -11716,7 +12011,9 @@ function onNetData(d) {
         baristaTargetSlot = _s.baristaActive.targetSlot;
         baristaTargetUid = _uidAt(_s.baristaActive.targetSlot);
         baristaTargetName = _s.baristaActive.targetName || (G.slots[baristaTargetSlot]||{}).name || null;
+        applyBaristaBlocksFromSlots(_s.baristaBlockList);
       } else if (!_s.baristaActive) {
+        applyBaristaBlocksFromSlots(_s.baristaBlockList);
         if (baristaTargetSlot) setBaristaFade(baristaTargetSlot, false);
         baristaActiveSlot = null; baristaTargetSlot = null; baristaTargetName = null; baristaTargetUid = null;
       }
@@ -11758,6 +12055,7 @@ if (d.t === 'state4') {
         (d.dinkSlots||[]).forEach(sid => { if (G.slots[sid]) dinkSet(sid, true); });
         (d.glorSlots||[]).forEach(sid => { if (G.slots[sid]) glorSuppSet(sid, true); });
         if (d.glorianActive && G.slots[d.glorianActive.slotId]) glorianActiveSlot = {slotId: d.glorianActive.slotId, ownerP: d.glorianActive.ownerP};
+        applyBaristaBlocksFromSlots(d.baristaBlockList || []);
         if (d.baristaActive && d.baristaActive.targetSlot && G.slots[d.baristaActive.targetSlot]) {
           baristaActiveSlot = {slotId: d.baristaActive.slotId, ownerP: d.baristaActive.ownerP};
           baristaTargetSlot = d.baristaActive.targetSlot;
@@ -12028,6 +12326,8 @@ if (d.t === 'state4') {
     // Name fehlt. Ohne das bleibt nur der Fade sichtbar, die Buttons funktionieren weiter.
     baristaTargetName = d.targetName || (G.slots[d.targetLsid]||{}).name || null;
     baristaTargetUid = _uidAt(d.targetLsid);
+    const _rbtu = _uidAt(d.targetLsid), _rbbu = _uidAt(d.baristaSlotId);
+    if (_rbtu !== null && _rbbu !== null) baristaBlocks[_rbtu] = {baristaUid: _rbbu, ownerP: d.ownerP, targetName: baristaTargetName};
     setAbilityShimmer(d.baristaSlotId, true);
     setBaristaFade(d.targetLsid, true);
   }
@@ -12079,7 +12379,7 @@ if (d.t === 'state4') {
         spawnCard({name:cd2.name,color:cd2.color,type:cd2.type,uid:u,file:cd2.file||''},0,0,false);
         myArr[d.targetP].push(u);
       });
-      layoutMyHand();
+      if (d.is4) layoutMyHand4(); else layoutMyHand();
       showOutcomeToast('Kartentausch abgeschlossen!', d.is4);
       if (NET.mode==='multi') netSend({t:'nbk_result', ownerP:d.ownerP, theirCardData, is4:d.is4, sender:NET.myPlayer});
       if (NET.mode==='multi') { d.is4 ? netSendState4() : netSendState(); }
@@ -12096,7 +12396,7 @@ if (d.t === 'state4') {
         spawnCard({name:cd2.name,color:cd2.color,type:cd2.type,uid:u,file:cd2.file||''},0,0,false);
         myArr[d.ownerP].push(u);
       });
-      layoutMyHand();
+      if (d.is4) layoutMyHand4(); else layoutMyHand();
       showOutcomeToast('Kartentausch abgeschlossen!', d.is4);
       if (NET.mode==='multi') { d.is4 ? netSendState4() : netSendState(); }
     }
@@ -12266,6 +12566,11 @@ if (d.t === 'state4') {
     // Nur löschen wenn KEINE Karte mit dieser UID mehr auf dem Feld liegt.
     const _stillOn = Object.keys(G.slots).some(s => G.slots[s] && String(G.slots[s].uid) === String(d.uid));
     if (!_stillOn) permanentAbilityUsed.delete(d.uid);
+  }
+  if (d.t === 'grave_update') {
+    if (d.sender === NET.myPlayer) return;
+    if (d.is4) { G4.graves[d.player] = d.grave || []; updGrave4(d.player); }
+    else { G.graves[d.player] = d.grave || []; updGrave(d.player); }
   }
   if (d.t === 'owner_change_reset') {
     // slotIds sind logisch und damit fuer beide Clients identisch - die lokale uid
@@ -12706,7 +13011,13 @@ function renderSimulatedHand(logicalPfx, cards, is4) {
   const cw = is4 ? 47 : 63, ch = is4 ? 66 : 88;
   const step = is4 ? 30 : 40; // identisch mit layoutMyHand/layoutMyHand4
   const padding = 8;
-  (cards || []).forEach((cd, i) => {
+  // Ueberlauf-Grenzen: horizontal (oben/unten) 41 Karten/Reihe im 4P, 46 im 2P;
+  // vertikal (links/rechts im 4P) 25 Karten/Spalte. Nach Erreichen der Grenze beginnt
+  // eine zweite, versetzte Reihe/Spalte die ueber der vorherigen liegt.
+  const perLine = vertical ? 25 : (is4 ? 41 : 46);
+  const overflowOffset = vertical ? Math.round(cw * 0.55) : Math.round(ch * 0.55);
+  const hasOverflow = (cards || []).length > perLine;
+  (cards || []).forEach((cd, _i0) => {
     const c = document.createElement('div');
     c.className = 'sim-hand-card';
     c.dataset.name = cd.name; c.dataset.color = cd.color; c.dataset.ctype = cd.ctype;
@@ -12716,14 +13027,32 @@ function renderSimulatedHand(logicalPfx, cards, is4) {
     img.src = BACK;
     img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
     c.appendChild(img);
+    const lineIdx = Math.floor(_i0 / perLine);   // welche Reihe/Spalte (0 = Basis, 1+ = Ueberlauf)
+    const posInLine = _i0 % perLine;
     if (vertical) {
-      c.style.left = '50%'; c.style.marginLeft = (-cw/2) + 'px';
-      c.style.top = (padding + i*step) + 'px';
+      // Links/Rechts im 4P: bei Ueberlauf rueckt die GANZE Spalte an den jeweiligen Rand
+      // (links -> linker Rand, rechts -> rechter Rand), die Folgespalten wachsen nach innen.
+      c.style.top = (padding + posInLine*step) + 'px';
+      c.style.marginLeft = '';
+      if (!hasOverflow) {
+        c.style.left = '50%'; c.style.marginLeft = (-cw/2) + 'px';
+      } else if (physPfx === 'p3') {           // linke Handzone
+        c.style.left = (padding + lineIdx*overflowOffset) + 'px';
+      } else {                                  // rechte Handzone (p4)
+        c.style.right = (padding + lineIdx*overflowOffset) + 'px';
+        c.style.left = '';
+      }
     } else {
-      c.style.top = '50%'; c.style.marginTop = (-ch/2) + 'px';
-      c.style.left = (padding + i*step) + 'px';
+      // Oben/Unten: bei Ueberlauf rueckt die ganze Reihe an den OBEREN Rand der Handzone
+      c.style.left = (padding + posInLine*step) + 'px';
+      c.style.marginTop = '';
+      if (!hasOverflow) {
+        c.style.top = '50%'; c.style.marginTop = (-ch/2) + 'px';
+      } else {
+        c.style.top = (3 + lineIdx*overflowOffset) + 'px';
+      }
     }
-    c.style.zIndex = String(i);
+    c.style.zIndex = String((lineIdx+1) * 1000 + posInLine);
     handEl.appendChild(c);
   });
   // Legilimens: neu gerenderte Karten sofort aufdecken wenn Fähigkeit aktiv
@@ -13060,6 +13389,10 @@ function triggerExplosions() {
 </script>
 
 <!-- DEAL CONFIRM MODAL -->
+<div id="deal-start-toast" style="display:none;position:fixed;z-index:9600;background:rgba(20,20,25,0.92);color:#fff;padding:14px 22px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.4);text-align:center;font-family:'Kievit',sans-serif;">
+  <div style="font-size:1rem;font-weight:700;margin-bottom:8px;">🃏 Neue Runde beginnt!</div>
+  <button onclick="dealStartCards()" style="padding:8px 20px;border-radius:8px;border:none;background:#2255cc;color:#fff;cursor:pointer;font-weight:700;font-family:'Kievit',sans-serif;">Startkarten ausgeben</button>
+</div>
 <div id="deal-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:8000;align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:14px;padding:28px 32px;min-width:220px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.25);">
     <div style="font-size:1.1rem;font-weight:800;margin-bottom:10px;font-family:'AiSpec',sans-serif;font-style:italic;">Startkarten ausgeben?</div>
