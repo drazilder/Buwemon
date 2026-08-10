@@ -2768,7 +2768,7 @@ let _pendingOutcomeText = null; // sammelt Toast-Texte während resolveFn läuft
 const FOURACEFOUR_NAME = 'FourAceFour-Feuer-Reverse-Blöff';
 
 const SUMMON_CARDS = {
-  'Tristan Verbot':          { specName: "L'Enderdragon",   count: 3, needGilip: false, needAllColors: false },
+  'Tristanverbot':           { specName: "L'Enderdragon",   count: 3, needGilip: false, needAllColors: false },
   'Elefanten Aufstand':      { specName: 'Die Pogofanten',  count: 3, needGilip: false, needAllColors: false },
   'Sigma Transformation':    { specName: 'Golop der Grobe', count: 3, needGilip: true,  needAllColors: false },
   'Zeitmaschinen Veruntreuung': { specName: 'Der Zeitführer', count: 4, needGilip: false, needAllColors: false },
@@ -2781,6 +2781,33 @@ let _fourAceHandledInCombat = false;
 let _lastActivatorSlotId = null; // verhindert Eigenzug-Handler nach Kampf-FourAceFour
 const ABILITY_FIRST_RESPONSE_NAMES = ['Dinkelmehl', 'Ablehnt', FOURACEFOUR_NAME];
 const ABILITY_CHAIN_RESPONSE_NAMES = ['Ablehnt', FOURACEFOUR_NAME];
+
+// Greift gerade ein EX-Buwemon an? (Calgon/Stein wirken dagegen nicht)
+function attackerIsExBuwemon() {
+  if (!pendingAbility || !pendingAbility.slotId) return false;
+  const cd = G.slots[pendingAbility.slotId];
+  if (!cd) return false;
+  return cd.type === 'ex-auto' || cd.ctype === 'ex-auto' || /-ex(-4)?$/.test(pendingAbility.slotId);
+}
+
+// Kurzer Hinweis-Overlay ueber dem Kampf-Toast - verdraengt ihn NICHT, sondern legt sich
+// nur ~2s darueber und verschwindet dann wieder.
+function showBlockedCardHint(text) {
+  let el = document.getElementById('blocked-card-hint');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'blocked-card-hint';
+    el.style.cssText = 'position:fixed;left:50%;top:14%;transform:translateX(-50%);z-index:9800;'
+      + 'background:rgba(20,20,25,0.94);color:#fff;padding:10px 18px;border-radius:10px;'
+      + 'font-family:"Kievit",sans-serif;font-size:.85rem;font-weight:600;text-align:center;'
+      + 'box-shadow:0 4px 18px rgba(0,0,0,0.45);max-width:420px;pointer-events:none;';
+    document.documentElement.appendChild(el);
+  }
+  el.textContent = text;
+  el.style.display = 'block';
+  clearTimeout(window._blockedHintTimer);
+  window._blockedHintTimer = setTimeout(() => { el.style.display = 'none'; }, 2200);
+}
 
 function abilityGlowEl(slotId) {
   const slotEl = document.getElementById(physId(slotId));
@@ -2878,12 +2905,18 @@ function openAbilityRound(phase) {
   const timeEl = document.getElementById('abil-toast-time'+suf);
   const skipBtn = document.getElementById('abil-toast-skip'+suf);
   if (!toast) return;
+  // Ladebalken wieder einblenden - ein vorher gezeigter Info-Toast hat ihn ausgeblendet
+  // und stellt ihn erst nach 3s zurueck (dann ist diese Runde laengst gestartet).
+  const barWrapOAR = document.getElementById('abil-toast-bar-wrap'+suf);
+  if (barWrapOAR) barWrapOAR.style.display = '';
 
   const inMulti = (NET.mode === 'multi');
   const iAmLastActor = inMulti && (NET.myPlayer === pendingAbility.lastActor);
   const iAmActivator = inMulti && (NET.myPlayer === data.activatorP);
 
-  const abilitySpan = coloredAbilName(data.abilityName, data.cardColor);
+  // Kennzeichnen, ob es sich um einen Angriff oder eine Faehigkeit handelt
+  const _kindSuffix = data.isAttack ? ' (Angriff)' : ' (Fähigkeit)';
+  const abilitySpan = coloredAbilName(data.abilityName, data.cardColor) + _kindSuffix;
   const cardSpan = coloredAbilName(data.cardName, data.cardColor);
   const defenderSpan = data.defenderName ? coloredAbilName(data.defenderName, data.defenderColor) : '';
   const extraTxt = escHtml(data.extraText || '');
@@ -3743,13 +3776,26 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
   if (defense) {
     if (defense.name === 'Calgon') {
       // 4/6 Fehlschlag, bei blauem Verteidiger 100%
-      attackFails = (defCd.color === '#1a44bb') ? true : (Math.random() < 4/6);
-      { const _t = attackFails ? '<b>Calgon</b> hat den Angriff abgewehrt! (4/6)' : '<b>Calgon</b> hat NICHT gewirkt - Angriff wird durchgeführt.'; setTimeout(() => { showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t, is4}); }, 600); }
+      // Blaue Buwemon werden von Calgon IMMER geschuetzt (sofern nicht abgewehrt)
+      const _calgonSure = (defCd.color === '#1a44bb');
+      attackFails = _calgonSure ? true : (Math.random() < 4/6);
+      { const _t = attackFails
+          ? (_calgonSure
+              ? '<b>Calgon</b> schützt BLAUE Buwemon immer - Angriff zu 100% abgewehrt!'
+              : '<b>Calgon</b> hat den Angriff abgewehrt! (4/6)')
+          : '<b>Calgon</b> hat NICHT gewirkt - Angriff wird durchgeführt.';
+        setTimeout(() => { showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t, is4}); }, 600); }
     } else if (defense.name === 'Stein') {
       // 4/6 Fehlschlag + Angreifer stirbt, bei orangem Verteidiger 100%
-      const roll = (defCd.color === '#cc5500') ? true : (Math.random() < 4/6);
+      const _steinSure = (defCd.color === '#cc5500');
+      const roll = _steinSure ? true : (Math.random() < 4/6);
       if (roll) { attackFails = true; attackerDiesInstead = true; }
-      { const _t = roll ? '<b>Stein</b> hat gewirkt - der Angreifer stirbt! (4/6)' : '<b>Stein</b> hat NICHT gewirkt - Angriff wird durchgeführt.'; setTimeout(() => { showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t, is4}); }, 600); }
+      { const _t = roll
+          ? (_steinSure
+              ? '<b>Stein</b> schützt ORANGE Buwemon immer - der Angreifer stirbt (100%)!'
+              : '<b>Stein</b> hat gewirkt - der Angreifer stirbt! (4/6)')
+          : '<b>Stein</b> hat NICHT gewirkt - Angriff wird durchgeführt.';
+        setTimeout(() => { showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t, is4}); }, 600); }
     } else if (defense.name === 'UwU ') {
       atkPowerOverride = sel.attackPower - 30;
       if (atkColor === '#008899') attackerDiesAfterwards = true; // Angreifer ist Cyan
@@ -6226,7 +6272,10 @@ function selectEineRundeNoch(graveP, idx, effSlotId, is4, ownerP) {
   // Popups schließen
   document.getElementById('browser-modal').classList.remove('open');
   document.getElementById('verbot-target-modal').classList.remove('open');
-  if (NET.mode==='multi') { is4 ? netSendState4() : netSendState(); }
+  if (NET.mode==='multi') {
+    if (graveP !== ownerP) netSend({t:'grave_update', player:'p'+graveP, grave: graves, is4, sender: NET.myPlayer});
+    is4 ? netSendState4() : netSendState();
+  }
 }
 
 // ── VERBOTS-ZIELFÄHIGKEITEN (Lord Phillipp/Mecces Pakt, Flosama/Bett abbauen, Maxibu/Ein Problem mit Alkohol) ──
@@ -6522,9 +6571,9 @@ const ABILITY_EFFECTS = {
     // NET.isHost statt NET.myPlayer===1 - im 4-Spieler-Modus wird die Spielernummer
     // manuell gewaehlt und ist NICHT zwangslaeufig 1 fuer den Host. Mit dem falschen
     // Check loeste im 4P-Board oft NIEMAND das Neu-Austeilen aus.
-    if (NET.mode !== 'multi' || NET.isHost) {
-      setTimeout(() => { systemRestartDeal(is4); }, 450);
-    }
+    // Der AKTIVATOR teilt neu aus (nicht der Host!). Mit dem Host-Check passierte
+    // schlicht gar nichts, wenn ein Gast Bierre einsetzte.
+    setTimeout(() => { systemRestartDeal(is4); }, 450);
   },
 
   'Clubmate Hamsterung': () => {
@@ -8626,6 +8675,14 @@ function tryDockCard(el) {
       // Reine Ausruestungskarten gehoeren NUR an ein Buwemon, nie in ein Effektfeld
       const EQUIP_ONLY_NAMES = ['Clubmate', '13er Bogen'];
       if (isEffSlot && EQUIP_ONLY_NAMES.includes(cname)) continue;
+      // Gegen den Angriff eines EX-Buwemon wirken Calgon/Stein nicht - gar nicht erst
+      // docken lassen. Der Hinweis erscheint als kurzer Overlay-Toast, damit der Toast
+      // der laufenden Kampfsituation nicht verdraengt wird.
+      if (isEffSlot && !sandboxMode && pendingAbility && pendingAbility.isAttack
+          && ['Calgon','Stein'].includes(cname) && attackerIsExBuwemon()) {
+        showBlockedCardHint('Diese Karte kann nicht gegen Angriffe von EX-Buwemonkarten eingesetzt werden');
+        continue;
+      }
       if (isEffSlot && !(ctype === 'eff' || EFF_EREIGNIS_NAMES.includes(cname))) continue;
       // ── EFFEKTKARTEN-DOCKING-REGELN (nur Automatik-Modus) ──
       if (isEffSlot && !sandboxMode) {
@@ -11336,7 +11393,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div id="game-version-label" style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v53f
+    v53j
   </div>
 </div>
 
@@ -11536,6 +11593,36 @@ function multiJoin() {
   });
 }
 
+// ── HAND-LABEL-OVERLAY ──────────────────────────────────────────────────────────
+// Die Handkarten haengen direkt am <body>, die Zonen-Beschriftungen dagegen im Board,
+// das durch die Letterbox-Transformation einen eigenen Stacking-Context bildet. Dadurch
+// kann KEIN z-index das Label ueber die Karten heben. Loesung: die Labels zusaetzlich als
+// Overlay ausserhalb des Boards spiegeln und exakt ueber der jeweiligen Zone platzieren.
+function syncHandLabelOverlays() {
+  const zoneIds = ['p1-hand','p2-hand','p1-hand-4','p2-hand-4','p3-hand-4','p4-hand-4'];
+  zoneIds.forEach(zid => {
+    const zoneEl = document.getElementById(zid);
+    const srcLbl = zoneEl ? zoneEl.querySelector('.zlbl') : null;
+    let ov = document.getElementById('handlbl-ov-' + zid);
+    // Zone nicht sichtbar -> Overlay ausblenden
+    if (!zoneEl || !srcLbl || !zoneEl.offsetParent) { if (ov) ov.style.display = 'none'; return; }
+    if (!ov) {
+      ov = document.createElement('div');
+      ov.id = 'handlbl-ov-' + zid;
+      ov.style.cssText = 'position:fixed;z-index:9999;pointer-events:none;'
+        + 'font-size:.75rem;color:rgba(0,0,0,0.55);text-transform:uppercase;letter-spacing:.4px;'
+        + 'white-space:nowrap;font-weight:600;font-family:"AiSpec",sans-serif;font-style:italic;';
+      document.documentElement.appendChild(ov);
+    }
+    const r = srcLbl.getBoundingClientRect();
+    ov.style.left = r.left + 'px';
+    ov.style.top = r.top + 'px';
+    ov.textContent = srcLbl.textContent;
+    ov.style.display = '';
+    srcLbl.style.visibility = 'hidden'; // Original ausblenden, das Overlay uebernimmt
+  });
+}
+
 function updateHandLabels() {
   ['p1','p2'].forEach(physP => {
     const zoneEl = document.getElementById(physP+'-hand');
@@ -11560,6 +11647,7 @@ function updateHandLabels() {
     }
     lbl.textContent = 'Hand – ' + name + ' – ' + count + ' Karten';
   });
+  syncHandLabelOverlays();
 }
 
 function updateHandLabels4() {
@@ -11583,6 +11671,7 @@ function scheduleHandLabelUpdate() {
     _handLabelRaf = null;
     updateHandLabels();
     updateHandLabels4();
+    syncHandLabelOverlays();
   });
 }
 document.addEventListener('DOMContentLoaded', () => {
@@ -12049,6 +12138,10 @@ function onNetData(d) {
       activeAbilitySlots().forEach(sid => { if (!dinkActive(sid)) setAbilityShimmer(sid, true); });
       // Raeumt Effekte auf, deren Karte das Feld verlassen hat (z.B. Barista gestorben)
       checkPermanentAbilitiesAfterMove();
+      // EX-Buwemon bei ALLEN Spielern nachziehen: liegen keine 3 gleichfarbigen mehr,
+      // muss das EX auch beim Nicht-Aktivator verschwinden (FourAceFour-Fall).
+      const _is4ex = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+      (_is4ex ? ['p1','p2','p3','p4'] : ['p1','p2']).forEach(p => checkExBuwemon(p, _is4ex ? '-4' : ''));
     }
 
     // Reveal state handled via separate event
@@ -13075,9 +13168,11 @@ function renderSimulatedHand(logicalPfx, cards, is4) {
       if (!hasOverflow) {
         c.style.left = '50%'; c.style.marginLeft = (-cw/2) + 'px';
       } else if (physPfx === 'p3') {           // linke Handzone
-        c.style.left = (padding + lineIdx*overflowOffset) + 'px';
+        // Erste Spalte buendig an der LINKEN Kante der Handzone, weitere nach rechts
+        c.style.left = (lineIdx*overflowOffset) + 'px';
       } else {                                  // rechte Handzone (p4)
-        c.style.right = (padding + lineIdx*overflowOffset) + 'px';
+        // Erste Spalte buendig an der RECHTEN Kante der Handzone, weitere nach links
+        c.style.right = (lineIdx*overflowOffset) + 'px';
         c.style.left = '';
       }
     } else {

@@ -31,7 +31,7 @@ body{background:linear-gradient(160deg,#5c6680 0%,#eef1f7 45%,#838fac 75%,#f8f9f
 .row-center{flex:14;display:flex;align-items:center;justify-content:center;min-height:0;gap:10px;}
 
 .zone{background:rgba(0,0,0,0.05);border:1.5px solid rgba(0,0,0,0.15);border-radius:7px;position:relative;}
-.zlbl{position:absolute;top:3px;left:5px;font-size:.75rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.4px;pointer-events:none;white-space:nowrap;z-index:5000;font-weight:600;font-family:"AiSpec",sans-serif;font-style:italic;background:rgba(255,255,255,0.55);border-radius:3px;padding:0 3px;}
+.zlbl{position:absolute;top:3px;left:5px;font-size:.75rem;color:rgba(0,0,0,0.38);text-transform:uppercase;letter-spacing:.4px;pointer-events:none;white-space:nowrap;z-index:5000;font-weight:600;font-family:"AiSpec",sans-serif;font-style:italic;}
 .zone-hand{flex:1;}
 :root{--cw:63px;--ch:88px;--slot:80px;}
 .zone-effects{flex:1;min-width:0;}
@@ -1474,23 +1474,28 @@ function myLogicalPlayer2p() {
 // der ersten Reihe. Gibt den z-index-Offset zurueck, ab dem die Ueberlauf-Karten liegen
 // (hoeher als die Basisreihe, damit sie sichtbar darueber erscheinen).
 function layoutHandRowWithOverflow(cardsInOrder, opts) {
-  const { baseX, baseY, step, perRow, overflowYOffset, getEl } = opts;
-  let _vi = 0;
-  cardsInOrder.forEach((uid) => {
+  const { baseX, baseY, step, perRow, overflowYOffset, getEl, zoneTop } = opts;
+  // Zaehlen, wie viele Karten wirklich vorhanden sind - erst daraus ergibt sich, ob
+  // ueberhaupt eine zweite Reihe noetig ist.
+  const present = cardsInOrder.filter(uid => !!getEl(uid));
+  // Sobald die Basisreihe voll ist, rueckt die GESAMTE Reihe an den oberen Rand der
+  // Handzone, damit die Ueberlauf-Reihe darunter Platz hat.
+  const hasOverflow = present.length > perRow;
+  const rowY = hasOverflow ? (zoneTop !== undefined ? zoneTop : baseY - overflowYOffset / 2) : baseY;
+  present.forEach((uid, _vi) => {
     const el = getEl(uid);
     if (!el) return;
     el.style.display = '';
     if (_vi < perRow) {
       el.style.left = clampX(baseX + _vi*step) + 'px';
-      el.style.top = clampY(baseY) + 'px';
+      el.style.top = clampY(rowY) + 'px';
       el.style.zIndex = String(200 + _vi);
     } else {
       const oi = _vi - perRow; // Index innerhalb der Ueberlauf-Reihe
       el.style.left = clampX(baseX + oi*step) + 'px';
-      el.style.top = clampY(baseY + overflowYOffset) + 'px';
+      el.style.top = clampY(rowY + overflowYOffset) + 'px';
       el.style.zIndex = String(400 + oi); // ueber der Basisreihe
     }
-    _vi++;
   });
 }
 
@@ -1508,6 +1513,7 @@ function layoutMyHand() {
   layoutHandRowWithOverflow(handOrderByPlayer2p[myP] || [], {
     baseX: zr.left + padding, baseY: y, step, perRow: HAND_ROW_2P,
     overflowYOffset: Math.round(ch * 0.55),
+    zoneTop: zr.top + 4, // bei Ueberlauf rueckt die ganze Reihe an den oberen Zonenrand
     getEl: (uid) => G.cards.find(c => parseInt(c.dataset.uid) === uid),
   });
 }
@@ -1518,7 +1524,22 @@ let _lastAutoDrawSeq2p = -1;
 function showDealStartToast() {
   if (sandboxMode) return; // im Sandbox-Modus bleibt der Topbar-Button die einzige Quelle
   const t = document.getElementById('deal-start-toast');
-  if (t) t.style.display = 'block';
+  if (!t) return;
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  // Direkt als Geschwister des jeweiligen Standard-Toasts einhaengen und dessen
+  // Positionierung 1:1 uebernehmen - so landet er garantiert im Spielfeld und nicht
+  // im schwarzen Letterbox-Rand.
+  const ref = document.getElementById(is4 ? 'abil-toast-4' : 'abil-toast');
+  if (ref && ref.parentElement) {
+    ref.parentElement.insertBefore(t, ref);
+    const cs = getComputedStyle(ref);
+    t.style.position = cs.position;
+    t.style.left = ref.style.left || ''; t.style.right = ref.style.right || '';
+    t.style.top = ref.style.top || '50%';
+    t.style.transform = ref.style.transform || 'translateY(-50%)';
+    t.style.width = ref.style.width || '220px';
+  }
+  t.style.display = 'flex';
 }
 function hideDealStartToast() {
   const t = document.getElementById('deal-start-toast');
@@ -1658,6 +1679,7 @@ function layoutMyHand4() {
   layoutHandRowWithOverflow(handOrderByPlayer4p[myP] || [], {
     baseX: zr.left + padding, baseY: y, step, perRow: HAND_ROW_4P,
     overflowYOffset: Math.round(ch * 0.55),
+    zoneTop: zr.top + 3, // bei Ueberlauf rueckt die ganze Reihe an den oberen Zonenrand
     getEl: (uid) => G.cards.find(c => parseInt(c.dataset.uid) === uid),
   });
 }
@@ -2760,6 +2782,33 @@ let _lastActivatorSlotId = null; // verhindert Eigenzug-Handler nach Kampf-FourA
 const ABILITY_FIRST_RESPONSE_NAMES = ['Dinkelmehl', 'Ablehnt', FOURACEFOUR_NAME];
 const ABILITY_CHAIN_RESPONSE_NAMES = ['Ablehnt', FOURACEFOUR_NAME];
 
+// Greift gerade ein EX-Buwemon an? (Calgon/Stein wirken dagegen nicht)
+function attackerIsExBuwemon() {
+  if (!pendingAbility || !pendingAbility.slotId) return false;
+  const cd = G.slots[pendingAbility.slotId];
+  if (!cd) return false;
+  return cd.type === 'ex-auto' || cd.ctype === 'ex-auto' || /-ex(-4)?$/.test(pendingAbility.slotId);
+}
+
+// Kurzer Hinweis-Overlay ueber dem Kampf-Toast - verdraengt ihn NICHT, sondern legt sich
+// nur ~2s darueber und verschwindet dann wieder.
+function showBlockedCardHint(text) {
+  let el = document.getElementById('blocked-card-hint');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'blocked-card-hint';
+    el.style.cssText = 'position:fixed;left:50%;top:14%;transform:translateX(-50%);z-index:9800;'
+      + 'background:rgba(20,20,25,0.94);color:#fff;padding:10px 18px;border-radius:10px;'
+      + 'font-family:"Kievit",sans-serif;font-size:.85rem;font-weight:600;text-align:center;'
+      + 'box-shadow:0 4px 18px rgba(0,0,0,0.45);max-width:420px;pointer-events:none;';
+    document.documentElement.appendChild(el);
+  }
+  el.textContent = text;
+  el.style.display = 'block';
+  clearTimeout(window._blockedHintTimer);
+  window._blockedHintTimer = setTimeout(() => { el.style.display = 'none'; }, 2200);
+}
+
 function abilityGlowEl(slotId) {
   const slotEl = document.getElementById(physId(slotId));
   if (!slotEl) return null;
@@ -2856,12 +2905,18 @@ function openAbilityRound(phase) {
   const timeEl = document.getElementById('abil-toast-time'+suf);
   const skipBtn = document.getElementById('abil-toast-skip'+suf);
   if (!toast) return;
+  // Ladebalken wieder einblenden - ein vorher gezeigter Info-Toast hat ihn ausgeblendet
+  // und stellt ihn erst nach 3s zurueck (dann ist diese Runde laengst gestartet).
+  const barWrapOAR = document.getElementById('abil-toast-bar-wrap'+suf);
+  if (barWrapOAR) barWrapOAR.style.display = '';
 
   const inMulti = (NET.mode === 'multi');
   const iAmLastActor = inMulti && (NET.myPlayer === pendingAbility.lastActor);
   const iAmActivator = inMulti && (NET.myPlayer === data.activatorP);
 
-  const abilitySpan = coloredAbilName(data.abilityName, data.cardColor);
+  // Kennzeichnen, ob es sich um einen Angriff oder eine Faehigkeit handelt
+  const _kindSuffix = data.isAttack ? ' (Angriff)' : ' (Fähigkeit)';
+  const abilitySpan = coloredAbilName(data.abilityName, data.cardColor) + _kindSuffix;
   const cardSpan = coloredAbilName(data.cardName, data.cardColor);
   const defenderSpan = data.defenderName ? coloredAbilName(data.defenderName, data.defenderColor) : '';
   const extraTxt = escHtml(data.extraText || '');
@@ -3721,6 +3776,7 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
   if (defense) {
     if (defense.name === 'Calgon') {
       // 4/6 Fehlschlag, bei blauem Verteidiger 100%
+      // Blaue Buwemon werden von Calgon IMMER geschuetzt (sofern nicht abgewehrt)
       attackFails = (defCd.color === '#1a44bb') ? true : (Math.random() < 4/6);
       { const _t = attackFails ? '<b>Calgon</b> hat den Angriff abgewehrt! (4/6)' : '<b>Calgon</b> hat NICHT gewirkt - Angriff wird durchgeführt.'; setTimeout(() => { showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t, is4}); }, 600); }
     } else if (defense.name === 'Stein') {
@@ -4265,7 +4321,7 @@ function beginClariSSIO(btn, cardEl) {
         confirmAttackTargetLP(targetP, is4);
         window._claripassBypass = false;
       }, 1200);
-    });
+    }, null, { extraText: ' (Ziel: ' + lpOptPlayerName(targetP, is4) + ')' });
   };
 
   if (opponents.length <= 1) { startAgainst(opponents[0]); return; }
@@ -4314,8 +4370,15 @@ function beginAntika(btn, cardEl) {
 
 function resolveAntika(activatorP, targetP, is4) {
   const hand = is4 ? (handOrderByPlayer4p[targetP]||[]) : (handOrderByPlayer2p[targetP]||[]);
-  if (!hand.length) { showOutcomeToast('Gegner hat keine Handkarten!', is4); return; }
-  const randIdx = Math.floor(Math.random() * hand.length);
+  // Antika greift nur, wenn das Ziel mindestens 3 Handkarten hat
+  if (hand.length < 3) { showOutcomeToast('Antika: Ziel hat weniger als 3 Handkarten!', is4); return; }
+  // Nur aus Karten waehlen, zu denen es hier auch wirklich ein Element gibt - sonst
+  // bliebe cd null und es passierte kommentarlos gar nichts. WICHTIG: randIdx muss der
+  // Index in der ECHTEN Hand sein (nicht in der gefilterten Liste), weil der Ziel-Client
+  // ueber diesen Index die richtige Karte entfernt.
+  const drawableIdx = hand.map((u,i)=>i).filter(i => G.cards.some(c => parseInt(c.dataset.uid) === hand[i]));
+  if (!drawableIdx.length) { showOutcomeToast('Keine klaubare Handkarte gefunden!', is4); return; }
+  const randIdx = drawableIdx[Math.floor(Math.random() * drawableIdx.length)];
   const stolenUid = hand[randIdx];
   // Karte finden für Kartendaten
   const stolenEl = G.cards.find(c => parseInt(c.dataset.uid) === stolenUid);
@@ -6493,9 +6556,9 @@ const ABILITY_EFFECTS = {
     // NET.isHost statt NET.myPlayer===1 - im 4-Spieler-Modus wird die Spielernummer
     // manuell gewaehlt und ist NICHT zwangslaeufig 1 fuer den Host. Mit dem falschen
     // Check loeste im 4P-Board oft NIEMAND das Neu-Austeilen aus.
-    if (NET.mode !== 'multi' || NET.isHost) {
-      setTimeout(() => { systemRestartDeal(is4); }, 450);
-    }
+    // Der AKTIVATOR teilt neu aus (nicht der Host!). Mit dem Host-Check passierte
+    // schlicht gar nichts, wenn ein Gast Bierre einsetzte.
+    setTimeout(() => { systemRestartDeal(is4); }, 450);
   },
 
   'Clubmate Hamsterung': () => {
@@ -7322,6 +7385,28 @@ function doReset(){
 
 // ── DEBUG-MENÜ ──
 let debugMenuConfirmed = false;
+// Debug-Hilfe: zieht 10 Karten vom Ziehstapel direkt auf die eigene Hand
+function debugDraw10() {
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const myP = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+  const arr = is4 ? handOrderByPlayer4p : handOrderByPlayer2p;
+  const deck = is4 ? G4.deck : G.deck;
+  if (!arr[myP]) arr[myP] = [];
+  let drawn = 0;
+  for (let i = 0; i < 10; i++) {
+    if (!deck.length) break;
+    const cd = deck.shift();
+    const uid = G.nid++;
+    spawnCard({name:cd.name, color:cd.color, type:cd.type, uid, file:cd.file||''}, 0, 0, false);
+    arr[myP].push(uid);
+    drawn++;
+  }
+  if (is4) { G.deck = G4.deck; updDeck4(); layoutMyHand4(); } else { updDeck(); layoutMyHand(); }
+  updateHandLabels();
+  showOutcomeToast(drawn + ' Karten gezogen (Debug)', is4);
+  if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
+}
+
 function openDebugMenu() {
   if (!debugMenuConfirmed) {
     if (!confirm('Achtung: Nur zum Debuggen!')) return;
@@ -7376,6 +7461,13 @@ function showDebugMenu() {
   addBtn.style.cssText = 'padding:14px 24px;font-size:1.1rem;border-radius:10px;border:none;background:#1a7a3a;color:#fff;cursor:pointer;font-family:"Kievit",sans-serif;';
   addBtn.onclick = () => { overlay.remove(); showAddCardMenu(); };
   btnWrap.appendChild(addBtn);
+
+  // Debug: 10 Karten am Stueck vom Ziehstapel auf die eigene Hand
+  const draw10Btn = document.createElement('button');
+  draw10Btn.textContent = '🃏 10 Karten ziehen';
+  draw10Btn.style.cssText = 'padding:14px 24px;font-size:1.1rem;border-radius:10px;border:none;background:#2255cc;color:#fff;cursor:pointer;font-family:"Kievit",sans-serif;';
+  draw10Btn.onclick = () => { overlay.remove(); debugDraw10(); };
+  btnWrap.appendChild(draw10Btn);
 
   if (!sandboxMode) {
     const dbgBtn = document.createElement('button');
@@ -8568,6 +8660,14 @@ function tryDockCard(el) {
       // Reine Ausruestungskarten gehoeren NUR an ein Buwemon, nie in ein Effektfeld
       const EQUIP_ONLY_NAMES = ['Clubmate', '13er Bogen'];
       if (isEffSlot && EQUIP_ONLY_NAMES.includes(cname)) continue;
+      // Gegen den Angriff eines EX-Buwemon wirken Calgon/Stein nicht - gar nicht erst
+      // docken lassen. Der Hinweis erscheint als kurzer Overlay-Toast, damit der Toast
+      // der laufenden Kampfsituation nicht verdraengt wird.
+      if (isEffSlot && !sandboxMode && pendingAbility && pendingAbility.isAttack
+          && ['Calgon','Stein'].includes(cname) && attackerIsExBuwemon()) {
+        showBlockedCardHint('Diese Karte kann nicht gegen Angriffe von EX-Buwemonkarten eingesetzt werden');
+        continue;
+      }
       if (isEffSlot && !(ctype === 'eff' || EFF_EREIGNIS_NAMES.includes(cname))) continue;
       // ── EFFEKTKARTEN-DOCKING-REGELN (nur Automatik-Modus) ──
       if (isEffSlot && !sandboxMode) {
@@ -11278,7 +11378,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div id="game-version-label" style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v53d
+    v53h
   </div>
 </div>
 
@@ -12197,7 +12297,14 @@ if (d.t === 'state4') {
     applySystemRestartDeal(d.dealt || {}, !!d.is4);
   }
   if (d.t === 'outcome_toast') {
-    showOutcomeToast(d.text, d.is4);
+    // Beim Empfaenger laeuft die Kampfsituation oft noch, wenn dieser Toast ankommt -
+    // clearAbilityUI() wuerde ihn direkt danach wieder wegraeumen. Deshalb warten, bis
+    // die Kampfsituation wirklich beendet ist (max. ~2s), dann erst anzeigen.
+    const _showIt = (tries) => {
+      if (pendingAbility && tries < 20) { setTimeout(() => _showIt(tries+1), 100); return; }
+      showOutcomeToast(d.text, d.is4);
+    };
+    _showIt(0);
   }
   if (d.t === 'slot_update') {
     G.slots[d.slotId] = d.cd;
@@ -12984,8 +13091,12 @@ function renderSimulatedHand(logicalPfx, cards, is4) {
   // Ueberlauf-Grenzen: horizontal (oben/unten) 41 Karten/Reihe im 4P, 46 im 2P;
   // vertikal (links/rechts im 4P) 25 Karten/Spalte. Nach Erreichen der Grenze beginnt
   // eine zweite, versetzte Reihe/Spalte die ueber der vorherigen liegt.
-  const perLine = vertical ? 25 : (is4 ? 41 : 46);
-  const overflowOffset = vertical ? Math.round(cw * 0.55) : Math.round(ch * 0.55);
+  // vertikal: 24 Karten je Spalte -> die 25ste beginnt AB dann die naechste Spalte
+  const perLine = vertical ? 24 : (is4 ? 41 : 46);
+  // vertikal duerfen sich die SPALTEN nicht ueberlappen (volle Kartenbreite + kleiner Abstand),
+  // horizontal ueberlappt die zweite Reihe die erste bewusst (nur ~55% versetzt).
+  const overflowOffset = vertical ? (cw + 2) : Math.round(ch * 0.55);
+  const hasOverflow = (cards || []).length > perLine;
   (cards || []).forEach((cd, _i0) => {
     const c = document.createElement('div');
     c.className = 'sim-hand-card';
@@ -12999,15 +13110,29 @@ function renderSimulatedHand(logicalPfx, cards, is4) {
     const lineIdx = Math.floor(_i0 / perLine);   // welche Reihe/Spalte (0 = Basis, 1+ = Ueberlauf)
     const posInLine = _i0 % perLine;
     if (vertical) {
+      // Links/Rechts im 4P: bei Ueberlauf rueckt die GANZE Spalte an den jeweiligen Rand
+      // (links -> linker Rand, rechts -> rechter Rand), die Folgespalten wachsen nach innen.
       c.style.top = (padding + posInLine*step) + 'px';
-      c.style.left = (lineIdx === 0 ? '50%' : '') ;
-      if (lineIdx === 0) { c.style.marginLeft = (-cw/2) + 'px'; }
-      else { c.style.left = 'calc(50% + ' + (-cw/2 + lineIdx*overflowOffset) + 'px)'; }
+      c.style.marginLeft = '';
+      if (!hasOverflow) {
+        c.style.left = '50%'; c.style.marginLeft = (-cw/2) + 'px';
+      } else if (physPfx === 'p3') {           // linke Handzone
+        // Erste Spalte buendig an der LINKEN Kante der Handzone, weitere nach rechts
+        c.style.left = (lineIdx*overflowOffset) + 'px';
+      } else {                                  // rechte Handzone (p4)
+        // Erste Spalte buendig an der RECHTEN Kante der Handzone, weitere nach links
+        c.style.right = (lineIdx*overflowOffset) + 'px';
+        c.style.left = '';
+      }
     } else {
+      // Oben/Unten: bei Ueberlauf rueckt die ganze Reihe an den OBEREN Rand der Handzone
       c.style.left = (padding + posInLine*step) + 'px';
-      c.style.top = (lineIdx === 0 ? '50%' : '');
-      if (lineIdx === 0) { c.style.marginTop = (-ch/2) + 'px'; }
-      else { c.style.top = 'calc(50% + ' + (-ch/2 + lineIdx*overflowOffset) + 'px)'; }
+      c.style.marginTop = '';
+      if (!hasOverflow) {
+        c.style.top = '50%'; c.style.marginTop = (-ch/2) + 'px';
+      } else {
+        c.style.top = (3 + lineIdx*overflowOffset) + 'px';
+      }
     }
     c.style.zIndex = String((lineIdx+1) * 1000 + posInLine);
     handEl.appendChild(c);
@@ -13346,9 +13471,9 @@ function triggerExplosions() {
 </script>
 
 <!-- DEAL CONFIRM MODAL -->
-<div id="deal-start-toast" style="display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9600;background:rgba(20,20,25,0.92);color:#fff;padding:14px 22px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.4);text-align:center;font-family:'Kievit',sans-serif;">
-  <div style="font-size:1rem;font-weight:700;margin-bottom:8px;">🃏 Neue Runde beginnt!</div>
-  <button onclick="dealStartCards()" style="padding:8px 20px;border-radius:8px;border:none;background:#2255cc;color:#fff;cursor:pointer;font-weight:700;font-family:'Kievit',sans-serif;">Startkarten ausgeben</button>
+<div id="deal-start-toast" class="abil-toast" style="display:none;">
+  <div class="abil-toast-title"><b>🃏 Neue Runde</b></div>
+  <button onclick="dealStartCards()" style="padding:6px 10px;border-radius:8px;border:none;background:#2255cc;color:#fff;cursor:pointer;font-weight:700;font-family:'Kievit',sans-serif;font-size:.8rem;">Startkarten ausgeben</button>
 </div>
 <div id="deal-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:8000;align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:14px;padding:28px 32px;min-width:220px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.25);">
