@@ -1826,6 +1826,10 @@ function endTurn(p) {
   clearWanzeReveal();
   clearDinkelmehlSuppression();
   ragequitBlockedUids.clear();
+  // Nach dem Zugende gelten pausierte Baristas wieder - der Zustand muss SOFORT bei
+  // allen Spielern gleich aussehen, nicht erst beim naechsten State-Update.
+  if (typeof refreshBaristaBlocks === 'function') refreshBaristaBlocks();
+  if (NET.mode === 'multi') netSend({t:'dink_cleared', is4:false, sender: NET.myPlayer});
   resetTurnFlags(); // Erst Flags zurücksetzen (setzt turnActionsAllowed=1)
   // Nachschlag-Karten auf Friedhof
   if (!sandboxMode) {
@@ -1860,6 +1864,8 @@ function endTurn4(p) {
   clearWanzeReveal();
   clearDinkelmehlSuppression();
   ragequitBlockedUids.clear();
+  if (typeof refreshBaristaBlocks === 'function') refreshBaristaBlocks();
+  if (NET.mode === 'multi') netSend({t:'dink_cleared', is4:true, sender: NET.myPlayer});
   resetTurnFlags();
   // Nachschlag-Karten auf Friedhof - fehlte hier komplett (nur die 2P-Variante endTurn()
   // hatte diese Aufraeumung), deshalb blieb Nachschlag im 4-Spieler-Board liegen.
@@ -1989,8 +1995,8 @@ const CARD_DB=[
   {name:"ClariSSIO",count:3,color:"#008899",type:"buw"},
   {name:"Alicia die ehrenlose Fettsau",count:3,color:"#008899",type:"buw"},
   {name:"Dr. Stirli",count:3,color:"#008899",type:"buw",file:"DrStirli.png"},
-  {name:"Die Pogofanten",count:1,color:"#111111",type:"spec"},
   {name:"L'Enderdragon",count:1,color:"#111111",type:"spec"},
+  {name:"Die Pogofanten",count:1,color:"#111111",type:"spec"},
   {name:"Golop der Grobe",count:1,color:"#111111",type:"spec"},
   {name:"Der Zeitführer",count:1,color:"#111111",type:"spec"},
   {name:"BOOM Clan",count:1,color:"#111111",type:"spec"},
@@ -2768,7 +2774,7 @@ let _pendingOutcomeText = null; // sammelt Toast-Texte während resolveFn läuft
 const FOURACEFOUR_NAME = 'FourAceFour-Feuer-Reverse-Blöff';
 
 const SUMMON_CARDS = {
-  'Tristan Verbot':          { specName: "L'Enderdragon",   count: 3, needGilip: false, needAllColors: false },
+  'Tristanverbot':           { specName: "L'Enderdragon",   count: 3, needGilip: false, needAllColors: false },
   'Elefanten Aufstand':      { specName: 'Die Pogofanten',  count: 3, needGilip: false, needAllColors: false },
   'Sigma Transformation':    { specName: 'Golop der Grobe', count: 3, needGilip: true,  needAllColors: false },
   'Zeitmaschinen Veruntreuung': { specName: 'Der Zeitführer', count: 4, needGilip: false, needAllColors: false },
@@ -2781,6 +2787,87 @@ let _fourAceHandledInCombat = false;
 let _lastActivatorSlotId = null; // verhindert Eigenzug-Handler nach Kampf-FourAceFour
 const ABILITY_FIRST_RESPONSE_NAMES = ['Dinkelmehl', 'Ablehnt', FOURACEFOUR_NAME];
 const ABILITY_CHAIN_RESPONSE_NAMES = ['Ablehnt', FOURACEFOUR_NAME];
+
+// Greift gerade ein EX-Buwemon an? (Calgon/Stein wirken dagegen nicht)
+function attackerIsExBuwemon() {
+  if (!pendingAbility || !pendingAbility.slotId) return false;
+  const cd = G.slots[pendingAbility.slotId];
+  if (!cd) return false;
+  return cd.type === 'ex-auto' || cd.ctype === 'ex-auto' || /-ex(-4)?$/.test(pendingAbility.slotId);
+}
+
+// Kurzer Hinweis-Overlay ueber dem Kampf-Toast - verdraengt ihn NICHT, sondern legt sich
+// nur ~2s darueber und verschwindet dann wieder.
+function showBlockedCardHint(text) {
+  const is4h = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const ref = document.getElementById(is4h ? 'abil-toast-4' : 'abil-toast');
+  let el = document.getElementById('blocked-card-hint');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'blocked-card-hint';
+    el.className = 'abil-toast'; // gleiche Optik/Groesse wie die uebrigen Toasts
+    el.style.pointerEvents = 'none';
+    // Weisse Schrift auf dunklem Grund und klar VOR dem Kampf-Toast
+    el.style.background = 'rgba(20,20,25,0.97)';
+    el.style.color = '#ffffff';
+    el.style.border = '1px solid rgba(255,255,255,0.35)';
+    el.style.padding = '10px 14px';
+    el.style.fontSize = '.8rem';
+    el.style.fontWeight = '700';
+    el.style.textAlign = 'center';
+  }
+  // Direkt neben den Standard-Toast haengen und dessen Position uebernehmen, damit der
+  // Hinweis in BEIDEN Boards dort erscheint, wo auch die anderen Info-Toasts sitzen.
+  if (ref && ref.parentElement) {
+    ref.parentElement.insertBefore(el, ref);
+    const cs = getComputedStyle(ref);
+    el.style.position = cs.position;
+    el.style.left = ref.style.left || ''; el.style.right = ref.style.right || '';
+    el.style.top = ref.style.top || '50%';
+    el.style.transform = ref.style.transform || 'translateY(-50%)';
+    el.style.width = ref.style.width || '220px';
+    // Deutlich ueber dem Kampf-Toast, damit der Hinweis wirklich davor liegt
+    el.style.zIndex = '10050';
+  } else if (!el.parentElement) {
+    document.documentElement.appendChild(el);
+  }
+  el.textContent = text;
+  el.style.display = 'flex';
+  clearTimeout(window._blockedHintTimer);
+  window._blockedHintTimer = setTimeout(() => { el.style.display = 'none'; }, 2200);
+}
+
+// Verhaelt sich die Karte in diesem Slot wie <buwName>? Trifft auch zu, wenn eine
+// Schwammika dessen Faehigkeit per Saugkraft kopiert hat - sie IST fuer alle
+// zugueberdauernden Effekte diese Karte (Glorian, Luis, Lisa, Ramon, Finn, AnniKKKa ...).
+function schwammikaCopiesAsSlots() {
+  return Object.keys(schwammikaState).map(uid => {
+    const s = _slotOfUid(uid);
+    return s ? { slotId: s, copiedAbility: schwammikaState[uid].copiedAbility,
+                 copiedBuwemon: schwammikaState[uid].copiedBuwemon } : null;
+  }).filter(Boolean);
+}
+function applySchwammikaCopies(list) {
+  const keep = new Set();
+  (list || []).forEach(e => {
+    const u = _uidAt(e.slotId);
+    if (u === null) return;
+    schwammikaState[u] = { copiedAbility: e.copiedAbility, copiedBuwemon: e.copiedBuwemon, ownerSlotId: e.slotId };
+    keep.add(u);
+  });
+  Object.keys(schwammikaState).forEach(u => { if (!keep.has(u)) delete schwammikaState[u]; });
+}
+
+function actsAsBuwemon(slotIdOrCd, buwName) {
+  const cd = (typeof slotIdOrCd === 'string') ? G.slots[slotIdOrCd] : slotIdOrCd;
+  if (!cd) return false;
+  if (cd.name === buwName) return true;
+  if (cd.name === 'Schwammika' && cd.uid !== undefined) {
+    const st = schwammikaState[String(cd.uid)];
+    if (st && st.copiedBuwemon === buwName) return true;
+  }
+  return false;
+}
 
 function abilityGlowEl(slotId) {
   const slotEl = document.getElementById(physId(slotId));
@@ -2882,12 +2969,17 @@ function openAbilityRound(phase) {
   // und stellt ihn erst nach 3s zurueck (dann ist diese Runde laengst gestartet).
   const barWrapOAR = document.getElementById('abil-toast-bar-wrap'+suf);
   if (barWrapOAR) barWrapOAR.style.display = '';
+  // Beschriftung zuruecksetzen - ein vorheriges Zielauswahl-Event hat sie auf
+  // "Abbrechen" gesetzt, in der Kampfsituation heisst der Button aber "Nichts tun".
+  if (skipBtn) skipBtn.textContent = 'Nichts tun';
 
   const inMulti = (NET.mode === 'multi');
   const iAmLastActor = inMulti && (NET.myPlayer === pendingAbility.lastActor);
   const iAmActivator = inMulti && (NET.myPlayer === data.activatorP);
 
-  const abilitySpan = coloredAbilName(data.abilityName, data.cardColor);
+  // Kennzeichnen, ob es sich um einen Angriff oder eine Faehigkeit handelt
+  const _kindSuffix = data.isAttack ? ' (Angriff)' : ' (Fähigkeit)';
+  const abilitySpan = coloredAbilName(data.abilityName, data.cardColor) + _kindSuffix;
   const cardSpan = coloredAbilName(data.cardName, data.cardColor);
   const defenderSpan = data.defenderName ? coloredAbilName(data.defenderName, data.defenderColor) : '';
   const extraTxt = escHtml(data.extraText || '');
@@ -2905,7 +2997,12 @@ function openAbilityRound(phase) {
   } else {
     const equipInfo = pendingAbility.lastCombatEquip;
     let mainTxt;
-    if (equipInfo) {
+    // Wurde ZULETZT ein Ablehnt gespielt, hat dessen Meldung Vorrang - sonst stuende dort
+    // weiter "Spieler X ruestet Clubmate aus", obwohl die Karte gerade abgelehnt wurde.
+    const _lastPlayed = (pendingAbility.playedCards || [])[pendingAbility.playedCards.length - 1];
+    if (_lastPlayed && _lastPlayed.cardName === 'Ablehnt' && _lastPlayed.ablehntOf) {
+      mainTxt = coloredAbilName(_lastPlayed.ablehntOf, '#aaaaaa') + ' wird abgelehnt!';
+    } else if (equipInfo) {
       const eqCardColor = (function(){ const dc = G.slots[pendingAbility.defenderSlotId]; return dc ? dc.color : '#888888'; })();
       mainTxt = 'Spieler ' + equipInfo.ownerP + ' rüstet ' + coloredAbilName(equipInfo.name, eqCardColor) + ' aus';
     } else if (data.isAttack && pendingAbility.combatDefense) {
@@ -3010,6 +3107,25 @@ function clearAbilityUI() {
 
 // Jeder Spieler räumt NUR seine eigenen gespielten Antwortkarten und ggf. sein eigenes
 // blockiertes Buwemon selbst weg (jeder ist nur für seine eigenen Felder verantwortlich)
+// Oeffnet nach einer fehlgeschlagenen Calgon/Stein-Verteidigung eine weitere Abwehr-Runde.
+// Der Angriff selbst wird dabei mit denselben Parametern neu aufgesetzt, die bisherige
+// (gescheiterte) Verteidigung ist verbraucht und wird nicht erneut angerechnet.
+function reopenDefenseRound(sel, defenderSlotId, defenderP, isDirect, preEquipCount, is4) {
+  if (!sel || !sel.cardEl) return;
+  const txt = 'Weitere Abwehr möglich!';
+  showOutcomeToast(txt, is4);
+  if (NET.mode === 'multi') netSend({t:'outcome_toast', text: txt, is4});
+  const targetCd = defenderSlotId ? G.slots[defenderSlotId] : null;
+  // Bypass, damit der erneute Angriff nicht als zusaetzliche Buwemonaktion zaehlt
+  window._claripassBypass = true;
+  beginAbilityActivation(sel.cardEl, 'angriff', sel.attackName,
+    (resolveInfo) => resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, preEquipCount),
+    defenderSlotId,
+    targetCd ? { defenderName: targetCd.name, defenderColor: targetCd.color, extraText: ' (erneute Abwehr)' }
+             : { extraText: ' (erneute Abwehr)' });
+  window._claripassBypass = false;
+}
+
 function cleanUpOwnAbilityCards(playedCards, killSlotId, killOwnerP, is4, cleanAll, returnToHand, tutMirLeidSlotId, combatSlotIds) {
   const myP = NET.mode === 'multi' ? NET.myPlayer : null;
   (playedCards || []).forEach(pc => {
@@ -3118,6 +3234,140 @@ const COMBAT_ONLY_ROLES = {
 
 // Macht die zuletzt während eines Kampfes ausgerüstete Clubmate/13er Bogen rückgängig
 // (durch Ablehnt oder FourAceFour) - Karte wandert zum Besitzer auf den Friedhof.
+// ── ABLEHNT-ZIELAUSWAHL ─────────────────────────────────────────────────────────
+// Beim Ablehnt darf gezielt eine ausgeruestete Effektkarte gewaehlt werden. Die Karte
+// wird nur vorgemerkt (ablehntTargets) und erst in finalizeAbilityChain entfernt, falls
+// das Ablehnt nicht seinerseits abgewehrt wurde. Mehrere Ablehnts hintereinander sind
+// erlaubt (die lastActor-Sperre gilt hier bewusst nicht).
+let pendingAblehntSelect = null;
+function beginAblehntTargetSelect(player, ablehntSlotId, cd) {
+  const is4 = !!(pendingAbility && pendingAbility.is4);
+  pendingAblehntSelect = { player, ablehntSlotId, cd, is4 };
+  const suf = is4 ? '-4' : '';
+  const toast = document.getElementById('abil-toast'+suf);
+  document.getElementById('abil-toast-title'+suf).innerHTML = '<b>Ablehnt</b>';
+  document.getElementById('abil-toast-sub'+suf).textContent = 'Wähle eine ausgerüstete Effektkarte oder eine gespielte Ablehnt-Karte';
+  document.getElementById('abil-toast-bar-wrap'+suf).style.display = 'none';
+  const skipBtn = document.getElementById('abil-toast-skip'+suf);
+  skipBtn.textContent = 'Abbrechen'; skipBtn.style.display = 'inline-block';
+  skipBtn.onclick = () => { pendingAblehntSelect = null; openAbilityRound('chain'); };
+  toast.classList.add('open');
+}
+
+// Klick auf eine ausgeruestete Karte (die kleinen Miniaturen am Buwemon)
+function tryConfirmAblehntTarget(equipIdx, targetSlotId) {
+  if (!pendingAblehntSelect) return false;
+  const sel = pendingAblehntSelect; pendingAblehntSelect = null;
+  // Ausserhalb einer Kampfsituation gibt es kein pendingAbility - dann die gewaehlte
+  // Ausruestung direkt entfernen (Ablehnt im eigenen Zug).
+  const _slotAbl = targetSlotId || (pendingAbility && pendingAbility.defenderSlotId) || sel.targetSlotId;
+  if (!pendingAbility) {
+    applyAblehntTargets({ ablehntTargets: [{ idx: equipIdx, ownerP: sel.player }],
+                          defenderSlotId: _slotAbl, is4: sel.is4 });
+    const suf0 = sel.is4 ? '-4' : '';
+    document.getElementById('abil-toast'+suf0).classList.remove('open');
+    document.getElementById('abil-toast-bar-wrap'+suf0).style.display = '';
+    if (NET.mode === 'multi') { sel.is4 ? netSendState4() : netSendState(); }
+    return true;
+  }
+  if (!pendingAbility.ablehntTargets) pendingAbility.ablehntTargets = [];
+  const defCd = G.slots[_slotAbl];
+  const eq = defCd && defCd.equipped ? defCd.equipped[equipIdx] : null;
+  if (!eq) { openAbilityRound('chain'); return false; }
+  pendingAbility.ablehntTargets.push({ idx: equipIdx, name: eq.name, ownerP: sel.player, bySlot: sel.ablehntSlotId });
+  markAblehntTarget(_slotAbl, equipIdx, true);
+  // ablehntOf sorgt dafuer, dass im Toast steht, WAS abgelehnt wurde
+  pendingAbility.playedCards.push({ player: sel.player, slotId: sel.ablehntSlotId, cardName: 'Ablehnt',
+    cardColor: sel.cd.color, cardType: sel.cd.type || sel.cd.ctype, cardFile: sel.cd.file || '',
+    ablehntOf: eq.name });
+  pendingAbility.lastActor = sel.player;
+  pendingAbility.chainStep++;
+  if (NET.mode === 'multi') {
+    netSend({t:'ability_chain_play', chainBlocked: pendingAbility.chainBlocked, chainStep: pendingAbility.chainStep,
+      lastActor: pendingAbility.lastActor, playedCards: pendingAbility.playedCards,
+      combatDefense: pendingAbility.combatDefense, fourAceFourPlayed: pendingAbility.fourAceFourPlayed,
+      ablehntTargets: pendingAbility.ablehntTargets, locked:false, killsBuwemon:false});
+  }
+  openAbilityRound('chain');
+  return true;
+}
+
+// "Ablehnt gegen Ablehnt": eine bereits gespielte Ablehnt-Karte als Ziel markieren.
+// Damit wird deren Wirkung aufgehoben, sobald die Kette aufgeloest wird.
+function confirmAblehntCardTarget(effSlotId) {
+  if (!pendingAblehntSelect || !pendingAbility) return false;
+  const sel = pendingAblehntSelect; pendingAblehntSelect = null;
+  if (!pendingAbility.ablehntCardTargets) pendingAbility.ablehntCardTargets = [];
+  pendingAbility.ablehntCardTargets.push(effSlotId);
+  // Optische Markierung am Effektfeld
+  const _el = document.getElementById(physId(effSlotId));
+  if (_el) _el.style.outline = '2px solid #cc3333';
+  pendingAbility.playedCards.push({ player: sel.player, slotId: sel.ablehntSlotId, cardName: 'Ablehnt',
+    cardColor: sel.cd.color, cardType: sel.cd.type || sel.cd.ctype, cardFile: sel.cd.file || '',
+    ablehntOf: 'Ablehnt' });
+  pendingAbility.lastActor = sel.player;
+  pendingAbility.chainStep++;
+  if (NET.mode === 'multi') {
+    netSend({t:'ability_chain_play', chainBlocked: pendingAbility.chainBlocked, chainStep: pendingAbility.chainStep,
+      lastActor: pendingAbility.lastActor, playedCards: pendingAbility.playedCards,
+      combatDefense: pendingAbility.combatDefense, fourAceFourPlayed: pendingAbility.fourAceFourPlayed,
+      ablehntTargets: pendingAbility.ablehntTargets, ablehntCardTargets: pendingAbility.ablehntCardTargets,
+      locked:false, killsBuwemon:false});
+  }
+  openAbilityRound('chain');
+  return true;
+}
+
+// Markiert eine ausgeruestete Karte optisch als "abgelehnt" (noch nicht entfernt)
+function markAblehntTarget(slotId, equipIdx, on) {
+  const el = document.getElementById(physId(slotId));
+  if (!el) return;
+  const wraps = el.querySelectorAll('.equip-wrap');
+  const w = wraps[equipIdx];
+  if (w) w.style.outline = on ? '2px solid #cc3333' : '';
+}
+
+// Entfernt am Ende der Kette alle vorgemerkten Ablehnt-Ziele (nur wenn nicht gekontert)
+function applyAblehntTargets(pa) {
+  if (!pa || !pa.ablehntTargets || !pa.ablehntTargets.length) return;
+  const defCd = G.slots[pa.defenderSlotId];
+  if (!defCd || !defCd.equipped) return;
+  // Ablehnt-Karten, die ihrerseits abgelehnt wurden, wirken NICHT mehr - ihre Ziele
+  // bleiben also ausgeruestet. (Ablehnt gegen Ablehnt hebt die Ablehnung auf.)
+  const _cancelled = new Set(pa.ablehntCardTargets || []);
+  const _wirksam = pa.ablehntTargets.filter(t => !(t.bySlot && _cancelled.has(t.bySlot)));
+  if (!_wirksam.length) {
+    pa.ablehntTargets = [];
+    // Markierungen entfernen und Karte normal darstellen
+    renderSlot(pa.defenderSlotId);
+    return;
+  }
+  // von hinten entfernen, damit die Indizes gueltig bleiben
+  [..._wirksam].sort((a,b) => b.idx - a.idx).forEach(t => {
+    const eq = defCd.equipped[t.idx];
+    if (!eq) return;
+    defCd.equipped.splice(t.idx, 1);
+    // Die Karte gehoert dem Spieler, in dessen Feld sie zuletzt lag - NICHT dem, der das
+    // Ablehnt gespielt hat. Sonst landet die eigene Clubmate im Friedhof des Angreifers.
+    const _cardOwnerP = parseInt((String(pa.defenderSlotId||'').match(/^p(\d)/)||[])[1] || t.ownerP || '1');
+    const ownerPfx = 'p' + _cardOwnerP;
+    const isEreignis = (eq.ctype === 'ereignis' || eq.ctype === 'ex-ereignis');
+    if (!isEreignis) {
+      const bcd = { name: eq.name, color: eq.color, type: eq.ctype || 'eff', file: eq.file || '' };
+      if (pa.is4) { G4.graves[ownerPfx].push(bcd); updGrave4(ownerPfx); }
+      else { G.graves[ownerPfx].push(bcd); updGrave(ownerPfx); }
+    }
+  });
+  pa.ablehntTargets = [];
+  renderSlot(pa.defenderSlotId);
+  // OHNE das kommt die Ausruestung beim naechsten State-Update zurueck: lokal entfernt,
+  // aber nie synchronisiert -> Karte lag im Friedhof UND weiter am Buwemon.
+  // Verzoegert senden: alle Clients entfernen die Ausruestung lokal (ablehntTargets sind
+  // synchronisiert). Ein sofortiges netSendState kollidiert mit dem noch alten State des
+  // Empfaengers - die Karte kam dadurch zurueck ("geklont").
+  if (NET.mode === 'multi') setTimeout(() => { pa.is4 ? netSendState4() : netSendState(); }, 500);
+}
+
 function undoCombatEquip(pa) {
   if (!pa.lastCombatEquip) return;
   const defCd = G.slots[pa.defenderSlotId];
@@ -3152,7 +3402,9 @@ function checkAbilityBlock(cd, slotId) {
     if (!EX_ALLOWED_DEFENSE.includes(cd.name)) return;
   }
   if (isFirstStep && player === pendingAbility.activatorP) return; // Aktivator kann die eigene Fähigkeit/den eigenen Angriff nicht selbst blocken
-  if (player === pendingAbility.lastActor) return; // nicht zweimal hintereinander derselbe Spieler
+  // Ablehnt darf - wie das Ausruesten - mehrfach hintereinander vom selben Spieler
+  // gespielt werden (z.B. um zwei Ausruestungskarten nacheinander abzulehnen).
+  if (cd.name !== 'Ablehnt' && player === pendingAbility.lastActor) return; // sonst nicht zweimal hintereinander derselbe Spieler
 
   // UwU ist nicht einsetzbar, wenn das angegriffene Buwemon Cyan ist
   if (isAttack && cd.name === 'UwU ') {
@@ -3169,13 +3421,23 @@ function checkAbilityBlock(cd, slotId) {
     // feste Bedeutung (siehe resolveAttack) statt der generischen "tötet Erstantwort"-Regel.
     if (cd.name === 'Ablehnt') {
       if (pendingAbility.vertragsbruch) return; // Ablehnt kann Vertragsbruch nicht abwehren
-      if (pendingAbility.lastCombatEquip) {
-        undoCombatEquip(pendingAbility);
-        pendingAbility.lastCombatEquip = null;
-      } else {
-        pendingAbility.chainBlocked = !pendingAbility.chainBlocked;
-        pendingAbility.combatDefense = null;
+      // Gibt es ausgeruestete Effektkarten am angegriffenen Buwemon? Dann darf der
+      // Spieler gezielt EINE davon auswaehlen. Sie wird nur MARKIERT und erst bei der
+      // Auflösung entfernt - der Gegner kann das Ablehnt ja noch abwehren.
+      const _defCdAbl = pendingAbility.defenderSlotId ? G.slots[pendingAbility.defenderSlotId] : null;
+      const _eqAvail = _defCdAbl && _defCdAbl.equipped
+        ? _defCdAbl.equipped.filter((eq,i) => !(pendingAbility.ablehntTargets||[]).some(t => t.idx === i)).length : 0;
+      // Gibt es bereits gespielte Ablehnt-Karten in Effektfeldern? Die koennen ebenfalls
+      // abgelehnt werden ("Ablehnt gegen Ablehnt").
+      const _ablOnField = (pendingAbility.playedCards||[]).filter(pc =>
+        pc.cardName === 'Ablehnt' && pc.slotId && G.slots[pc.slotId]
+        && !(pendingAbility.ablehntCardTargets||[]).includes(pc.slotId)).length;
+      if (_eqAvail > 0 || _ablOnField > 0) {
+        beginAblehntTargetSelect(player, slotId, cd);
+        return; // Kette laeuft erst weiter, wenn ein Ziel gewaehlt wurde
       }
+      pendingAbility.chainBlocked = !pendingAbility.chainBlocked;
+      pendingAbility.combatDefense = null;
     } else if (isFourAceFour) {
       pendingAbility.fourAceFourPlayed = true;
       if (pendingAbility.lastCombatEquip) {
@@ -3226,6 +3488,12 @@ function finalizeAbilityChain(killsBuwemon) {
   const combatDefense = data.combatDefense || null;
   const fourAceFourPlayed = !!data.fourAceFourPlayed;
 
+  // Vorgemerkte Ablehnt-Ziele jetzt tatsaechlich entfernen. Wurde das Ablehnt selbst
+  // gekontert (chainBlocked-Umschaltung durch die Gegenseite), bleiben die Karten liegen.
+  if (data.ablehntTargets && data.ablehntTargets.length) {
+    applyAblehntTargets({ ablehntTargets: data.ablehntTargets, ablehntCardTargets: data.ablehntCardTargets,
+                          defenderSlotId: data.defenderSlotId, is4: data.is4 });
+  }
   clearAbilityUI();
   pendingAbility = null;
   // Karten, die bis zum Ende der Kampfsituation liegen bleiben sollten (z.B. RGB),
@@ -3290,6 +3558,13 @@ function finalizeAbilityChain(killsBuwemon) {
     }
     if (NET.mode === 'multi') netSend({t:'ability_resolved', wasBlocked, playedCards: playedCardsToClean, killSlotId, killOwnerP, is4: data.is4, returnToHand, tutMirLeidSlotId, combatSlotIds});
   }
+  // EX-Buwemon nachziehen: hat z.B. FourAceFour eines der drei gleichfarbigen Buwemon
+  // getoetet, muss das EX auch BEIM ANWENDER sofort verschwinden. Der fuehrt den Kill
+  // lokal aus und bekommt keinen State-Empfang, in dem das sonst geprueft wuerde.
+  setTimeout(() => {
+    const _is4fin = !!data.is4;
+    (_is4fin ? ['p1','p2','p3','p4'] : ['p1','p2']).forEach(p => checkExBuwemon(p, _is4fin ? '-4' : ''));
+  }, 120);
 }
 
 // Fähigkeiten, die noch ihr eigenes (altes) Popup öffnen und noch NICHT ans
@@ -3447,7 +3722,7 @@ function applyLpDamage(p, amount, is4, attackerColor) {
 function annikkkaActive() {
   return activeAbilitySlots().some(sid => {
     const s = G.slots[sid];
-    return s && s.name === 'AnniKKKa' && !dinkActive(sid);
+    return s && actsAsBuwemon(s, 'AnniKKKa') && !dinkActive(sid);
   });
 }
 
@@ -3514,6 +3789,15 @@ let activeGlaskuppel2p = {}; // {1: slotId, 2: slotId}
 let activeGlaskuppel4p = {}; // {1: slotId, ...}
 
 // Zeigt kurz (3s) an, wie eine Zufalls-Verteidigungskarte ausgegangen ist
+// Laeuft gerade irgendein Zielauswahl-Event? Deren Toast darf nicht automatisch
+// weggeraeumt werden - er bleibt, bis der Spieler ein Ziel gewaehlt oder abgebrochen hat.
+function anyTargetSelectOpen() {
+  const flags = ['pendingBaristaTarget','pendingStirliTarget','pendingSaugkraft',
+    'pendingAblehntSelect','pendingClariSSIO','pendingAntika','pendingNBK',
+    'pendingOwnTurnTarget','pendingFourAceFourOwnTurn','pendingAttackSelection'];
+  return flags.some(f => { try { return !!eval(f); } catch(e) { return false; } });
+}
+
 function showOutcomeToast(text, is4) {
   const suf = is4 ? '-4' : '';
   const toast = document.getElementById('abil-toast'+suf);
@@ -3533,6 +3817,7 @@ function showOutcomeToast(text, is4) {
   setTimeout(() => {
     if (window._outcomeToastSeq !== _myToastSeq) return; // inzwischen ueberholt
     if (pendingAbility) return;                          // Kampfsituation laeuft -> offen lassen
+    if (anyTargetSelectOpen()) return;                   // Zielauswahl laeuft -> offen lassen
     toast.classList.remove('open');
     barWrap.style.display = '';
   }, 3000);
@@ -3588,7 +3873,7 @@ function moveCombatEquipToGrave(defenderSlotId, preEquipCount, is4) {
 function finnOwnerP() {
   const sid = activeAbilitySlots().find(s => {
     const cd = G.slots[s];
-    return cd && cd.name === 'Finn der Peniskopf' && !dinkActive(s);
+    return cd && actsAsBuwemon(cd, 'Finn der Peniskopf') && !dinkActive(s);
   });
   return sid ? parseInt((sid.match(/^p(\d)/)||[])[1]||'0') : 0;
 }
@@ -3700,7 +3985,7 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
   // WICHTIG: eigener return-Pfad wie bei Luis. Ein blosses Setzen von attackFails waere
   // hier ein Zugriff vor der let-Deklaration weiter unten (Temporal Dead Zone ->
   // "can't access lexical declaration 'attackFails' before initialization").
-  if (defCd.name === 'Ramon der Schinken' && abilActive(defenderSlotId) && !dinkActive(defenderSlotId)) {
+  if (actsAsBuwemon(defCd, 'Ramon der Schinken') && abilActive(defenderSlotId) && !dinkActive(defenderSlotId)) {
     const ramonBlocks = Math.random() < 2/6;
     const ramonTxt = ramonBlocks
       ? 'Der Schutz des Katers: Angriff abgewehrt – der Angreifer stirbt!'
@@ -3715,7 +4000,7 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
       return; // Angreifer ist tot -> kein Zwillingsattacke-Folgeangriff
     }
   }
-  if (defCd.name === 'Luis Münsters' && abilActive(defenderSlotId) && !dinkActive(defenderSlotId)) {
+  if (actsAsBuwemon(defCd, 'Luis Münsters') && abilActive(defenderSlotId) && !dinkActive(defenderSlotId)) {
     const luisBlocks = Math.random() < 4/6;
     const luisTxt = luisBlocks ? 'Münster-Effekt: Angriff abgewehrt!' : 'Münster-Effekt hat NICHT gewirkt – Angriff wird durchgeführt.';
     showOutcomeToast(luisTxt, is4);
@@ -3747,13 +4032,26 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
   if (defense) {
     if (defense.name === 'Calgon') {
       // 4/6 Fehlschlag, bei blauem Verteidiger 100%
-      attackFails = (defCd.color === '#1a44bb') ? true : (Math.random() < 4/6);
-      { const _t = attackFails ? '<b>Calgon</b> hat den Angriff abgewehrt! (4/6)' : '<b>Calgon</b> hat NICHT gewirkt - Angriff wird durchgeführt.'; setTimeout(() => { showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t, is4}); }, 600); }
+      // Blaue Buwemon werden von Calgon IMMER geschuetzt (sofern nicht abgewehrt)
+      const _calgonSure = (defCd.color === '#1a44bb');
+      attackFails = _calgonSure ? true : (Math.random() < 4/6);
+      { const _t = attackFails
+          ? (_calgonSure
+              ? '<b>Calgon</b> schützt BLAUE Buwemon immer - Angriff zu 100% abgewehrt!'
+              : '<b>Calgon</b> hat den Angriff abgewehrt! (4/6)')
+          : '<b>Calgon</b> hat NICHT gewirkt - Angriff wird durchgeführt.';
+        setTimeout(() => { showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t, is4}); }, 600); }
     } else if (defense.name === 'Stein') {
       // 4/6 Fehlschlag + Angreifer stirbt, bei orangem Verteidiger 100%
-      const roll = (defCd.color === '#cc5500') ? true : (Math.random() < 4/6);
+      const _steinSure = (defCd.color === '#cc5500');
+      const roll = _steinSure ? true : (Math.random() < 4/6);
       if (roll) { attackFails = true; attackerDiesInstead = true; }
-      { const _t = roll ? '<b>Stein</b> hat gewirkt - der Angreifer stirbt! (4/6)' : '<b>Stein</b> hat NICHT gewirkt - Angriff wird durchgeführt.'; setTimeout(() => { showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t, is4}); }, 600); }
+      { const _t = roll
+          ? (_steinSure
+              ? '<b>Stein</b> schützt ORANGE Buwemon immer - der Angreifer stirbt (100%)!'
+              : '<b>Stein</b> hat gewirkt - der Angreifer stirbt! (4/6)')
+          : '<b>Stein</b> hat NICHT gewirkt - Angriff wird durchgeführt.';
+        setTimeout(() => { showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t, is4}); }, 600); }
     } else if (defense.name === 'UwU ') {
       atkPowerOverride = sel.attackPower - 30;
       if (atkColor === '#008899') attackerDiesAfterwards = true; // Angreifer ist Cyan
@@ -3771,6 +4069,19 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
       if (atkColor === '#aa9900' && Math.random() < 0.5) lpProtected = false; // gelber Angreifer durchbricht mit 50%
       if (atkColor === '#aa9900') { const _t = lpProtected ? '<b>Glaskuppel</b> hält stand! (50%)' : '<b>Glaskuppel</b> wurde durchbrochen! (50%)'; setTimeout(() => { showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t, is4}); }, 600); }
     }
+  }
+
+  // Fehlgeschlagene Calgon/Stein-Verteidigung: eine weitere Abwehr-Runde eroeffnen,
+  // damit die Nicht-Angreifer erneut verteidigen koennen (weiteres Calgon usw.).
+  if (!attackFails && defense && (defense.name === 'Calgon' || defense.name === 'Stein')
+      && !window._defenseRetryDone) {
+    window._defenseRetryDone = true;
+    setTimeout(() => {
+      window._defenseRetryDone = false;
+      if (pendingAbility) return; // laeuft schon wieder etwas
+      reopenDefenseRound(sel, defenderSlotId, defenderP, isDirect, preEquipCount, is4);
+    }, 1400);
+    return;
   }
 
   if (attackFails) {
@@ -4042,12 +4353,56 @@ function beginFourAceFourOwnTurn(ownerP, is4, effSlotId) {
 // Globaler Klick-Listener für Zielauswahl im eigenen Zug (Ablehnt/Dinkelmehl/FourAceFour)
 document.addEventListener('pointerdown', (e) => {
   if (sandboxMode) return;
+  // Ablehnt-Zielauswahl: Klick auf eine gespielte ABLEHNT-Karte im Effektfeld.
+  // MUSS vor dem folgenden return stehen - waehrend einer Kampfsituation ist weder
+  // pendingOwnTurnTarget noch pendingFourAceFourOwnTurn gesetzt, der Block war also
+  // vorher unerreichbar.
+  if (typeof pendingAblehntSelect !== 'undefined' && pendingAblehntSelect && pendingAbility) {
+    const _effEl0 = e.target.closest('[id$="-eff1"],[id$="-eff2"],[id$="-eff3"],[id$="-eff4"],[id$="-eff1-4"],[id$="-eff2-4"],[id$="-eff3-4"],[id$="-eff4-4"]');
+    if (_effEl0) {
+      const _effLsid0 = toLogicalId(_effEl0.id);
+      const _effCd0 = G.slots[_effLsid0];
+      if (_effCd0 && _effCd0.name === 'Ablehnt') {
+        e.stopPropagation();
+        confirmAblehntCardTarget(_effLsid0);
+        return;
+      }
+    }
+  }
   if (!pendingOwnTurnTarget && !pendingFourAceFourOwnTurn) return;
 
   const slotEl = e.target.closest('[id$="-buw1"],[id$="-buw2"],[id$="-buw3"],[id$="-eff1"],[id$="-eff2"],[id$="-eff3"],[id$="-eff4"]');
 
   // Klick auf ausgerüstete Karte (equip-wrap Miniatur)?
   const equipEl = e.target.closest('.equip-item');
+  if (false) {
+    const _effEl = null;
+    if (_effEl) {
+      const _effLsid = '';
+      const _effCd = null;
+      if (_effCd) {
+        e.stopPropagation();
+        return;
+      }
+    }
+  }
+  // Ablehnt-Zielauswahl IN der Kampfsituation hat Vorrang.
+  // pendingAbility kann null sein (Ablehnt ausserhalb einer Kampfsituation) - deshalb
+  // ueberall optional zugreifen, sonst: "can't access property defenderSlotId".
+  if (equipEl && typeof pendingAblehntSelect !== 'undefined' && pendingAblehntSelect) {
+    const _ai = parseInt(equipEl.dataset.equipIdx);
+    const _bs = equipEl.closest('[id$="-buw1"],[id$="-buw2"],[id$="-buw3"],[id$="-ex"],[id$="-buw1-4"],[id$="-buw2-4"],[id$="-buw3-4"],[id$="-ex-4"]');
+    if (_bs && !isNaN(_ai)) {
+      const _lsidAbl = toLogicalId(_bs.id);
+      // In der Kampfsituation nur das angegriffene Buwemon, sonst jede ausgeruestete Karte
+      const _defAbl = pendingAbility && pendingAbility.defenderSlotId;
+      if (!_defAbl || _lsidAbl === _defAbl) {
+        e.stopPropagation();
+        tryConfirmAblehntTarget(_ai, _lsidAbl);
+        return;
+      }
+    }
+  }
   if (equipEl && pendingOwnTurnTarget && pendingOwnTurnTarget.targetType === 'eff') {
     const { ownerP, is4, effSlotId } = pendingOwnTurnTarget;
     const equipIdx = parseInt(equipEl.dataset.equipIdx);
@@ -4111,7 +4466,13 @@ document.addEventListener('pointerdown', (e) => {
     G.slots[effSlotId] = null; renderSlot(effSlotId);
     const ownGraves = is4 ? G4.graves[ownPfx] : G.graves[ownPfx];
     if (ownGraves) { ownGraves.push({name:FOURACEFOUR_NAME,color:'',type:'eff',file:''}); if(is4)updGrave4(ownPfx);else updGrave(ownPfx); }
-    if (NET.mode==='multi') { is4 ? netSendState4() : netSendState(); }
+    if (NET.mode==='multi') {
+      // Der getroffene Friedhof gehoert einem ANDEREN Spieler - netSendState uebertraegt
+      // nur den eigenen, daher hier gezielt senden (sonst fehlt die Karte beim Ziel).
+      if (targetP !== ownerP && graves) netSend({t:'grave_update', player:pfx, grave:graves, is4, sender:NET.myPlayer});
+      netSend({t:'slot_update', slotId: lsid, cd: null, is4});
+      is4 ? netSendState4() : netSendState();
+    }
     return;
   }
 
@@ -4165,6 +4526,9 @@ document.addEventListener('pointerdown', (e) => {
         // Fähigkeit des Buwemon für diesen Zug deaktivieren
         if (abilActive(lsid)) {
           dinkSet(lsid, true);
+          // Wird eine BARISTA pausiert, muss ihr betaeubtes Buwemon sofort wieder
+          // normal dargestellt werden (Bild UND Aktionsbuttons).
+          setTimeout(() => { if (typeof refreshBaristaBlocks === 'function') refreshBaristaBlocks(); }, 40);
           const g = abilityGlowEl(lsid); if (g) g.classList.remove('ability-shimmer');
           const slotEl2 = document.getElementById(physId(lsid));
           if (slotEl2) {
@@ -4537,7 +4901,7 @@ function applyLisaRedirect(originalDefenderSlotId, defenderP, is4) {
   const buwSlots = ['buw1','buw2','buw3']
     .map(s => 'p'+defenderP+'-'+s+suf)
     .filter(sid => G.slots[sid]);
-  const lisaActive = buwSlots.some(sid => G.slots[sid] && G.slots[sid].name === 'Lisa aus Australien' && abilActive(sid) && !dinkActive(sid));
+  const lisaActive = buwSlots.some(sid => G.slots[sid] && actsAsBuwemon(G.slots[sid], 'Lisa aus Australien') && abilActive(sid) && !dinkActive(sid));
   if (!lisaActive) return { chosen: originalDefenderSlotId, txt: null };
   const options = [...buwSlots, null]; // null = ins Leere
   const chosen = options[Math.floor(Math.random() * options.length)];
@@ -4990,7 +5354,15 @@ const baristaBlocks = {};
 
 function isBaristaBlocked(uid) {
   if (uid === undefined || uid === null) return false;
-  return !!baristaBlocks[String(uid)];
+  const e = baristaBlocks[String(uid)];
+  if (!e) return false;
+  // Ist die zugehoerige Barista gerade durch Dinkelmehl pausiert (oder gar nicht mehr auf
+  // dem Feld), gilt die Blockade NICHT - sonst blieben die Aktionsbuttons gesperrt,
+  // obwohl das Buwemon optisch schon wieder normal dargestellt wird.
+  const bSlot = _slotOfUid(e.baristaUid);
+  if (!bSlot) return false;
+  if (dinkActive(bSlot)) return false;
+  return true;
 }
 
 // Prueft alle Blockaden: fehlt die zugehoerige Barista oder das Ziel, wird die Blockade
@@ -5804,7 +6176,7 @@ let schwammikaState = {}; // {slotId: {copiedAbility, copiedBuwemon}}
 function beginSaugkraft(btn, el) {
   closePopup();
   const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
-  const schwSlotId = toLogicalId(el.dataset.slotId || '') || _lastActivatorSlotId;
+  const schwSlotId = (el.dataset.slotId || '') || _lastActivatorSlotId; // bereits LOGISCH
   // Alle Buwemon auf dem Spielfeld (auch eigene, kein EX)
   const allBuw = is4 ?
     [1,2,3,4].flatMap(p=>['buw1','buw2','buw3'].map(b=>'p'+p+'-'+b+'-4')) :
@@ -5829,7 +6201,12 @@ function beginSaugkraft(btn, el) {
 }
 function tryConfirmSaugkraft(lsid, cd) {
   if (!pendingSaugkraft) return false;
-  if (cd.type === 'ex-auto' || cd.name === 'Schwammika' || !CARD_ABILITIES[cd.name]) return false;
+  if (cd.name === 'Schwammika') {
+    // Saugkraft kann sich nicht selbst kopieren - kurzer Hinweis, Auswahl bleibt offen
+    showBlockedCardHint('Schwammika kann Saugkraft nicht kopieren');
+    return false;
+  }
+  if (cd.type === 'ex-auto' || !CARD_ABILITIES[cd.name]) return false;
   const { schwSlotId, el, is4 } = pendingSaugkraft;
   const suf = is4 ? '-4' : '';
   document.getElementById('abil-toast'+suf).classList.remove('open');
@@ -5839,19 +6216,70 @@ function tryConfirmSaugkraft(lsid, cd) {
   const schwCd = G.slots[schwSlotId];
   const schwUid = schwCd ? (schwCd.uid !== undefined ? String(schwCd.uid) : schwSlotId) : schwSlotId;
   schwammikaState[schwUid] = { copiedAbility: abilName, copiedBuwemon: cd.name, ownerSlotId: schwSlotId };
-  // _lastActivatorSlotId auf Schwammikas Slot setzen damit Fähigkeiten korrekt activatorP berechnen
-  _lastActivatorSlotId = schwSlotId;
-  const fakeEl = document.createElement('div');
-  fakeEl.dataset.name = 'Schwammika';
-  fakeEl.dataset.slotId = schwSlotId;
-  fakeEl.dataset.color = '#aaaaaa';
-  fakeEl.dataset.ctype = 'buw';
-  fakeEl.dataset.uid = '0';
-  if (SPECIAL_ABILITY_HANDLERS[abilName]) {
-    SPECIAL_ABILITY_HANDLERS[abilName](null, fakeEl);
-  } else if (ABILITY_EFFECTS[abilName]) {
-    beginAbilityActivation(fakeEl, abilName, abilName, ABILITY_EFFECTS[abilName]);
-  }
+
+  // Schwammikas eigenes Fake-Element - sie wendet die kopierte Faehigkeit IMMER selbst an,
+  // also fuer ihren eigenen Spieler (SLOT-ID-VERTRAG: dataset.slotId bleibt logisch).
+  const makeSchwEl = () => {
+    const fe = document.createElement('div');
+    fe.dataset.name = 'Schwammika';
+    fe.dataset.slotId = schwSlotId;
+    fe.dataset.color = (schwCd && schwCd.color) || '#2e8a2e';
+    fe.dataset.ctype = 'buw';
+    fe.dataset.uid = (schwCd && schwCd.uid !== undefined) ? String(schwCd.uid) : '0';
+    return fe;
+  };
+  // Viele Faehigkeiten suchen ihre Karte ueber window._lastActivatorUid (Glibbern,
+  // Liiinks, Recast, Pumpen ...). Ohne das findet Schwammika sich selbst nicht und die
+  // Faehigkeit laeuft ins Leere - sie muss die Karte SEIN, die die Faehigkeit ausloest.
+  const setSchwActivator = () => {
+    _lastActivatorSlotId = schwSlotId;
+    const _now = G.slots[schwSlotId];
+    window._lastActivatorUid = (_now && _now.uid !== undefined) ? _now.uid
+      : ((schwCd && schwCd.uid !== undefined) ? schwCd.uid : null);
+  };
+
+  // ERST die Saugkraft selbst als Kampfsituation (mit dem Ziel im Toast) - erst wenn sie
+  // NICHT abgewehrt wurde, loest Schwammika die kopierte Faehigkeit automatisch aus.
+  beginAbilityActivation(makeSchwEl(), 'Saugkraft', 'Saugkraft', () => {
+    setSchwActivator();
+    const txt = 'Schwammika kopiert ' + abilName + ' von ' + cd.name + '!';
+    showOutcomeToast(txt, is4);
+    if (NET.mode === 'multi') netSend({t:'outcome_toast', text: txt, is4});
+    setTimeout(() => {
+      setSchwActivator();
+      const fe2 = makeSchwEl();
+      // Die kopierte Faehigkeit gehoert zur SELBEN Aktion wie Saugkraft und darf nicht
+      // erneut als Buwemonaktion zaehlen (sonst passiert schlicht nichts).
+      window._claripassBypass = true;
+      try {
+        if (SPECIAL_ABILITY_HANDLERS[abilName]) {
+          SPECIAL_ABILITY_HANDLERS[abilName](null, fe2);
+        } else if (ABILITY_EFFECTS[abilName]) {
+          beginAbilityActivation(fe2, abilName, abilName, ABILITY_EFFECTS[abilName]);
+        }
+      } finally {
+        // Bei Faehigkeiten MIT Zielauswahl bleibt der Bypass aktiv, bis der Spieler das
+        // Ziel gewaehlt hat - sonst gilt die Folge-Kampfsituation als zweite Aktion.
+        if (anyTargetSelectOpen()) {
+          const _rel = () => {
+            if (anyTargetSelectOpen()) { setTimeout(_rel, 200); return; }
+            window._claripassBypass = false;
+          };
+          setTimeout(_rel, 200);
+        } else {
+          window._claripassBypass = false;
+        }
+      }
+      // Einmalige Faehigkeiten (ABILITY_LIMITS === 1) gelten danach auch fuer Schwammika
+      // als verbraucht - ihr kopierter Button bleibt dann dauerhaft verblasst.
+      const _lim = ABILITY_LIMITS[abilName];
+      const _nowCd = G.slots[schwSlotId];
+      if (_lim === 1 && _nowCd && _nowCd.uid !== undefined && !sandboxMode && !debugMode) {
+        permanentAbilityUsed.add(String(_nowCd.uid));
+        if (NET.mode === 'multi') netSend({t:'perm_ability_used', uid: String(_nowCd.uid)});
+      }
+    }, 1200);
+  }, lsid, { defenderName: cd.name, defenderColor: cd.color });
   return true;
 }
 
@@ -5859,7 +6287,7 @@ function beginTreue(btn, el) {
   closePopup();
   const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
   const activatorP = parseInt((_lastActivatorSlotId||'p1').match(/^p(\d)/)[1]||'1');
-  pendingTreue = { cardEl: el, activatorP, is4, marcoSlotId: toLogicalId(el.dataset.slotId || '') || _lastActivatorSlotId };
+  pendingTreue = { cardEl: el, activatorP, is4, marcoSlotId: (el.dataset.slotId || '') || _lastActivatorSlotId }; // bereits LOGISCH
   const suf = is4 ? '-4' : '';
   const toast = document.getElementById('abil-toast'+suf);
   document.getElementById('abil-toast-title'+suf).innerHTML = '<b>Treue</b>';
@@ -6230,7 +6658,10 @@ function selectEineRundeNoch(graveP, idx, effSlotId, is4, ownerP) {
   // Popups schließen
   document.getElementById('browser-modal').classList.remove('open');
   document.getElementById('verbot-target-modal').classList.remove('open');
-  if (NET.mode==='multi') { is4 ? netSendState4() : netSendState(); }
+  if (NET.mode==='multi') {
+    if (graveP !== ownerP) netSend({t:'grave_update', player:'p'+graveP, grave: graves, is4, sender: NET.myPlayer});
+    is4 ? netSendState4() : netSendState();
+  }
 }
 
 // ── VERBOTS-ZIELFÄHIGKEITEN (Lord Phillipp/Mecces Pakt, Flosama/Bett abbauen, Maxibu/Ein Problem mit Alkohol) ──
@@ -6526,9 +6957,9 @@ const ABILITY_EFFECTS = {
     // NET.isHost statt NET.myPlayer===1 - im 4-Spieler-Modus wird die Spielernummer
     // manuell gewaehlt und ist NICHT zwangslaeufig 1 fuer den Host. Mit dem falschen
     // Check loeste im 4P-Board oft NIEMAND das Neu-Austeilen aus.
-    if (NET.mode !== 'multi' || NET.isHost) {
-      setTimeout(() => { systemRestartDeal(is4); }, 450);
-    }
+    // Der AKTIVATOR teilt neu aus (nicht der Host!). Mit dem Host-Check passierte
+    // schlicht gar nichts, wenn ein Gast Bierre einsetzte.
+    setTimeout(() => { systemRestartDeal(is4); }, 450);
   },
 
   'Clubmate Hamsterung': () => {
@@ -6752,13 +7183,19 @@ function renderPopupActionButtons(el, fd) {
   const _is4fb = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
   const _isMyCard = !_buwOwner || _buwOwner === (_is4fb ? myLogicalPlayer4p() : myLogicalPlayer2p());
   const foreignCardBlock = !sandboxMode && !debugMode && !_isMyCard;
+  // Buwemon-Aktionen sind NUR im Zug ihres Besitzers moeglich. Der Verbrauchs-Zustand
+  // (permanentAbilityUsed / selfMovedBlockedUids) bleibt davon unberuehrt - eine bereits
+  // aufgebrauchte Faehigkeit wird also auch im naechsten eigenen Zug nicht wieder frei,
+  // eine unverbrauchte dagegen schon.
+  const _turnNow = _is4fb ? TURN_4P : TURN_2P;
+  const notMyTurnBlock = !sandboxMode && !debugMode && _buwOwner !== 0 && _turnNow !== _buwOwner;
   // Ueber die Mehrfach-Map pruefen (Punkt-Fix): mit dem alten Einzelzustand
   // (baristaTargetUid/baristaActiveSlot) galt bei ZWEI parallelen Blockaden nur noch die
   // zuletzt eingetragene Karte als geblockt - die erste verlor ihren Button-Fade.
   const baristaBlocksThis = !sandboxMode && !debugMode && isBaristaBlocked(el.dataset.uid);
   if (atkName) {
     const atkBtn = makeBtn('Angriff_Icon.png', atkName, (btn, cardEl) => beginAttackSelection(btn, cardEl), totalPower);
-    if (turnBlocked || baristaBlocksThis || firstRoundBlocksAtk || foreignCardBlock) { atkBtn.style.opacity = '0.3'; atkBtn.style.pointerEvents = 'none'; }
+    if (turnBlocked || baristaBlocksThis || firstRoundBlocksAtk || foreignCardBlock || notMyTurnBlock) { atkBtn.style.opacity = '0.3'; atkBtn.style.pointerEvents = 'none'; }
     wrap.appendChild(atkBtn);
   }
   if (!isEx) {
@@ -6800,7 +7237,7 @@ function renderPopupActionButtons(el, fd) {
         })();
       const firstRoundBlocksAbil = !sandboxMode && !debugMode && !firstRoundOver &&
         ['Drogen','Arsch anfassen','Zwillingsattacke','Überspringen'].includes(abName);
-      const abilityBlocked = turnBlocked || glorianBlocks || baristaBlocksThis || firstRoundBlocksAbil || foreignCardBlock || (!sandboxMode && !debugMode && !canUseAbility(slotIdForLimit, abName));
+      const abilityBlocked = turnBlocked || glorianBlocks || baristaBlocksThis || firstRoundBlocksAbil || foreignCardBlock || notMyTurnBlock || (!sandboxMode && !debugMode && !canUseAbility(slotIdForLimit, abName));
       if (abilityBlocked) { abBtn.style.opacity = '0.3'; abBtn.style.pointerEvents = 'none'; }
       wrap.appendChild(abBtn);
     }
@@ -7819,7 +8256,18 @@ function renderSlot(slotId) {
   if (existingEquip) existingEquip.remove();
   el.classList.remove('has-card');
   const cd = G.slots[slotId];
-  if (!cd) return;
+  if (!cd) {
+    // WICHTIG: auch fuer LEERE Buwemonfelder pruefen! Wird eines der drei gleichfarbigen
+    // Buwemon getoetet (z.B. durch FourAceFour), muss das EX-Feld desselben Spielers bei
+    // JEDEM Client sofort geleert werden - nicht nur beim Besitzer.
+    const _mB0 = /^(p\d)-buw\d(-4)?$/.exec(slotId);
+    if (_mB0 && !window._exCheckRunning) {
+      window._exCheckRunning = true;
+      try { checkExBuwemon(_mB0[1], _mB0[2] || ''); }
+      finally { window._exCheckRunning = false; }
+    }
+    return;
+  }
   const div = document.createElement('div');
   div.className = 'docked-card';
   const img = document.createElement('img');
@@ -7877,6 +8325,12 @@ function renderSlot(slotId) {
       let eqClickCount = 0, eqClickTimer = null;
       eqImg.addEventListener('pointerdown', (e) => {
         e.stopPropagation();
+        // Ablehnt-Zielauswahl hat Vorrang - der eigene Handler mit stopPropagation
+        // verhinderte sonst, dass der Klick den Auswahl-Handler ueberhaupt erreicht.
+        if (typeof pendingAblehntSelect !== 'undefined' && pendingAblehntSelect) {
+          const _defA = pendingAbility && pendingAbility.defenderSlotId;
+          if (!_defA || slotId === _defA) { tryConfirmAblehntTarget(idx, slotId); return; }
+        }
         eqClickCount++;
         if (eqClickCount === 2) {
           clearTimeout(eqClickTimer); eqClickCount = 0;
@@ -7973,6 +8427,18 @@ function renderSlot(slotId) {
   // Finns Chemie Unfall: geblockte Effektkarten muessen nach jedem Neuaufbau erneut
   // verblasst werden - renderSlot() baut das <img> neu und verwirft die Opacity.
   if (typeof applyFinnFade === 'function' && finnOwnerP() !== 0) setTimeout(applyFinnFade, 12);
+  // EX-Buwemon konsistent halten: sobald sich ein BUWEMONFELD aendert, muss das EX-Feld
+  // desselben Spielers neu bewertet werden. Deckt auch den Fall ab, dass FourAceFour eines
+  // der drei gleichfarbigen Buwemon toetet - dann verschwindet das EX bei JEDEM Spieler,
+  // nicht nur beim Besitzer. (Rekursionsschutz: der EX-Slot selbst loest das nicht aus.)
+  {
+    const _mBuw = /^(p\d)-buw\d(-4)?$/.exec(slotId);
+    if (_mBuw && !window._exCheckRunning) {
+      window._exCheckRunning = true;
+      try { checkExBuwemon(_mBuw[1], _mBuw[2] || ''); }
+      finally { window._exCheckRunning = false; }
+    }
+  }
   // Barista-Blockaden nachziehen: stirbt die Barista oder verlaesst sie das Feld, muss
   // das betaeubte Buwemon bei ALLEN Spielern wieder normal dargestellt werden.
   if (typeof refreshBaristaBlocks === 'function' && Object.keys(baristaBlocks).length) {
@@ -8303,6 +8769,16 @@ function onCardDockedToEffSlot(player, slotId, cd) {
     fake.dataset.name = cd.name; fake.dataset.color = cd.color;
     fake.dataset.ctype = cd.type||'eff'; fake.dataset.uid = cd.uid||0;
     fake.dataset.slotId = slotId;
+    const _ermToGrave = () => {
+      if (!G.slots[slotId] || G.slots[slotId].name !== 'Eine Runde noch') return;
+      G.slots[slotId] = null; renderSlot(slotId);
+      const pfxE = 'p'+ownerP;
+      const bcdE = {name:cd.name,color:cd.color,type:'eff',file:cd.file||''};
+      if (is4) { G4.graves[pfxE].push(bcdE); updGrave4(pfxE); } else { G.graves[pfxE].push(bcdE); updGrave(pfxE); }
+      if (NET.mode==='multi') { is4 ? netSendState4() : netSendState(); }
+    };
+    window._pendingCardCleanup = window._pendingCardCleanup || [];
+    window._pendingCardCleanup.push(_ermToGrave);
     beginAbilityActivation(fake, 'Eine Runde noch', 'Eine Runde noch', () => {
       openEineRundeNochPopup(ownerP, slotId, is4);
     });
@@ -8606,7 +9082,7 @@ function tryDockCard(el) {
         // Effektfeld-Slot geräumt werden muss (die Karte steckt ja jetzt in der Ausrüstung).
         if (pendingAbility && pendingAbility.isAttack && pendingAbility.defenderSlotId === lsid) {
           const eqPlayer = parseInt((lsid.match(/^p(\d)/)||[])[1] || '0');
-          if (eqPlayer !== pendingAbility.lastActor) {
+          {
             pendingAbility.lastActor = eqPlayer;
             pendingAbility.chainStep++;
             pendingAbility.lastCombatEquip = { name: cname, ownerP: eqPlayer };
@@ -8630,6 +9106,14 @@ function tryDockCard(el) {
       // Reine Ausruestungskarten gehoeren NUR an ein Buwemon, nie in ein Effektfeld
       const EQUIP_ONLY_NAMES = ['Clubmate', '13er Bogen'];
       if (isEffSlot && EQUIP_ONLY_NAMES.includes(cname)) continue;
+      // Gegen den Angriff eines EX-Buwemon wirken Calgon/Stein nicht - gar nicht erst
+      // docken lassen. Der Hinweis erscheint als kurzer Overlay-Toast, damit der Toast
+      // der laufenden Kampfsituation nicht verdraengt wird.
+      if (isEffSlot && !sandboxMode && pendingAbility && pendingAbility.isAttack
+          && ['Calgon','Stein'].includes(cname) && attackerIsExBuwemon()) {
+        showBlockedCardHint('Diese Karte kann nicht gegen Angriffe von EX-Buwemonkarten eingesetzt werden');
+        continue;
+      }
       if (isEffSlot && !(ctype === 'eff' || EFF_EREIGNIS_NAMES.includes(cname))) continue;
       // ── EFFEKTKARTEN-DOCKING-REGELN (nur Automatik-Modus) ──
       if (isEffSlot && !sandboxMode) {
@@ -8720,11 +9204,18 @@ function tryDockCard(el) {
             if (!isMyTurn || isCombat) { blockReason = 'Nur im eigenen Zug einsetzbar'; break; }
             if (!hasBuwemonCardOrField('Golop der Grobe') || !hasBuwemonCardOrField('Gilip der Glibbrige') || buwCount < 4) blockReason = 'Benötigt Golop der Grobe + Gilip der Glibbrige + mind. 2 weitere Buwemon';
             break;
-          case 'Discord Meeting':
+          case 'Discord Meeting': {
             if (!isMyTurn || isCombat) { blockReason = 'Nur im eigenen Zug einsetzbar'; break; }
             if (!hasBuwemonCardOrField('BOOM Clan') || buwCount < 6) { blockReason = 'Benötigt BOOM Clan + mind. 5 weitere Buwemon in verschiedenen Farben'; break; }
-            if (buwColors.length < 6) blockReason = 'Die 5 anderen Buwemon müssen alle verschiedene Farben haben';
+            // BOOM Clan selbst NICHT mitzaehlen: er ist ein Spezial-Buwemon (schwarz) und
+            // kollidierte sonst mit einem anderen Spezial-Buwemon (z.B. Pogofanten) in der
+            // Farbzaehlung - dadurch kamen trotz 5 verschiedener Farben nur 5 statt 6 heraus.
+            const _dmOthers = [...buwOnHand.filter(c => c.dataset.name !== 'BOOM Clan').map(c => c.dataset.color),
+                               ...fieldBuw.filter(cd => cd.name !== 'BOOM Clan').map(cd => cd.color)].filter(Boolean);
+            const _dmColors = [...new Set(_dmOthers)];
+            if (_dmColors.length < 5) blockReason = 'Die 5 anderen Buwemon müssen alle verschiedene Farben haben';
             break;
+          }
         }
         if (blockReason) {
           const is4x2 = lsid.endsWith('-4');
@@ -9910,7 +10401,8 @@ function doLiiinks() {
   // Die Netz-Nachricht folgt WEITER UNTEN (nach recast_slots), damit der Empfänger die
   // Karte in ihrem neuen Slot bereits kennt und seine LOKALE uid nachschlagen kann.
   let _giNowSlot = null;
-  if (_giraffaelPreCd && _giraffaelPreCd.name === 'Giraffael' && _giraffaelPreCd.uid) {
+  // Auch eine Schwammika mit KOPIERTEM Liiinks bleibt nach der Selbstverschiebung gesperrt
+  if (_giraffaelPreCd && (_giraffaelPreCd.name === 'Giraffael' || _giraffaelPreCd.name === 'Schwammika') && _giraffaelPreCd.uid) {
     selfMovedBlockedUids.add(String(_giraffaelPreCd.uid));
     _giNowSlot = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'].find(s => G.slots[s] && String(G.slots[s].uid) === String(_giraffaelPreCd.uid)) || null;
   }
@@ -9971,7 +10463,8 @@ function doRecast() {
   const _recastCd = _clarryPreCd; // bereits vor dem Shuffle gespeichert
   window._rcPreOwners = null;
   let _clNowSlot = null;
-  if (_recastCd && _recastCd.name === 'Clarry Pather der Maincharacter' && _recastCd.uid) {
+  // Auch eine Schwammika mit KOPIERTEM Recast bleibt nach der Selbstverschiebung gesperrt
+  if (_recastCd && (_recastCd.name === 'Clarry Pather der Maincharacter' || _recastCd.name === 'Schwammika') && _recastCd.uid) {
     selfMovedBlockedUids.add(String(_recastCd.uid));
     _clNowSlot = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'].find(s => G.slots[s] && String(G.slots[s].uid) === String(_recastCd.uid)) || null;
   }
@@ -10013,7 +10506,7 @@ function checkPermanentAbilitiesAfterMove() {
   });
   // Glorian
   if (glorianActiveSlot) {
-    const gs = allBuw.find(s => G.slots[s] && G.slots[s].name === 'Glorian' && abilActive(s));
+    const gs = allBuw.find(s => G.slots[s] && actsAsBuwemon(G.slots[s], 'Glorian') && abilActive(s));
     if (!gs || parseInt((gs.match(/^p(\d)/)||[])[1]) !== glorianActiveSlot.ownerP) {
       glorianActiveSlot = null;
       glorianSuppressedSlots().forEach(s => { dinkSet(s, false); if (abilActive(s)) setAbilityShimmer(s, true); });
@@ -10030,7 +10523,7 @@ function checkPermanentAbilitiesAfterMove() {
   });
   // Barista
   if (baristaActiveSlot) {
-    const bs = allBuw.find(s => G.slots[s] && G.slots[s].name === 'Barista Clarista der Mister-Fister' && abilActive(s));
+    const bs = allBuw.find(s => G.slots[s] && actsAsBuwemon(G.slots[s], 'Barista Clarista der Mister-Fister') && abilActive(s));
     // Zusaetzlich: ist die betaeubte KARTE selbst weg, endet die Betaeubung ebenfalls
     const _btSlot = baristaTargetUid ? _slotOfUid(baristaTargetUid) : null;
     if (!bs || parseInt((bs.match(/^p(\d)/)||[])[1]) !== baristaActiveSlot.ownerP || !_btSlot) {
@@ -10167,7 +10660,7 @@ function doLiiinks4() {
 
   // Giraffael die Liiinks ausgelöst hat → Fähigkeit bleibt geblockt nach Verschiebung
   let _giNowSlot4 = null;
-  if (_giraffaelPreCd4 && _giraffaelPreCd4.name === 'Giraffael' && _giraffaelPreCd4.uid) {
+  if (_giraffaelPreCd4 && (_giraffaelPreCd4.name === 'Giraffael' || _giraffaelPreCd4.name === 'Schwammika') && _giraffaelPreCd4.uid) {
     selfMovedBlockedUids.add(String(_giraffaelPreCd4.uid));
     _giNowSlot4 = _allSlots4Li.find(s => G.slots[s] && String(G.slots[s].uid) === String(_giraffaelPreCd4.uid)) || null;
   }
@@ -10244,7 +10737,7 @@ function doRecast4() {
 
   // Clarry Pather die Recast ausgelöst hat → Fähigkeit bleibt geblockt nach Verschiebung
   let _clNowSlot4 = null;
-  if (_clarryPreCd4 && _clarryPreCd4.name === 'Clarry Pather der Maincharacter' && _clarryPreCd4.uid) {
+  if (_clarryPreCd4 && (_clarryPreCd4.name === 'Clarry Pather der Maincharacter' || _clarryPreCd4.name === 'Schwammika') && _clarryPreCd4.uid) {
     selfMovedBlockedUids.add(String(_clarryPreCd4.uid));
     _clNowSlot4 = allSlots.find(s => G.slots[s] && String(G.slots[s].uid) === String(_clarryPreCd4.uid)) || null;
   }
@@ -11340,7 +11833,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div id="game-version-label" style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v53g
+    v53t
   </div>
 </div>
 
@@ -11540,6 +12033,46 @@ function multiJoin() {
   });
 }
 
+// ── HAND-LABEL-OVERLAY ──────────────────────────────────────────────────────────
+// Die Handkarten haengen direkt am <body>, die Zonen-Beschriftungen dagegen im Board,
+// das durch die Letterbox-Transformation einen eigenen Stacking-Context bildet. Dadurch
+// kann KEIN z-index das Label ueber die Karten heben. Loesung: die Labels zusaetzlich als
+// Overlay ausserhalb des Boards spiegeln und exakt ueber der jeweiligen Zone platzieren.
+function syncHandLabelOverlays() {
+  // Im Startmenue/Lobby duerfen die Overlays NICHT sichtbar sein - sie liegen sonst
+  // ueber dem Hintergrundbild des Startbildschirms.
+  const lobbyEl = document.getElementById('lobby');
+  const lobbyOpen = lobbyEl && lobbyEl.style.display !== 'none' && lobbyEl.offsetParent !== null;
+  const zoneIds = ['p1-hand','p2-hand','p1-hand-4','p2-hand-4','p3-hand-4','p4-hand-4'];
+  if (lobbyOpen) {
+    zoneIds.forEach(zid => { const o = document.getElementById('handlbl-ov-' + zid); if (o) o.style.display = 'none'; });
+    return;
+  }
+  zoneIds.forEach(zid => {
+    const zoneEl = document.getElementById(zid);
+    const srcLbl = zoneEl ? zoneEl.querySelector('.zlbl') : null;
+    let ov = document.getElementById('handlbl-ov-' + zid);
+    // Zone nicht sichtbar -> Overlay ausblenden
+    if (!zoneEl || !srcLbl || !zoneEl.offsetParent) { if (ov) ov.style.display = 'none'; return; }
+    if (!ov) {
+      ov = document.createElement('div');
+      ov.id = 'handlbl-ov-' + zid;
+      // z-index knapp ueber den Handkarten (max. ~7000), aber DEUTLICH unter Lobby/Popups,
+      // damit die Beschriftung nicht ueber dem Startbildschirm liegt.
+      ov.style.cssText = 'position:fixed;z-index:7500;pointer-events:none;'
+        + 'font-size:.44rem;color:rgba(0,0,0,0.55);text-transform:uppercase;letter-spacing:.15px;'
+        + 'white-space:nowrap;font-weight:600;font-family:"AiSpec",sans-serif;font-style:italic;';
+      document.documentElement.appendChild(ov);
+    }
+    const r = srcLbl.getBoundingClientRect();
+    ov.style.left = r.left + 'px';
+    ov.style.top = r.top + 'px';
+    ov.textContent = srcLbl.textContent;
+    ov.style.display = '';
+    srcLbl.style.visibility = 'hidden'; // Original ausblenden, das Overlay uebernimmt
+  });
+}
+
 function updateHandLabels() {
   ['p1','p2'].forEach(physP => {
     const zoneEl = document.getElementById(physP+'-hand');
@@ -11564,6 +12097,7 @@ function updateHandLabels() {
     }
     lbl.textContent = 'Hand – ' + name + ' – ' + count + ' Karten';
   });
+  syncHandLabelOverlays();
 }
 
 function updateHandLabels4() {
@@ -11587,6 +12121,7 @@ function scheduleHandLabelUpdate() {
     _handLabelRaf = null;
     updateHandLabels();
     updateHandLabels4();
+    syncHandLabelOverlays();
   });
 }
 document.addEventListener('DOMContentLoaded', () => {
@@ -11674,6 +12209,10 @@ function netSendState() {
     // Dauereffekt-Zustand mitschicken, damit er einen Verbindungsabbruch/Reconnect
     // ueberlebt. UEBER NETZ IMMER LOGISCHE SLOT-IDs (UIDs divergieren zwischen Clients).
     abilSlots: activeAbilitySlots(),
+    // Kopierte Faehigkeiten mitschicken - sonst ist die Map beim Gegner leer und alle
+    // zugueberdauernden Effekte (Glorian, Luis, Lisa, Ramon, Finn, AnniKKKa) greifen dort
+    // nicht. Ueber LOGISCHE Slot-IDs, weil uids zwischen den Clients divergieren.
+    schwCopies: schwammikaCopiesAsSlots(),
     dinkSlots: [...dinkelmehlSuppressed].map(u => _slotOfUid(u)).filter(Boolean),
     glorSlots: glorianSuppressedSlots(),
     glorianActive: glorianActiveSlot ? {slotId: glorianActiveSlot.slotId, ownerP: glorianActiveSlot.ownerP} : null,
@@ -11888,7 +12427,7 @@ function onNetData(d) {
     // Slot-Update anwenden, weil die Slot-IDs lokal in uids aufgeloest werden muessen.
     if (Array.isArray(d.abilSlots)) {
       window._pendingAbilSync = {
-        abil: d.abilSlots, dink: d.dinkSlots || [], glor: d.glorSlots || [],
+        abil: d.abilSlots, dink: d.dinkSlots || [], glor: d.glorSlots || [], schw: d.schwCopies || [],
         glorianActive: d.glorianActive || null, baristaActive: d.baristaActive || null,
         baristaBlockList: d.baristaBlockList || []
       };
@@ -11904,7 +12443,7 @@ function onNetData(d) {
     // Glorian-Slot aktualisieren: prüfen ob Glorian mit Shimmer noch im Slot
     if (glorianActiveSlot) {
       const buwSlots2p = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'];
-      const newGlorianSlot = buwSlots2p.find(s => d.slots && d.slots[s] && d.slots[s].name === 'Glorian' && abilActive(s));
+      const newGlorianSlot = buwSlots2p.find(s => d.slots && d.slots[s] && actsAsBuwemon(d.slots[s], 'Glorian') && abilActive(s));
       if (!newGlorianSlot) { glorianActiveSlot = null; }
       else if (newGlorianSlot !== glorianActiveSlot.slotId) {
         glorianActiveSlot.slotId = newGlorianSlot;
@@ -12014,6 +12553,7 @@ function onNetData(d) {
       // VOLLABGLEICH: erst alles entfernen, was der Sender NICHT mehr als aktiv meldet.
       // (Rein additives Uebernehmen liess Schimmer/Effekte stehen, die z.B. nach einem
       //  Besitzerwechsel durch Liiinks/Recast bereits deaktiviert worden waren.)
+      applySchwammikaCopies(_s.schw);
       const _abilSet0 = new Set(_s.abil), _dinkSet0 = new Set(_s.dink), _glorSet0 = new Set(_s.glor);
       activeAbilitySlots().forEach(sid => {
         if (!_abilSet0.has(sid)) setAbilityShimmer(sid, false);
@@ -12053,6 +12593,10 @@ function onNetData(d) {
       activeAbilitySlots().forEach(sid => { if (!dinkActive(sid)) setAbilityShimmer(sid, true); });
       // Raeumt Effekte auf, deren Karte das Feld verlassen hat (z.B. Barista gestorben)
       checkPermanentAbilitiesAfterMove();
+      // EX-Buwemon bei ALLEN Spielern nachziehen: liegen keine 3 gleichfarbigen mehr,
+      // muss das EX auch beim Nicht-Aktivator verschwinden (FourAceFour-Fall).
+      const _is4ex = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+      (_is4ex ? ['p1','p2','p3','p4'] : ['p1','p2']).forEach(p => checkExBuwemon(p, _is4ex ? '-4' : ''));
     }
 
     // Reveal state handled via separate event
@@ -12083,6 +12627,7 @@ if (d.t === 'state4') {
     }
     if (Array.isArray(d.abilSlots)) {
       setTimeout(() => {
+        applySchwammikaCopies(d.schwCopies || []);
         d.abilSlots.forEach(sid => { if (G.slots[sid]) abilSet(sid, true); });
         (d.dinkSlots||[]).forEach(sid => { if (G.slots[sid]) dinkSet(sid, true); });
         (d.glorSlots||[]).forEach(sid => { if (G.slots[sid]) glorSuppSet(sid, true); });
@@ -12503,7 +13048,17 @@ if (d.t === 'state4') {
     setAbilityShimmer(d.slotId, d.active);
     if (!d.active && legilimensSlotId === d.slotId) clearLegilimens();
   }
+  if (d.t === 'dink_cleared') {
+    if (d.sender === NET.myPlayer) return;
+    // Der andere Spieler hat seinen Zug beendet: Dinkelmehl-Pausen laufen aus, die
+    // Barista-Blockaden gelten wieder - sofort nachziehen statt auf den State zu warten.
+    clearDinkelmehlSuppression();
+    if (typeof refreshBaristaBlocks === 'function') refreshBaristaBlocks();
+  }
   if (d.t === 'dinkelmehl_suppress') {
+    // Nach dem Pausieren die Barista-Blockaden neu bewerten, damit das betaeubte Buwemon
+    // bei JEDEM Spieler gleichzeitig wieder normal dargestellt wird.
+    setTimeout(() => { if (typeof refreshBaristaBlocks === 'function') refreshBaristaBlocks(); }, 60);
     dinkSet(d.slotId, true);
     const slotEl3 = document.getElementById(physId(d.slotId));
     if (slotEl3) { const ov = slotEl3.querySelector('.ability-shimmer-overlay'); if (ov) ov.remove(); }
@@ -12529,6 +13084,8 @@ if (d.t === 'state4') {
       pendingAbility.playedCards = d.playedCards;
       if (d.combatDefense !== undefined) pendingAbility.combatDefense = d.combatDefense;
       if (d.fourAceFourPlayed) pendingAbility.fourAceFourPlayed = true;
+    if (d.ablehntTargets) pendingAbility.ablehntTargets = d.ablehntTargets;
+    if (d.ablehntCardTargets) pendingAbility.ablehntCardTargets = d.ablehntCardTargets;
       if (d.lastCombatEquip !== undefined) pendingAbility.lastCombatEquip = d.lastCombatEquip;
       if (d.locked) {
         // FourAceFour gelegt: Aktivator schließt die Kette ab, alle anderen warten auf 'ability_resolved'
@@ -12904,8 +13461,11 @@ function canUseAbility(slotId, abilityName) {
   // UIDs als String vergleichen (Netzwerk/JSON-Typsicherheit).
   const _cdChk = G.slots[lsid];
   if (_cdChk && _cdChk.uid !== undefined && selfMovedBlockedUids.has(String(_cdChk.uid))) {
+    // Schwammika zaehlt hier mit: hat sie Liiinks/Recast kopiert und sich damit selbst
+    // verschoben, bleibt ihr Button beim neuen Besitzer ebenfalls gesperrt.
     if ((_cdChk.name === 'Giraffael' && abilityName === 'Liiinks') ||
-        (_cdChk.name === 'Clarry Pather der Maincharacter' && abilityName === 'Recast')) return false;
+        (_cdChk.name === 'Clarry Pather der Maincharacter' && abilityName === 'Recast') ||
+        _cdChk.name === 'Schwammika') return false;
   }
   if (turnActionsUsed >= turnActionsAllowed) return false;
   // Nachschlag: in diesem Zug duerfen auch bereits verbrauchte Faehigkeiten erneut genutzt werden
