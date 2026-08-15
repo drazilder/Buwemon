@@ -1556,12 +1556,14 @@ function autoDrawIfMyTurn2p(p, seq) {
   if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) return;
   if (NET.mode === 'multi' && p !== myLogicalPlayer2p()) return; // Mehrspieler: nur meine eigenen Karten wirklich erzeugen
   if (_lastAutoDrawSeq2p === seq) return; // für DIESEN konkreten Zug wurde schon gezogen (nicht nur "für diesen Spieler")
-  _lastAutoDrawSeq2p = seq;
   if (!G.deck.length) return;
+  // Limit VOR dem Seq-Merker pruefen - sonst gilt der Zug als "gezogen" und man kann
+  // spaeter (unter dem Limit) nie wieder ziehen.
   if ((handOrderByPlayer2p[p]||[]).length >= HAND_MAX_2P) {
     if (p === myLogicalPlayer2p()) showOutcomeToast('Du hast das Maximum an Handkarten erreicht!', false);
     return;
   }
+  _lastAutoDrawSeq2p = seq;
   const cd = G.deck.shift();
   updDeck();
   const uid = G.nid++;
@@ -1694,12 +1696,13 @@ function autoDrawIfMyTurn4p(p, seq) {
   if (sandboxMode) return;
   if (NET.mode === 'multi' && p !== myLogicalPlayer4p()) return;
   if (_lastAutoDrawSeq4p === seq) return; // für DIESEN konkreten Zug wurde schon gezogen
-  _lastAutoDrawSeq4p = seq;
   if (!G4.deck.length) return;
+  // Limit VOR dem Seq-Merker pruefen (siehe 2P)
   if ((handOrderByPlayer4p[p]||[]).length >= HAND_MAX_4P) {
     if (p === myLogicalPlayer4p()) showOutcomeToast('Du hast das Maximum an Handkarten erreicht!', true);
     return;
   }
+  _lastAutoDrawSeq4p = seq;
   const cd = G4.deck.shift();
   updDeck4();
   const uid = G.nid++;
@@ -2938,6 +2941,40 @@ function filterRemovedEquip(slotId, arr) {
   return arr.filter(eq => !isEquipRemoved(slotId, eq));
 }
 
+// Prueft, ob der eigene Spieler noch <need> Karten ziehen kann. Gibt false zurueck und
+// zeigt einen Info-Toast, wenn das Handkarten-Limit das verhindert.
+function canDrawCards(need) {
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  if (sandboxMode) return true;
+  const myL = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+  const cur = (is4 ? (handOrderByPlayer4p[myL]||[]) : (handOrderByPlayer2p[myL]||[])).length;
+  const max = is4 ? HAND_MAX_4P : HAND_MAX_2P;
+  if (cur + (need||1) > max) {
+    showOutcomeToast('Du hast das Maximum an Handkarten - diese Fähigkeit ist gerade nicht einsetzbar!', is4);
+    return false;
+  }
+  return true;
+}
+
+// Nach dem Ende einer Glorian-Pause: Ist im Slot ein Alexerus mit aktiver Faehigkeit,
+// werden die gegnerischen Handkarten wieder aufgedeckt (Luis wirkt automatisch, weil
+// dessen Effekt nur abilActive() prueft - Alexerus braucht diesen expliziten Schritt).
+function reactivateLegilimensIfAlexerus(s) {
+  const cd = G.slots[s];
+  if (!cd || !actsAsBuwemon(cd, 'Alexerus Snape')) return;
+  const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const oP = parseInt((s.match(/^p(\d)/)||[])[1]||'1');
+  const act = is4 ? [1,2,3,4].filter(p => G4.active[p]) : [1,2];
+  legilimensSlotId = s;
+  legilimensRevealedPlayers = act.filter(p => p !== oP);
+  setAbilityShimmer(s, true);
+  legilimensRevealedPlayers.forEach(p => {
+    revealHandForLegilimens(p, is4);
+    updateRevealStatus(p, true, is4);
+    if (NET.mode === 'multi') netSend({t:'wanze_reveal', targetP: p, is4, open: true});
+  });
+}
+
 function abilityGlowEl(slotId) {
   const slotEl = document.getElementById(physId(slotId));
   if (!slotEl) return null;
@@ -3469,8 +3506,13 @@ function checkAbilityBlock(cd, slotId) {
   const isAttack = !!pendingAbility.isAttack;
 
   let validNames;
+  const _isDrogenAtk = !!pendingAbility.isDrogen
+    || (pendingAbility.abilityName && String(pendingAbility.abilityName).includes('Drogen'))
+    || pendingAbility.abilityKey === 'drogen';
   if (isAttack) {
     validNames = ATTACK_DEFENSE_NAMES.concat(['Ablehnt', FOURACEFOUR_NAME]);
+    // Gruenikas Drogen ist ein FAEHIGKEITS-Angriff - Dinkelmehl unterbindet ihn
+    if (_isDrogenAtk) validNames = validNames.concat(['Dinkelmehl']);
   } else {
     validNames = isFirstStep ? ABILITY_FIRST_RESPONSE_NAMES : ABILITY_CHAIN_RESPONSE_NAMES;
   }
@@ -3577,7 +3619,7 @@ function finalizeAbilityChain(killsBuwemon) {
   }
   clearAbilityUI();
   pendingAbility = null;
-  setTimeout(() => { window._ablehntRemovedCount = 0; clearRemovedEquipKeys(); }, 6000);
+  setTimeout(() => { window._ablehntRemovedCount = 0; clearRemovedEquipKeys(); window._luisAlreadyRolled = false; }, 6000);
   // Karten, die bis zum Ende der Kampfsituation liegen bleiben sollten (z.B. RGB),
   // jetzt aufraeumen - auch wenn die Wirkung abgewehrt wurde und die resolveFn nie lief.
   if (window._pendingCardCleanup && window._pendingCardCleanup.length) {
@@ -3629,7 +3671,18 @@ function finalizeAbilityChain(killsBuwemon) {
       // Ansonsten wird IMMER aufgelöst - ob und wie stark sich das auswirkt, entscheidet die
       // ggf. aktive Verteidigungskarte (combatDefense) selbst innerhalb von resolveAttack.
       // "wasBlocked" ist bei Angriffen KEIN Signal mehr für "nichts passiert".
-      if (fourAceFourPlayed) {
+      // Gruenikas Drogen per DINKELMEHL abgewehrt -> der Fähigkeitsangriff findet gar
+      // nicht statt. Niemand stirbt, Gruenika behaelt ihre 160 (keine 100-Karte).
+      const _drogenBlocked = wasBlocked && (data.isDrogen
+        || (data.abilityName && String(data.abilityName).includes('Drogen'))
+        || data.abilityKey === 'drogen');
+      if (_drogenBlocked) {
+        // Faehigkeit gilt trotzdem als AUFGEBRAUCHT (keine 100-Karte)
+        if (data.slotId) applyDrogenNacheffekt(data.slotId, true);
+        const _t = 'Drogen wurde abgewehrt - der Angriff findet nicht statt!';
+        showOutcomeToast(_t, data.is4);
+        if (NET.mode === 'multi') netSend({t:'outcome_toast', text:_t, is4:data.is4});
+      } else if (fourAceFourPlayed) {
         if (resolveFn) resolveFn({ fourAceFour: true });
       } else {
         if (resolveFn) resolveFn({ combatDefense, playedCardsForReturn: playedCards });
@@ -3717,6 +3770,9 @@ function confirmAttackTarget(lsid, targetCd) {
   const realLsid = _lisaTarget;
   const realCd = G.slots[realLsid] || targetCd;
   const preEquipCount = (realCd.equipped || []).length;
+  // Ausruestungs-Bonus zum Angriffsstart merken - waehrend des Kampfes dazugekommene
+  // Karten (Konter-Clubmate) werden spaeter als DIFFERENZ addiert.
+  sel.equipBonusAtStart = computeEquipBonus(realCd.color, realCd.equipped, sel.attackerP);
   pendingAttackSelection = null;
   // Lisa-Meldung (falls umgeleitet) wird als extraText direkt in die Kampfsituation
   // eingeblendet statt als konkurrierender Standalone-Toast.
@@ -4096,7 +4152,11 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
       return; // Angreifer ist tot -> kein Zwillingsattacke-Folgeangriff
     }
   }
-  if (actsAsBuwemon(defCd, 'Luis Münsters') && abilActive(defenderSlotId) && !dinkActive(defenderSlotId)) {
+  // Nach einer bereits fehlgeschlagenen Muenster-Pruefung nicht erneut wuerfeln -
+  // sonst meldet die Folgerunde wieder "Muenster hat gewirkt" statt "Calgon".
+  if (actsAsBuwemon(defCd, 'Luis Münsters') && abilActive(defenderSlotId) && !dinkActive(defenderSlotId)
+      && !window._luisAlreadyRolled
+      && !(resolveInfo && resolveInfo.combatDefense)) {
     const luisBlocks = Math.random() < 4/6;
     const luisTxt = luisBlocks ? 'Münster-Effekt: Angriff abgewehrt!' : 'Münster-Effekt hat NICHT gewirkt – Angriff wird durchgeführt.';
     showOutcomeToast(luisTxt, is4);
@@ -4104,6 +4164,20 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
     // Ergebnis nie. An alle Spieler senden, damit jeder den Ausgang sieht.
     if (NET.mode === 'multi') netSend({t:'outcome_toast', text: luisTxt, is4});
 
+    if (!luisBlocks && !window._luisRetryDone) {
+      // Muenster fehlgeschlagen -> der Verteidiger darf sich noch normal wehren
+      // (Calgon, Glaskuppel ...), bevor der Angriff durchgeht.
+      window._luisRetryDone = true;
+      window._luisAlreadyRolled = true; // in der Folgerunde nicht erneut wuerfeln
+      setTimeout(() => {
+        window._luisRetryDone = false;
+        if (pendingAbility) return;
+        if (typeof reopenDefenseRound === 'function') {
+          reopenDefenseRound(sel, defenderSlotId, defenderP, isDirect, preEquipCount, is4);
+        }
+      }, 1400);
+      return;
+    }
     if (luisBlocks) {
       if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
       // Zwillingsattacke: der zweite Angriff steht auch dann zu, wenn der erste
@@ -4195,7 +4269,22 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
   }
 
   const defPower = (CARD_ATTACK_POWER[defCd.name] || 0) + computeEquipBonus(defCd.color, defCd.equipped, defenderP);
-  const atkPower = atkPowerOverride !== null ? atkPowerOverride : sel.attackPower;
+  // Angriffskraft FRISCH berechnen - der Angreifer kann sich waehrend der Kampfsituation
+  // selbst noch eine Clubmate/13er Bogen ausruesten (Konter). sel.attackPower ist der
+  // eingefrorene Wert vom Angriffsstart und wuerde diesen Bonus verschlucken.
+  let _atkPowerLive = sel.attackPower;
+  {
+    // NUR den waehrend des Kampfes dazugekommenen Ausruestungs-Bonus addieren.
+    // sel.attackPower bleibt die Basis - bei Faehigkeits-Angriffen (Drogen 220,
+    // Ueberspringen 200) ist das der korrekte Sonderwert, NICHT CARD_ATTACK_POWER.
+    const _aCd = G.slots[sel.slotId];
+    if (_aCd) {
+      const _nowBonus = computeEquipBonus(_aCd.color, _aCd.equipped, sel.attackerP);
+      const _preBonus = (sel.equipBonusAtStart !== undefined) ? sel.equipBonusAtStart : _nowBonus;
+      _atkPowerLive = sel.attackPower + (_nowBonus - _preBonus);
+    }
+  }
+  const atkPower = atkPowerOverride !== null ? atkPowerOverride : _atkPowerLive;
   const diff = atkPower - defPower;
 
   if (diff > 0) {
@@ -4296,22 +4385,27 @@ function resetOwnerChangedCards(slots, preOwners) {
     const uid = String(cd.uid);
     const pre = preOwners[uid];
     const now = (s.match(/^p\d/)||[''])[0];
-    if (!pre || pre === now) return;
+    if (!pre) return;
+    const _ownerChanged = (pre !== now);
     // Ausgeruestete EREIGNISKARTEN gehen beim Besitzerwechsel verloren
     stripEreignisEquip(cd);
     // ZUGUEBERDAUERNDE Faehigkeit + Schimmer aufheben: der neue Besitzer muss sie
     // erst wieder aktivieren (Glorian, Luis, Lisa, Ramon, Finn, AnniKKKa, Barista ...)
-    if (abilActive(s)) setAbilityShimmer(s, false);
-    abilSet(s, false); dinkSet(s, false); glorSuppSet(s, false);
-    if (glorianActiveSlot && glorianActiveSlot.slotId === s) glorianActiveSlot = null;
-    if (cd.uid !== undefined) { delete schwammikaState[String(cd.uid)]; delete baristaBlocks[String(cd.uid)]; }
-    // ALLEN Clients mitteilen - sonst schimmert die Karte beim Gegner weiter
-    if (NET.mode === 'multi') netSend({t:'dauer_reset', slotId: s, is4: (typeof fourPlayerMode!=='undefined'&&fourPlayerMode), sender: NET.myPlayer});
+    if (_ownerChanged) {
+      if (abilActive(s)) setAbilityShimmer(s, false);
+      abilSet(s, false); dinkSet(s, false); glorSuppSet(s, false);
+      if (glorianActiveSlot && glorianActiveSlot.slotId === s) glorianActiveSlot = null;
+      if (cd.uid !== undefined) { delete schwammikaState[String(cd.uid)]; delete baristaBlocks[String(cd.uid)]; }
+    }
     renderSlot(s);
     if (selfMovedBlockedUids.has(uid)) return; // Selbstverschiebung: bleibt gesperrt
+    // Verbrauchte Faehigkeiten IMMER freigeben - auch wenn die Karte beim selben
+    // Spieler gelandet ist (bei Liiinks rotiert das gesamte Feld).
     permanentAbilityUsed.delete(uid);
+    // ALLE Verbrauchs-Eintraege dieser Karte loeschen - egal unter welchem Schluessel
+    // (uid:... / slot:... / mit Faehigkeitsnamen dahinter). Vorher griff nur indexOf===0.
     Object.keys(abilityUsesThisLife).forEach(k => {
-      if (k.indexOf('uid:'+uid) === 0 || k.indexOf('slot:'+s) === 0) delete abilityUsesThisLife[k];
+      if (k.includes('uid:'+uid) || k.includes('slot:'+s)) delete abilityUsesThisLife[k];
     });
     ragequitBlockedUids.delete(uid);
     changed.push(s);
@@ -4368,11 +4462,15 @@ function setAbilityShimmer(slotId, active) {
     // Glorian deaktiviert: supprimierte Dauerfähigkeiten wiederherstellen
     if (glorianActiveSlot && glorianActiveSlot.slotId === slotId) {
       glorianActiveSlot = null;
-      glorianSuppressedSlots().forEach(s => {
-        dinkSet(s, false);
-        if (abilActive(s)) setAbilityShimmer(s, true);
-      });
+      const _restore = glorianSuppressedSlots().slice(); // Snapshot VOR dem Loeschen
+      _restore.forEach(s => { dinkSet(s, false); glorSuppSet(s, false); });
       glorianSuppressed.clear();
+      // Erst NACH dem Loeschen reaktivieren - sonst verdeckt der Alexerus-Waechter
+      // sofort wieder (er prueft glorSuppActive).
+      _restore.forEach(s => {
+        if (abilActive(s)) { setAbilityShimmer(s, true); reactivateLegilimensIfAlexerus(s); }
+      });
+      if (typeof refreshBaristaBlocks === 'function') refreshBaristaBlocks();
     }
     if (baristaActiveSlot && baristaActiveSlot.slotId === slotId) {
       setBaristaFade(baristaTargetSlot, false);
@@ -4680,7 +4778,36 @@ let legilimensRevealedPlayers = []; // Spieler deren Karten aufgedeckt sind
 setInterval(() => {
   if (!legilimensSlotId) return;
   const cd = G.slots[legilimensSlotId];
-  if (!cd || !actsAsBuwemon(cd, 'Alexerus Snape')) clearLegilimens();
+  // Nur wenn Alexerus WIRKLICH weg ist, den Zustand loeschen.
+  if (!cd || !actsAsBuwemon(cd, 'Alexerus Snape') || !abilActive(legilimensSlotId)) { clearLegilimens(); return; }
+  // Pausiert (Glorian/Dinkelmehl): NUR verdecken - legilimensSlotId BLEIBT gesetzt,
+  // damit die Faehigkeit nach dem Ende der Pause von selbst wieder greift (wie Luis).
+  const _is4w = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const _paused = dinkActive(legilimensSlotId) || glorSuppActive(legilimensSlotId);
+  const _oPw = parseInt((legilimensSlotId.match(/^p(\d)/)||[])[1]||'1');
+  const _opps = (_is4w ? [1,2,3,4].filter(p => G4.active[p]) : [1,2]).filter(p => p !== _oPw);
+  if (_paused && legilimensRevealedPlayers.length) {
+    legilimensRevealedPlayers.forEach(p => {
+      const physPfx = physId('p'+p), suf = _is4w ? '-4' : '';
+      const handEl = document.getElementById(physPfx+'-hand'+suf);
+      if (handEl) handEl.querySelectorAll('.sim-hand-card').forEach(x => {
+        const im = x.querySelector('img'); if (im) im.src = BACK;
+        x.style.pointerEvents = 'none'; x.style.cursor = ''; x.ondblclick = null;
+      });
+      updateRevealStatus(p, false, _is4w);
+      if (NET.mode === 'multi') netSend({t:'wanze_reveal', targetP: p, is4: _is4w, open: false});
+    });
+    legilimensRevealedPlayers = [];
+    setAbilityShimmer(legilimensSlotId, false);
+  } else if (!_paused && !legilimensRevealedPlayers.length) {
+    legilimensRevealedPlayers = _opps;
+    setAbilityShimmer(legilimensSlotId, true);
+    _opps.forEach(p => {
+      revealHandForLegilimens(p, _is4w);
+      updateRevealStatus(p, true, _is4w);
+      if (NET.mode === 'multi') netSend({t:'wanze_reveal', targetP: p, is4: _is4w, open: true});
+    });
+  }
 }, 500);
 
 function beginLegilimens(btn, el) {
@@ -5366,6 +5493,11 @@ function resolveMarie(activatorP, targetP, is4) {
     };
     c2.onclick = (e2) => {
       e2.stopPropagation();
+      // Spezial-Buwemon und FourAceFour duerfen NICHT geklaut werden
+      if (c2.dataset.ctype === 'spec' || c2.dataset.name === FOURACEFOUR_NAME) {
+        showBlockedCardHint('Diese Karte kann nicht geklaut werden');
+        return;
+      }
       const hand = is4 ? (handOrderByPlayer4p[targetP]||[]) : (handOrderByPlayer2p[targetP]||[]);
       const allCards = handEl.querySelectorAll('.sim-hand-card');
       const cardIdx = Array.from(allCards).indexOf(c2);
@@ -6022,7 +6154,7 @@ function startNBKUI(ownerP, targetP, maxSelect, is4) {
 
   const counter = document.createElement('div');
   counter.className = 'abil-toast-sub';
-  counter.textContent = 'Wähle bis zu ' + maxSelect + ' Karten (0 ausgewählt)';
+  counter.textContent = 'Wähle eine beliebige Anzahl an Karten (0 ausgewählt)';
   modal.appendChild(counter);
 
   const btn = document.createElement('button');
@@ -6041,7 +6173,7 @@ function startNBKUI(ownerP, targetP, maxSelect, is4) {
         selected.add(uid); card.style.opacity='0.55'; card.style.outline='3px solid #2255cc';
       }
       const n = selected.size;
-      counter.textContent = 'Wähle bis zu ' + maxSelect + ' Karten (' + n + ' ausgewählt)';
+      counter.textContent = 'Wähle eine beliebige Anzahl an Karten (' + n + ' ausgewählt)';
       btn.disabled = n === 0;
       btn.style.opacity = n > 0 ? '1' : '0.4';
       btn.style.cursor = n > 0 ? 'pointer' : 'not-allowed';
@@ -6203,6 +6335,16 @@ function beginGruenikaDrogen(btn, cardEl) {
 
 // Nach Drogen-Angriff: 100-Ereigniskarte ausrüsten (außer bei Dinkelmehl)
 function applyDrogenNacheffekt(grueSlotId, isDinkelmehled) {
+  // Drogen ist EINMALIG - Faehigkeit gilt nach JEDEM Einsatz als verbraucht
+  {
+    const _gc = G.slots[grueSlotId];
+    if (_gc && _gc.uid !== undefined && !sandboxMode && !debugMode) {
+      permanentAbilityUsed.add(String(_gc.uid));
+      if (NET.mode === 'multi') netSend({t:'perm_ability_used', uid: String(_gc.uid)});
+      markAbilityUsed(grueSlotId, 'Drogen');
+      renderSlot(grueSlotId);
+    }
+  }
   if (isDinkelmehled) return;
   const cd = G.slots[grueSlotId];
   if (!cd) return;
@@ -6946,6 +7088,8 @@ const ABILITY_EFFECTS = {
         glorSuppSet(s, true);
         dinkSet(s, true);
         setAbilityShimmer(s, false);
+        // Alexerus: aufgedeckte Handkarten wieder verdecken, solange Glorian aktiv ist
+        if (typeof legilimensSlotId !== 'undefined' && legilimensSlotId === s) clearLegilimens();
         abilSet(s, true); // bleibt registriert, nur pausiert
       }
     });
@@ -7405,6 +7549,22 @@ function renderPopupActionButtons(el, fd) {
           };
         }
         // effectFn === null: Fähigkeit noch nicht implementiert -> Button bleibt ohne Funktion
+      }
+      // Kartenzieh-Faehigkeiten am Handkarten-Limit gar nicht erst starten - die
+      // Faehigkeit gilt dann auch NICHT als benutzt (Buwemonaktion bleibt erhalten).
+      const _drawNeed = {
+        'Ein Drink zu viel': 1, 'Goldrausch': 2, 'Marie hat recht': 1,
+        "Quit livin' on dreams": 1,   // Antika klaut eine Handkarte
+        'Grasen': 1,                  // Leonie holt vom Friedhof
+        'Mecces Pakt': 2, 'Mecces Völlerei': 2, 'Clubmate Hamsterung': 2,
+        'Killsteal': 1, 'Schicksal': 1, 'Gossip': 1, 'Meme Belästigung': 1,
+      };
+      if (handler && _drawNeed[abName] !== undefined) {
+        const _innerH = handler;
+        handler = (btn, cardEl) => {
+          if (!canDrawCards(_drawNeed[abName])) { closePopup(); return; }
+          _innerH(btn, cardEl);
+        };
       }
       const abBtn = makeBtn('Fähigkeit_Icon.png', abName, handler);
       const slotIdForLimit = el.dataset.slotId;
@@ -9291,7 +9451,7 @@ function tryDockCard(el) {
         // eigener Zug in der Reaktions-Kette (kann per Ablehnt/FourAceFour gekontert werden) -
         // wird komplett getrennt von playedCards/cleanUpOwnAbilityCards verfolgt, da hier kein
         // Effektfeld-Slot geräumt werden muss (die Karte steckt ja jetzt in der Ausrüstung).
-        if (pendingAbility && pendingAbility.isAttack && pendingAbility.defenderSlotId === lsid) {
+        if (pendingAbility && pendingAbility.isAttack && (pendingAbility.defenderSlotId === lsid || pendingAbility.slotId === lsid)) {
           const eqPlayer = parseInt((lsid.match(/^p(\d)/)||[])[1] || '0');
           {
             pendingAbility.lastActor = eqPlayer;
@@ -9314,6 +9474,8 @@ function tryDockCard(el) {
         return true;
       }
       if (isExSlot && ctype !== 'ex' && ctype !== 'ex-ereignis' && ctype !== 'ex-auto') continue;
+      // RGB zieht 2 Karten - am Handkarten-Limit gar nicht erst docken lassen
+      if (isEffSlot && !sandboxMode && cname === 'RGB' && !canDrawCards(2)) continue;
       // Reine Ausruestungskarten gehoeren NUR an ein Buwemon, nie in ein Effektfeld
       const EQUIP_ONLY_NAMES = ['Clubmate', '13er Bogen'];
       if (isEffSlot && EQUIP_ONLY_NAMES.includes(cname)) continue;
@@ -10734,6 +10896,20 @@ function doRecast() {
 
 
 function checkPermanentAbilitiesAfterMove() {
+  // Ist Glorian vom Feld verschwunden, muessen alle pausierten Dauerfaehigkeiten
+  // wieder aktiv werden (Schimmer + Wirkung, inkl. Alexerus-Aufdeckung).
+  if (glorianActiveSlot) {
+    const _gc = G.slots[glorianActiveSlot.slotId];
+    if (!_gc || !actsAsBuwemon(_gc, 'Glorian')) {
+      glorianActiveSlot = null;
+      const _restore2 = glorianSuppressedSlots().slice();
+      _restore2.forEach(s => { dinkSet(s, false); glorSuppSet(s, false); });
+      glorianSuppressed.clear();
+      _restore2.forEach(s => {
+        if (abilActive(s)) { setAbilityShimmer(s, true); reactivateLegilimensIfAlexerus(s); }
+      });
+    }
+  }
   const allBuw = ['p1-buw1','p1-buw2','p1-buw3','p2-buw1','p2-buw2','p2-buw3'];
   // Für jede aktive Dauerfähigkeit: prüfen ob Karte noch beim selben Spieler
   if (typeof refreshBaristaBlocks === 'function') refreshBaristaBlocks();
@@ -12086,7 +12262,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div id="game-version-label" style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v54b
+    v54h
   </div>
 </div>
 
@@ -13111,7 +13287,13 @@ if (d.t === 'state4') {
     if (myL === d.targetP) {
       // Ich bin das Ziel: Karte per Index aus meiner Hand entfernen
       const myHand = d.is4 ? (handOrderByPlayer4p[d.targetP]||[]) : (handOrderByPlayer2p[d.targetP]||[]);
-      const uidToRemove = myHand[d.cardIdx];
+      // Index nur akzeptieren, wenn der Kartenname passt - sonst per Name suchen.
+      // Die Handreihenfolge kann zwischen den Clients abweichen -> falsche Karte.
+      const _nameOf = (u) => { const e = G.cards.find(c => parseInt(c.dataset.uid) === u); return e ? e.dataset.name : null; };
+      let uidToRemove = myHand[d.cardIdx];
+      if (uidToRemove === undefined || (d.cardName && _nameOf(uidToRemove) !== d.cardName)) {
+        uidToRemove = myHand.find(u => _nameOf(u) === d.cardName);
+      }
       if (uidToRemove !== undefined) {
         if (d.is4) handOrderByPlayer4p[d.targetP] = myHand.filter(u => u !== uidToRemove);
         else handOrderByPlayer2p[d.targetP] = myHand.filter(u => u !== uidToRemove);
@@ -13206,7 +13388,10 @@ if (d.t === 'state4') {
     const myArr = d.is4 ? handOrderByPlayer4p : handOrderByPlayer2p;
     if (myL === d.targetP) {
       // Gegner wählt selbst echte UIDs aus seiner Hand
-      const realHand = [...(myArr[d.targetP]||[])];
+      // NUR Karten waehlen, zu denen es hier auch ein Element gibt - sonst faellt sie
+      // spaeter beim filter(Boolean) raus und der Aktivator bekommt zu wenige zurueck.
+      const realHand = [...(myArr[d.targetP]||[])]
+        .filter(u => G.cards.some(x => parseInt(x.dataset.uid) === u));
       const shuffled = realHand.sort(() => Math.random()-0.5);
       const realTheirUids = shuffled.slice(0, d.count);
       // Kartendaten VOR dem Entfernen sammeln
@@ -13284,16 +13469,6 @@ if (d.t === 'state4') {
     const _gs = (typeof fourPlayerMode!=='undefined' && fourPlayerMode) ? G4.graves : G.graves;
     if (_gs[d.pfx]) { _gs[d.pfx] = filterRemovedGrave(d.pfx, _gs[d.pfx]);
       if (typeof fourPlayerMode!=='undefined' && fourPlayerMode) { G.graves[d.pfx]=_gs[d.pfx]; updGrave4(d.pfx); } else updGrave(d.pfx); }
-  }
-  if (d.t === 'dauer_reset') {
-    if (d.sender === NET.myPlayer) return;
-    if (abilActive(d.slotId)) setAbilityShimmer(d.slotId, false);
-    abilSet(d.slotId, false); dinkSet(d.slotId, false); glorSuppSet(d.slotId, false);
-    if (glorianActiveSlot && glorianActiveSlot.slotId === d.slotId) glorianActiveSlot = null;
-    const _rc = G.slots[d.slotId];
-    if (_rc && _rc.uid !== undefined) { delete schwammikaState[String(_rc.uid)]; delete baristaBlocks[String(_rc.uid)]; }
-    if (typeof refreshBaristaBlocks === 'function') refreshBaristaBlocks();
-    renderSlot(d.slotId);
   }
   if (d.t === 'equip_removed') {
     if (d.sender === NET.myPlayer) return;
