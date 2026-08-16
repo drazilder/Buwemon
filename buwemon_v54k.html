@@ -2937,7 +2937,7 @@ function actsAsBuwemon(slotIdOrCd, buwName) {
 // ── ENTFERNTE AUSRUESTUNG (Klon-Sperre) ─────────────────────────────────────────
 // Schluessel: slotId + '|' + Kartenname + '|' + Index-unabhaengige Kennung.
 // Wird beim Kampfende geleert.
-const _removedEquipKeys = new Set();
+const _removedEquipKeys = new Map(); // key -> Zeitpunkt der Sperre (siehe isEquipRemoved)
 function _equipKey(slotId, eq) { return String(slotId) + '|' + (eq && eq.name); }
 // Aus einem Friedhof ENTFERNTE Karten (Zeitfuehrer) duerfen nicht zurueckgeklont werden
 const _removedGraveKeys = new Set();
@@ -2946,8 +2946,22 @@ function filterRemovedGrave(pfx, arr) {
   if (!arr || !_removedGraveKeys.size) return arr || [];
   return arr.filter(cd => !_removedGraveKeys.has(pfx + '|' + cd.name));
 }
-function markEquipRemoved(slotId, eq) { _removedEquipKeys.add(_equipKey(slotId, eq)); }
-function isEquipRemoved(slotId, eq) { return _removedEquipKeys.has(_equipKey(slotId, eq)); }
+// Die Sperre gilt NUR KURZ: sie soll verhindern, dass ein noch unterwegs befindlicher
+// alter State die gerade entfernte Karte zurueckklont. Frueher galt sie unbegrenzt und
+// per slotId|NAME - danach wurde JEDE spaeter neu ausgeruestete Karte gleichen Namens in
+// diesem Slot dauerhaft weggefiltert (z.B. ein neues "Plus 20" von Dr. Stirli). Der
+// Verteidiger sah 180 AP, der Angreifer rechnete mit 160 -> 40 statt 20 LP Schaden.
+const _EQUIP_LOCK_MS = 6000;
+function markEquipRemoved(slotId, eq) { _removedEquipKeys.set(_equipKey(slotId, eq), Date.now()); }
+function isEquipRemoved(slotId, eq) {
+  const k = _equipKey(slotId, eq);
+  const t = _removedEquipKeys.get(k);
+  if (t === undefined) return false;
+  if (Date.now() - t > _EQUIP_LOCK_MS) { _removedEquipKeys.delete(k); return false; }
+  return true;
+}
+// Wird eine Karte ABSICHTLICH neu ausgeruestet, muss eine alte Sperre sofort weichen.
+function unmarkEquipRemoved(slotId, eq) { _removedEquipKeys.delete(_equipKey(slotId, eq)); }
 function clearRemovedEquipKeys() { _removedEquipKeys.clear(); }
 // Filtert gesperrte Karten aus einem equipped-Array (zentral, fuer JEDEN Codepfad)
 function filterRemovedEquip(slotId, arr) {
@@ -6381,6 +6395,7 @@ function applyDrogenNacheffekt(grueSlotId, isDinkelmehled) {
   if (!cd.equipped) cd.equipped = [];
   // Bereits eine 100-Karte ausgerüstet? Nicht doppelt
   if (!cd.equipped.some(eq => eq.name === '100 Ereignis')) {
+    unmarkEquipRemoved(grueSlotId, { name: '100 Ereignis' }); // alte Kampf-Sperre aufheben
     cd.equipped.push({ name: '100 Ereignis', color: '#888888', ctype: 'ereignis', file: '100.png' });
   }
   renderSlot(grueSlotId);
@@ -6418,6 +6433,7 @@ function tryConfirmDoener(lsid, cd) {
     const cdNow = G.slots[lsid];
     if (!cdNow) return;
     if (!cdNow.equipped) cdNow.equipped = [];
+    unmarkEquipRemoved(lsid, { name: 'Minus 20' }); // alte Kampf-Sperre aufheben
     cdNow.equipped.push({ name: 'Minus 20', color: '#888888', ctype: 'ereignis', file: 'Minus_20.png' });
     renderSlot(lsid);
     if (NET.mode === 'multi') netSend({t:'equip_update', slotId: lsid, equipped: cdNow.equipped});
@@ -7167,15 +7183,12 @@ const ABILITY_EFFECTS = {
     if (!target || !G.slots[target]) { showOutcomeToast('Verarztung: Ziel nicht mehr da!', is4); return; }
     const cd = G.slots[target];
     if (!cd.equipped) cd.equipped = [];
+    unmarkEquipRemoved(target, {name:'Plus 20'}); // alte Kampf-Sperre aufheben
     cd.equipped.push({name:'Plus 20', color:'#888888', ctype:'ereignis', file:'Plus_20.png'});
     renderSlot(target);
     showOutcomeToast('Dr. Stirli verarztet ' + cd.name + ' (+20 AP)!', is4);
     if (NET.mode==='multi') {
       netSend({t:'outcome_toast', text:'Dr. Stirli verarztet ' + cd.name + ' (+20 AP)!', is4});
-      // ZUSAETZLICH ein direktes equip_update senden (nicht nur netSendState): greift der
-      // Gegner sehr schnell nach der Verarztung an, darf die +20 AP in der Kampfsituation
-      // (defPower-Berechnung beim Angreifer) nicht fehlen, weil der volle State noch unterwegs ist.
-      netSend({t:'equip_update', slotId: target, equipped: cd.equipped});
       is4 ? netSendState4() : netSendState();
     }
   },
@@ -7390,6 +7403,7 @@ const ABILITY_EFFECTS = {
       const cd = G.slots[lsid];
       if (cd) {
         if (!cd.equipped) cd.equipped = [];
+        unmarkEquipRemoved(lsid, {name:'Plus10 Ereignis'}); // alte Kampf-Sperre aufheben
         cd.equipped.push({name:'Plus10 Ereignis',color:'#888888',ctype:'ereignis',file:'Plus_10.png'});
         renderSlot(lsid);
         if (NET.mode==='multi') netSend({t:'equip_update', slotId:lsid, equipped: cd.equipped});
@@ -9493,6 +9507,7 @@ function tryDockCard(el) {
       if (isBuwOrExSlot && !sandboxMode && (ctype === 'eff' || ctype === 'ereignis') && EQUIP_NAMES.includes(cname) && G.slots[lsid] && G.slots[lsid].name) {
         if (!G.slots[lsid].equipped) G.slots[lsid].equipped = [];
         if (G.slots[lsid].equipped.length >= 8) continue;
+        unmarkEquipRemoved(lsid, { name: cname }); // alte Kampf-Sperre aufheben
         G.slots[lsid].equipped.push({ name: cname, color: el.dataset.color, uid: parseInt(el.dataset.uid), file: imgFileFor(cname), ctype: ctype });
         // Während eines laufenden Angriffs auf GENAU dieses Buwemon zählt das Ausrüsten als
         // eigener Zug in der Reaktions-Kette (kann per Ablehnt/FourAceFour gekontert werden) -
@@ -13266,6 +13281,19 @@ if (d.t === 'state4') {
     // Prüfe über sender (falls vorhanden), sonst über activatorP als Fallback.
     const isMySelf = d.sender === NET.myPlayer || (!d.sender && d.activatorP === NET.myPlayer);
     if (isMySelf) return;
+    // AP-FRISCHE: Die Kampfsituation wird spaeter komplett beim ANGREIFER ausgerechnet -
+    // mit dessen lokaler Kopie unserer Buwemon. Deshalb hier sofort den eigenen
+    // Ausruestungsstand nachschicken, damit dort exakt die AP-Zahl gilt, die bei uns am
+    // Angriffsbutton steht (z.B. +20 durch Dr. Stirli).
+    if (d.isAttack && NET.mode === 'multi') {
+      const _is4p = (typeof fourPlayerMode !== 'undefined' && fourPlayerMode);
+      const _myLp = _is4p ? myLogicalPlayer4p() : myLogicalPlayer2p();
+      ['buw1','buw2','buw3','ex'].forEach(_bs => {
+        const _sid = 'p' + _myLp + '-' + _bs;
+        const _c = G.slots[_sid];
+        if (_c && _c.equipped && _c.equipped.length) netSend({t:'equip_update', slotId:_sid, equipped:_c.equipped});
+      });
+    }
     if (pendingAbility && pendingAbility.resolveFn) {
       // Eine NEUE Aktivierung (anderer Slot, andere Faehigkeit ODER anderer isAttack-Typ)
       // ist eine echte Folge-Kampfsituation und muss durchkommen - sonst sieht der
