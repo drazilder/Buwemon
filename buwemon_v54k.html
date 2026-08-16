@@ -2699,19 +2699,32 @@ function openColorRemove4(btnEl){
         G4.banish.push(bcd);
       });
       G4.deck=G4.deck.filter(c=>c.color!==cg.hex);updDeck4();
-      // Add loose field cards to banish and remove them
+      // Add loose field cards to banish and remove them.
+      // GEDOCKTE Karten ueberspringen: ihr (verstecktes) DOM-Element steckt noch in G.cards,
+      // aber der Slot-Block unten banisht sie bereits - sonst landen sie DOPPELT im Stapel.
+      const _slottedU4 = new Set(Object.values(G.slots).filter(Boolean).map(s=>String(s.uid)));
       G.cards.filter(c=>c.dataset.color===cg.hex).forEach(c=>{
+        if (_slottedU4.has(String(c.dataset.uid))) { removeCardSynced(c); return; }
         const bcd={name:c.dataset.name,color:c.dataset.color,type:c.dataset.ctype,file:c.dataset.file||''};
         G4.banish.push(bcd);
         removeCardSynced(c);
       });
-      // Add grave cards to banish (all 4 players)
+      // Add grave cards to banish (all 4 players) - MIT Klon-Sperre (markGraveRemoved)
+      // und grave_lock/grave_update-Sync, sonst klont der naechste State sie zurueck.
       ['p1','p2','p3','p4'].forEach(p=>{
+        const _rmNames = G4.graves[p].filter(c=>c.color===cg.hex).map(c=>c.name);
         G4.graves[p].filter(c=>c.color===cg.hex).forEach(c=>{
           const bcd={name:c.name,color:c.color,type:c.type,file:c.file||''};
           G4.banish.push(bcd);
+          markGraveRemoved(p, c);
         });
-        G4.graves[p]=G4.graves[p].filter(c=>c.color!==cg.hex);
+        if (_rmNames.length) {
+          G4.graves[p]=G4.graves[p].filter(c=>c.color!==cg.hex);
+          if (NET.mode==='multi') {
+            netSend({t:'grave_lock', pfx:p, names:_rmNames, sender:NET.myPlayer});
+            netSend({t:'grave_update', player:p, grave:G4.graves[p], is4:true, sender:NET.myPlayer});
+          }
+        }
         updGrave4(p);
       });
       updBanish4();
@@ -2755,20 +2768,21 @@ function openColorRemove(btnEl){
       // Handkarten entfernen (eigene + Gegner via netSend)
       applyColorHandRemove(cg.hex, false);
       layoutMyHand();
-      // Add field cards to banish and remove them (inkl. Handkarten die lokal als DOM existieren)
+      // Add field cards to banish and remove them (inkl. Handkarten die lokal als DOM existieren).
+      // GEDOCKTE Karten ueberspringen: ihr (verstecktes) DOM-Element steckt noch in G.cards,
+      // aber der Slot-Block unten banisht sie bereits - sonst landen sie DOPPELT im Stapel.
+      const _slottedU2 = new Set(Object.values(G.slots).filter(Boolean).map(s=>String(s.uid)));
       G.cards.filter(c=>c.dataset.color===cg.hex).forEach(c=>{
+        if (_slottedU2.has(String(c.dataset.uid))) { removeCardSynced(c); return; }
         const bcd={name:c.dataset.name,color:c.dataset.color,type:c.dataset.ctype,file:c.dataset.file||''};
         G.banish.push(bcd);
         removeCardSynced(c);
       });
       if (NET.mode==='multi') netSend({t:'color_hand_remove', hex:cg.hex, is4:false, sender:NET.myPlayer});
-      // Add grave cards to banish
-      [...G.graves.p1.filter(c=>c.color===cg.hex), ...G.graves.p2.filter(c=>c.color===cg.hex)].forEach(c=>{
-        const bcd={name:c.name,color:c.color,type:c.type,file:c.file||''};
-        G.banish.push(bcd);
-      });
-      G.graves.p1=G.graves.p1.filter(c=>c.color!==cg.hex);updGrave('p1');
-      G.graves.p2=G.graves.p2.filter(c=>c.color!==cg.hex);updGrave('p2');
+      // FRIEDHOEFE werden NUR im "FRIEDHOEFE"-Block weiter unten behandelt - der setzt
+      // markGraveRemoved + grave_lock + grave_update. Die fruehere Doppel-Behandlung hier
+      // leerte die Friedhoefe vorab, der Block unten fand dann nichts mehr -> Klon-Sperre
+      // griff nie und der naechste State klonte die entfernten Karten zurueck.
       updBanish();
       // clear matching buw slots, add to banish, then recheck EX
       ['p1','p2'].forEach(p=>{
@@ -2964,6 +2978,13 @@ function reactivateLegilimensIfAlexerus(s) {
   if (!cd || !actsAsBuwemon(cd, 'Alexerus Snape')) return;
   const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
   const oP = parseInt((s.match(/^p(\d)/)||[])[1]||'1');
+  // NUR auf dem Client des Alexerus-Besitzers: sonst setzt ein fremder Client
+  // legilimensSlotId, sein Waechter funkt spaeter clearLegilimens/ability_shimmer:false
+  // und killt damit den Zustand beim echten Besitzer dauerhaft.
+  if (NET.mode === 'multi') {
+    const _myP = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+    if (_myP !== oP) return;
+  }
   const act = is4 ? [1,2,3,4].filter(p => G4.active[p]) : [1,2];
   legilimensSlotId = s;
   legilimensRevealedPlayers = act.filter(p => p !== oP);
@@ -3677,16 +3698,8 @@ function finalizeAbilityChain(killsBuwemon) {
         || (data.abilityName && String(data.abilityName).includes('Drogen'))
         || data.abilityKey === 'drogen');
       if (_drogenBlocked) {
-        // Faehigkeit gilt trotzdem als AUFGEBRAUCHT
-        if (data.slotId && !sandboxMode && !debugMode) {
-          const _gc = G.slots[data.slotId];
-          if (_gc && _gc.uid !== undefined) {
-            permanentAbilityUsed.add(String(_gc.uid));
-            if (NET.mode === 'multi') netSend({t:'perm_ability_used', uid: String(_gc.uid)});
-          }
-          markAbilityUsed(data.slotId, 'Drogen');
-          renderSlot(data.slotId);
-        }
+        // Faehigkeit gilt trotzdem als AUFGEBRAUCHT (keine 100-Karte)
+        if (data.slotId) applyDrogenNacheffekt(data.slotId, true);
         const _t = 'Drogen wurde abgewehrt - der Angriff findet nicht statt!';
         showOutcomeToast(_t, data.is4);
         if (NET.mode === 'multi') netSend({t:'outcome_toast', text:_t, is4:data.is4});
@@ -3942,6 +3955,11 @@ function anyTargetSelectOpen() {
   const flags = ['pendingBaristaTarget','pendingStirliTarget','pendingSaugkraft',
     'pendingAblehntSelect','pendingClariSSIO','pendingAntika','pendingNBK',
     'pendingOwnTurnTarget','pendingFourAceFourOwnTurn','pendingAttackSelection'];
+  // Offenes Farbwahl-Modal (Picky Eating/Raumzeitgenozid) zaehlt ebenfalls als laufende
+  // Zielauswahl - sonst laeuft der Schwammika-Bypass waehrend der Farbwahl aus und die
+  // Folge-Kampfsituation gilt faelschlich als zweite Buwemonaktion.
+  const _crm = document.getElementById('color-remove-modal');
+  if (_crm && _crm.classList.contains('open')) return true;
   return flags.some(f => { try { return !!eval(f); } catch(e) { return false; } });
 }
 
@@ -4786,9 +4804,38 @@ let legilimensRevealedPlayers = []; // Spieler deren Karten aufgedeckt sind
 setInterval(() => {
   if (!legilimensSlotId) return;
   const cd = G.slots[legilimensSlotId];
+  // Nur wenn Alexerus WIRKLICH weg ist, den Zustand loeschen. !abilActive allein reicht
+  // NICHT (uids divergieren zwischen Clients und koennen nach State-Sync kurz fehlen) -
+  // dann wie pausiert behandeln statt zu loeschen.
   if (!cd || !actsAsBuwemon(cd, 'Alexerus Snape')) { clearLegilimens(); return; }
-  // Von Glorian pausiert -> Handkarten wieder verdecken
-  if (dinkActive(legilimensSlotId) || glorSuppActive(legilimensSlotId)) { clearLegilimens(); return; }
+  // Pausiert (Glorian/Dinkelmehl): NUR verdecken - legilimensSlotId BLEIBT gesetzt,
+  // damit die Faehigkeit nach dem Ende der Pause von selbst wieder greift (wie Luis).
+  const _is4w = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const _paused = dinkActive(legilimensSlotId) || glorSuppActive(legilimensSlotId) || !abilActive(legilimensSlotId);
+  const _oPw = parseInt((legilimensSlotId.match(/^p(\d)/)||[])[1]||'1');
+  const _opps = (_is4w ? [1,2,3,4].filter(p => G4.active[p]) : [1,2]).filter(p => p !== _oPw);
+  if (_paused && legilimensRevealedPlayers.length) {
+    legilimensRevealedPlayers.forEach(p => {
+      const physPfx = physId('p'+p), suf = _is4w ? '-4' : '';
+      const handEl = document.getElementById(physPfx+'-hand'+suf);
+      if (handEl) handEl.querySelectorAll('.sim-hand-card').forEach(x => {
+        const im = x.querySelector('img'); if (im) im.src = BACK;
+        x.style.pointerEvents = 'none'; x.style.cursor = ''; x.ondblclick = null;
+      });
+      updateRevealStatus(p, false, _is4w);
+      if (NET.mode === 'multi') netSend({t:'wanze_reveal', targetP: p, is4: _is4w, open: false});
+    });
+    legilimensRevealedPlayers = [];
+    setAbilityShimmer(legilimensSlotId, false);
+  } else if (!_paused && !legilimensRevealedPlayers.length) {
+    legilimensRevealedPlayers = _opps;
+    setAbilityShimmer(legilimensSlotId, true);
+    _opps.forEach(p => {
+      revealHandForLegilimens(p, _is4w);
+      updateRevealStatus(p, true, _is4w);
+      if (NET.mode === 'multi') netSend({t:'wanze_reveal', targetP: p, is4: _is4w, open: true});
+    });
+  }
 }, 500);
 
 function beginLegilimens(btn, el) {
@@ -6287,7 +6334,9 @@ function startZwillingsAngriff(cardEl, slotId, is4, afterFn) {
 // eine 100-Ereigniskarte ausgerüstet (reduziert AP auf 100).
 function beginGruenikaDrogen(btn, cardEl) {
   closePopup();
-  if (!sandboxMode && !debugMode && turnActionsUsed >= turnActionsAllowed) {
+  // Schwammika-Kopie: Saugkraft hat die Buwemonaktion bereits verbraucht - Drogen gehoert
+  // zur SELBEN Aktion und darf hier nicht am Zug-Limit scheitern (_schwActionOpen-Bypass).
+  if (!sandboxMode && !debugMode && !window._schwActionOpen && !window._claripassBypass && turnActionsUsed >= turnActionsAllowed) {
     showOutcomeToast('⚠ Du hast in diesem Zug bereits angegriffen oder eine Fähigkeit genutzt!', false);
     return;
   }
@@ -6316,6 +6365,16 @@ function beginGruenikaDrogen(btn, cardEl) {
 
 // Nach Drogen-Angriff: 100-Ereigniskarte ausrüsten (außer bei Dinkelmehl)
 function applyDrogenNacheffekt(grueSlotId, isDinkelmehled) {
+  // Drogen ist EINMALIG - Faehigkeit gilt nach JEDEM Einsatz als verbraucht
+  {
+    const _gc = G.slots[grueSlotId];
+    if (_gc && _gc.uid !== undefined && !sandboxMode && !debugMode) {
+      permanentAbilityUsed.add(String(_gc.uid));
+      if (NET.mode === 'multi') netSend({t:'perm_ability_used', uid: String(_gc.uid)});
+      markAbilityUsed(grueSlotId, 'Drogen');
+      renderSlot(grueSlotId);
+    }
+  }
   if (isDinkelmehled) return;
   const cd = G.slots[grueSlotId];
   if (!cd) return;
@@ -7113,6 +7172,10 @@ const ABILITY_EFFECTS = {
     showOutcomeToast('Dr. Stirli verarztet ' + cd.name + ' (+20 AP)!', is4);
     if (NET.mode==='multi') {
       netSend({t:'outcome_toast', text:'Dr. Stirli verarztet ' + cd.name + ' (+20 AP)!', is4});
+      // ZUSAETZLICH ein direktes equip_update senden (nicht nur netSendState): greift der
+      // Gegner sehr schnell nach der Verarztung an, darf die +20 AP in der Kampfsituation
+      // (defPower-Berechnung beim Angreifer) nicht fehlen, weil der volle State noch unterwegs ist.
+      netSend({t:'equip_update', slotId: target, equipped: cd.equipped});
       is4 ? netSendState4() : netSendState();
     }
   },
@@ -7274,13 +7337,22 @@ const ABILITY_EFFECTS = {
       // 4/6 Wahrscheinlichkeit
       const roll = Math.random() < 4/6;
       if (!roll) { showOutcomeToast('Überspringen verfehlt! (4/6)', is4); if(NET.mode==='multi') netSend({t:'outcome_toast',text:'Überspringen verfehlt! (4/6)',is4}); return; }
-      // Direktangriff mit 200 AP - Kampfsituation wie normaler Angriff
+      // Direktangriff mit 200 AP - Kampfsituation wie normaler Angriff.
+      // WIE BEI CLARISSIO mit 1200ms Verzoegerung starten: so sind ability_resolved/
+      // outcome_toast der vorherigen Runde (Saugkraft) beim Verteidiger sicher verarbeitet,
+      // bevor die Angriffs-Kampfsituation dort oeffnet - sonst kam der Toast beim Gegner nie an.
       const sel = { cardEl: _atkEl, slotId: _pogoSlotFixed, is4, attackerP: ownerP, attackPower: 200, attackName: 'Überspringen (200 AP)' };
-      beginAbilityActivation(_atkEl, 'angriff', 'Überspringen (200 AP)', (resolveInfo) => {
-        const txt = 'Überspringen trifft! (4/6)';
-        setTimeout(() => { showOutcomeToast(txt, is4); if(NET.mode==='multi') netSend({t:'outcome_toast',text:txt,is4}); }, 600);
-        resolveAttack(sel, null, targetP, true, resolveInfo);
-      }, null, { extraText: ' (Direktangriff auf Spieler ' + targetP + ')' });
+      const _wasSchwPogo = !!window._schwActionOpen;
+      setTimeout(() => {
+        // Schwammika-Kopie: Bypass-Flag kann waehrend der Wartezeit ausgelaufen sein -
+        // wieder setzen, sonst blockt der Zug-Limit-Check ("bereits angegriffen").
+        if (_wasSchwPogo) { window._schwActionOpen = true; clearTimeout(window._schwBypassTimer); window._schwBypassTimer = setTimeout(() => { window._schwActionOpen = false; }, 8000); }
+        beginAbilityActivation(_atkEl, 'angriff', 'Überspringen (200 AP)', (resolveInfo) => {
+          const txt = 'Überspringen trifft! (4/6)';
+          setTimeout(() => { showOutcomeToast(txt, is4); if(NET.mode==='multi') netSend({t:'outcome_toast',text:txt,is4}); }, 600);
+          resolveAttack(sel, null, targetP, true, resolveInfo);
+        }, null, { extraText: ' (Direktangriff auf Spieler ' + targetP + ')' });
+      }, 1200);
     };
     if (opponents.length === 1) { startAgainst(opponents[0]); return; }
     pendingClariSSIO = { is4, opponents, startAgainst };
@@ -8205,6 +8277,7 @@ function showDebugMenu() {
       debugMode = !debugMode;
       dbgBtn.textContent = '🐛 Debug Modus: ' + (debugMode ? 'AN' : 'AUS');
       dbgBtn.style.background = debugMode ? '#cc8800' : '#555';
+      setTimeout(applyDebugLpEditable, 30);
     };
     btnWrap.appendChild(dbgBtn);
   }
@@ -8747,7 +8820,10 @@ function renderSlot(slotId) {
   if (legilimensSlotId && (legilimensSlotId === slotId || legilimensSlotId.replace('-4','') === slotId.replace('-4','')) && !G.slots[legilimensSlotId]) clearLegilimens();
   if (abilActive(slotId) && !dinkActive(slotId)) {
     // kurz warten damit das DOM fertig gebaut ist
-    setTimeout(() => setAbilityShimmer(slotId, true), 10);
+    // Zum FEUERZEITPUNKT erneut pruefen: setAbilityShimmer(true) registriert die Faehigkeit
+    // mit (abilSet). Nach Liiinks/Recast-Besitzerwechsel wurde sie synchron zurueckgesetzt -
+    // dieser verzoegerte Aufruf stellte sonst Schimmer UND Effekt wieder her.
+    setTimeout(() => { if (abilActive(slotId) && !dinkActive(slotId)) setAbilityShimmer(slotId, true); }, 10);
   }
   restoreGlibberIfActive(slotId);
   // Finns Chemie Unfall: geblockte Effektkarten muessen nach jedem Neuaufbau erneut
@@ -10892,11 +10968,14 @@ function checkPermanentAbilitiesAfterMove() {
     const origOwner = _abilOwnerByUid[uid];
     const nowOwner = parseInt((nowSlot.match(/^p(\d)/)||[])[1]||'0');
     if (origOwner !== undefined && nowOwner !== origOwner) {
-      // Karte hat den Besitzer gewechselt (Liiinks/Recast): Dauerfaehigkeit endet und der
-      // Glanz hoert auf. Muss AUCH beim Mitspieler passieren, sonst wirkt die Faehigkeit
-      // dort weiter (z.B. Lisas Umlenkung, Luis' 4/6-Schutz).
+      // Besitzerwechsel (Liiinks/Recast): Dauerfaehigkeit endet KOMPLETT - Registrierung,
+      // Schimmer und Sonderzustaende. Muss AUCH beim Mitspieler passieren.
       setAbilityShimmer(nowSlot, false);
       if (NET.mode === 'multi') netSend({t:'ability_shimmer', slotId: nowSlot, active: false});
+      activePermanentAbilities.delete(uid); delete _abilOwnerByUid[uid];
+      dinkelmehlSuppressed.delete(uid); glorianSuppressed.delete(uid);
+      if (legilimensSlotId === nowSlot) clearLegilimens();
+      delete schwammikaState[String(uid)];
     }
   });
   // Glorian
@@ -10904,8 +10983,10 @@ function checkPermanentAbilitiesAfterMove() {
     const gs = allBuw.find(s => G.slots[s] && actsAsBuwemon(G.slots[s], 'Glorian') && abilActive(s));
     if (!gs || parseInt((gs.match(/^p(\d)/)||[])[1]) !== glorianActiveSlot.ownerP) {
       glorianActiveSlot = null;
-      glorianSuppressedSlots().forEach(s => { dinkSet(s, false); if (abilActive(s)) setAbilityShimmer(s, true); });
+      const _rst3 = glorianSuppressedSlots().slice();
+      _rst3.forEach(s => { dinkSet(s, false); glorSuppSet(s, false); });
       glorianSuppressed.clear();
+      _rst3.forEach(s => { if (abilActive(s)) { setAbilityShimmer(s, true); reactivateLegilimensIfAlexerus(s); } });
     }
   }
   // Schwammika: prüfe ob noch beim selben Spieler
@@ -12233,7 +12314,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div id="game-version-label" style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v54g
+    v54k
   </div>
 </div>
 
@@ -12957,7 +13038,10 @@ function onNetData(d) {
       applySchwammikaCopies(_s.schw);
       const _abilSet0 = new Set(_s.abil), _dinkSet0 = new Set(_s.dink), _glorSet0 = new Set(_s.glor);
       activeAbilitySlots().forEach(sid => {
-        if (!_abilSet0.has(sid)) setAbilityShimmer(sid, false);
+        // Auch die REGISTRIERUNG entfernen (abilSet false) - nur den Schimmer zu loeschen
+        // reicht nicht, denn der Rebuild-Loop unten stellt ihn fuer alles, was noch in
+        // activePermanentAbilities steht, sofort wieder her (Liiinks/Recast-Besitzerwechsel).
+        if (!_abilSet0.has(sid)) { setAbilityShimmer(sid, false); abilSet(sid, false); }
       });
       [...dinkelmehlSuppressed].forEach(u => {
         const sid = _slotOfUid(u);
@@ -13219,6 +13303,10 @@ if (d.t === 'state4') {
     // die Kampfsituation wirklich beendet ist (max. ~2s), dann erst anzeigen.
     const _showIt = (tries) => {
       if (pendingAbility && tries < 20) { setTimeout(() => _showIt(tries+1), 100); return; }
+      // Laeuft nach Ablauf der Wartezeit IMMER NOCH eine Kampfsituation, den Info-Toast
+      // VERWERFEN statt anzeigen - sonst ueberschreibt er den Abwehr-Toast des Verteidigers
+      // (beide teilen sich dasselbe Toast-Element) und man kann sich nicht mehr wehren.
+      if (pendingAbility) return;
       showOutcomeToast(d.text, d.is4);
     };
     _showIt(0);
@@ -13288,9 +13376,15 @@ if (d.t === 'state4') {
   }
   if (d.t === 'color_hand_remove') {
     if (d.sender === NET.myPlayer) return;
-    applyColorHandRemove(d.hex, d.is4);
-    // State zurückschicken damit Aktivator die aktualisierte Hand sieht
-    if (d.is4) netSendState4(); else netSendState();
+    // VERZOEGERT ausfuehren: der Aktivator schickt direkt nach dieser Nachricht seinen
+    // State (mit dem autoritativen Banish). Erst den verarbeiten, DANN die eigenen
+    // Handkarten oben drauf pushen - sonst ueberschreiben sich die Banish-Stapel
+    // gegenseitig (Karten verschwinden oder landen doppelt).
+    setTimeout(() => {
+      applyColorHandRemove(d.hex, d.is4);
+      // State zurückschicken damit Aktivator die aktualisierte Hand sieht
+      if (d.is4) netSendState4(); else netSendState();
+    }, 400);
   }
   if (d.t === 'schicksal_start') {
     if (d.sender === NET.myPlayer) return;
@@ -13489,7 +13583,12 @@ if (d.t === 'state4') {
   }
   if (d.t === 'ability_shimmer') {
     setAbilityShimmer(d.slotId, d.active);
-    if (!d.active && legilimensSlotId === d.slotId) clearLegilimens();
+    // Nur wirklich clearen wenn Alexerus weg ist - bei blosser Pause (Glorian/Dinkelmehl)
+    // bleibt legilimensSlotId erhalten, damit der Waechter danach selbst wiederherstellt.
+    if (!d.active && legilimensSlotId === d.slotId) {
+      const _acd = G.slots[d.slotId];
+      if (!_acd || !actsAsBuwemon(_acd, 'Alexerus Snape')) clearLegilimens();
+    }
   }
   if (d.t === 'dink_cleared') {
     if (d.sender === NET.myPlayer) return;
@@ -13615,7 +13714,7 @@ if (d.t === 'state4') {
   if (d.t === 'grave_update') {
     if (d.sender === NET.myPlayer) return;
     if (d.is4) { G4.graves[d.player] = filterRemovedGrave(d.player, d.grave || []); updGrave4(d.player); }
-    else { G.graves[d.player] = d.grave || []; updGrave(d.player); }
+    else { G.graves[d.player] = filterRemovedGrave(d.player, d.grave || []); updGrave(d.player); }
   }
   if (d.t === 'owner_change_reset') {
     // slotIds sind logisch und damit fuer beide Clients identisch - die lokale uid
@@ -13979,6 +14078,21 @@ function applyDebugLpEditable() {
   // Ueber eine Body-Klasse, weil .automatik-mode .sandbox-only mit !important gesetzt
   // ist und inline-styles dagegen nicht ankommen.
   document.body.classList.toggle('debug-on', !!debugMode);
+  // Debug AN: das EIGENE LP-Anzeige-Feld direkt editierbar machen (wie im Sandbox-Modus).
+  // Sandbox verwaltet seine Editierbarkeit selbst - hier nicht anfassen.
+  if (sandboxMode) return;
+  const _is4d = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  const _myPd = _is4d ? myLogicalPlayer4p() : myLogicalPlayer2p();
+  const _lpEl = document.getElementById(physId('p'+_myPd)+'-lp'+(_is4d?'-4':''));
+  if (!_lpEl) return;
+  if (debugMode) {
+    _lpEl.contentEditable = 'true'; _lpEl.style.cursor = 'text';
+    _lpEl.onblur = () => (_is4d ? lpDirectEdit4(_myPd) : lpDirectEdit(_myPd));
+    _lpEl.onkeydown = (e) => (_is4d ? lpDirectKey4(e, _myPd) : lpDirectKey(e, _myPd));
+  } else {
+    _lpEl.contentEditable = 'false'; _lpEl.style.cursor = '';
+    _lpEl.onblur = null; _lpEl.onkeydown = null;
+  }
 }
 
 function toggleDebugMode() {
