@@ -974,7 +974,7 @@ body {
     <p class="sub">Gegen welchen Spieler soll die Fähigkeit eingesetzt werden?</p>
     <div id="verbot-target-btns" style="display:flex;flex-direction:column;gap:8px;width:100%;"></div>
     <div class="modal-footer">
-      <button onclick="document.getElementById('verbot-target-modal').classList.remove('open');">Abbrechen</button>
+      <button onclick="document.getElementById('verbot-target-modal').classList.remove('open'); if(typeof finishEineRundeNoch==='function') finishEineRundeNoch();">Abbrechen</button>
     </div>
   </div>
 </div>
@@ -1824,6 +1824,14 @@ function maybeStartTurn4p(p) {
 
 // Der Zug-beenden-Button ist physisch fest positioniert (immer derselbe Button-Slot),
 // aber WELCHEM logischen Spieler er gerade gehört hängt von der Perspektive ab.
+// Waehrend einer laufenden Kampfsituation darf der Zug NICHT weitergegeben werden - sonst
+// laeuft die Abwehr des Gegners ins Leere und der Zustand zerfaellt zwischen den Clients.
+function combatBlocksEndTurn(is4) {
+  if (sandboxMode || !pendingAbility) return false;
+  showTempInfoToast('Warte, bis die Kampfsituation beendet ist!', is4, 2000);
+  return true;
+}
+
 function endTurnPhysical(physP) {
   const logical = toLogicalId('p'+physP);
   endTurn(parseInt(logical.replace('p','')));
@@ -1831,6 +1839,7 @@ function endTurnPhysical(physP) {
 
 function endTurn(p) {
   if (TURN_2P !== p) return;
+  if (combatBlocksEndTurn(false)) return;
   clearWanzeReveal();
   clearDinkelmehlSuppression();
   ragequitBlockedUids.clear();
@@ -1872,6 +1881,7 @@ function endTurnPhysical4(physP) {
 
 function endTurn4(p) {
   if (TURN_4P !== p) return;
+  if (combatBlocksEndTurn(true)) return;
   clearWanzeReveal();
   clearDinkelmehlSuppression();
   ragequitBlockedUids.clear();
@@ -2431,6 +2441,8 @@ function openKontrollfreak4(btnEl){ openBrowser4('kontrollfreak',btnEl); }
 
 function closeBrowser(){
   document.getElementById('browser-modal').classList.remove('open');
+  // Popup manuell geschlossen ohne Karte zu nehmen -> "Eine Runde noch" jetzt ablegen.
+  if (typeof finishEineRundeNoch === 'function') finishEineRundeNoch();
   releaseAbilityBtn();
   if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) { updDeck4(); updBanish4(); updGrave4('p1'); updGrave4('p2'); updGrave4('p3'); updGrave4('p4'); }
   else { updGrave('p1'); updGrave('p2'); }
@@ -2778,6 +2790,8 @@ function openColorRemove(btnEl){
         G.banish.push(bcd);
         removeCardSynced(c);
       });
+      // Ich bin der Aktivator - nur ich darf gemeldete Karten in den Entferntstapel legen.
+      window._colorRemoveOwnerUntil = Date.now() + 15000;
       if (NET.mode==='multi') netSend({t:'color_hand_remove', hex:cg.hex, is4:false, sender:NET.myPlayer});
       // FRIEDHOEFE werden NUR im "FRIEDHOEFE"-Block weiter unten behandelt - der setzt
       // markGraveRemoved + grave_lock + grave_update. Die fruehere Doppel-Behandlung hier
@@ -2820,9 +2834,10 @@ function openColorRemove(btnEl){
         // Wir wissen nicht welche davon diese Farbe haben - State-Update vom Gegner kommt via netSendState
         // Aber für sofortige Anzeige: renderSimulatedHand wird durch State-Update getriggert
       });
-      const txt = 'Raum-Zeit-Genozid: Alle ' + cg.label + '-Karten wurden entfernt!';
+      const txt = 'Raum-Zeit-Genozid: Alle ' + coloredAbilName(cg.label, cg.hex) + '-Karten wurden entfernt!';
       showOutcomeToast(txt, false);
       netSend({t:'outcome_toast', text:txt, is4:false});
+    window._colorRemoveOwnerUntil = Date.now() + 15000; // ich fuehre den Entferntstapel
       netSend({t:'color_hand_remove', hex:cg.hex, is4:false, sender:NET.myPlayer});
       netSendState();
     };
@@ -2909,7 +2924,8 @@ function schwammikaCopiesAsSlots() {
   return Object.keys(schwammikaState).map(uid => {
     const s = _slotOfUid(uid);
     return s ? { slotId: s, copiedAbility: schwammikaState[uid].copiedAbility,
-                 copiedBuwemon: schwammikaState[uid].copiedBuwemon } : null;
+                 copiedBuwemon: schwammikaState[uid].copiedBuwemon,
+                 ts: schwammikaState[uid].ts || 0 } : null;
   }).filter(Boolean);
 }
 function applySchwammikaCopies(list) {
@@ -2917,8 +2933,15 @@ function applySchwammikaCopies(list) {
   (list || []).forEach(e => {
     const u = _uidAt(e.slotId);
     if (u === null) return;
-    schwammikaState[u] = { copiedAbility: e.copiedAbility, copiedBuwemon: e.copiedBuwemon, ownerSlotId: e.slotId };
     keep.add(u);
+    // ZEITSTEMPEL-SCHUTZ: Ein noch unterwegs befindlicher State des Mitspielers traegt den
+    // ALTEN Kopierstand. Ohne diesen Vergleich ueberschrieb er die gerade frisch kopierte
+    // Faehigkeit - Schwammika fiel dadurch nach Nachschlag auf die alte Kopie zurueck.
+    const _cur = schwammikaState[u];
+    const _remoteTs = e.ts || 0;
+    if (_cur && (_cur.ts || 0) > _remoteTs) return; // eigener Stand ist neuer -> behalten
+    schwammikaState[u] = { copiedAbility: e.copiedAbility, copiedBuwemon: e.copiedBuwemon,
+                           ownerSlotId: e.slotId, ts: _remoteTs };
   });
   Object.keys(schwammikaState).forEach(u => { if (!keep.has(u)) delete schwammikaState[u]; });
 }
@@ -3061,18 +3084,27 @@ function beginAbilityActivation(el, abilityKey, abilityName, resolveFn, defender
   const data = {
     is4, activatorP, activatorName,
     cardName: el.dataset.name, cardColor: el.dataset.color,
+    cardType: el.dataset.ctype || null, // fuer die "(Effekt)"/"(Fähigkeit)"-Kennzeichnung
     activatorUid: el.dataset.uid !== undefined ? parseInt(el.dataset.uid) : null,
     slotId, abilityKey, abilityName, defenderSlotId: defenderSlotId || null,
     defenderName: (extra && extra.defenderName) || null,
     defenderColor: (extra && extra.defenderColor) || null,
     extraText: (extra && extra.extraText) || '',
+    extraHtml: (extra && extra.extraHtml) || '', // FERTIGES HTML - wird NICHT escaped
+
     isAttack: abilityKey === 'angriff' || abilityKey === 'drogen' || abilityKey === 'clari_phase2',
     isClariPhase1: abilityKey === 'clari_phase1',
     isDrogen: (extra && extra.isDrogen) || false,
   };
   if (NET.mode === 'multi') netSend({t:'ability_pending', ...data, sender: NET.myPlayer});
   // Zug-Regel: Fähigkeit ODER Angriff als genutzt markieren (verbraucht die Buwemonaktion)
-  if ((isBuwAbility || abilityKey === 'angriff') && !sandboxMode && !debugMode && !window._claripassBypass && !window._schwActionOpen) markAbilityUsed(slotId, abilityKey);
+  // _schwActionOpen fasst Saugkraft + Folgeaktion zu EINER Aktion zusammen - frueher wurde
+  // dabei aber GAR NICHT gezaehlt, dadurch waren Schwammikas Aktionen unbegrenzt. Jetzt:
+  // genau EINMAL pro Schwammika-Aktion zaehlen, alle Folgeschritte bleiben frei.
+  if ((isBuwAbility || abilityKey === 'angriff') && !sandboxMode && !debugMode && !window._claripassBypass) {
+    if (!window._schwActionOpen) markAbilityUsed(slotId, abilityKey);
+    else if (!window._schwActionCounted) { window._schwActionCounted = true; markAbilityUsed(slotId, abilityKey); }
+  }
   startAbilityReactionWindow(data, true, resolveFn);
 }
 
@@ -3115,8 +3147,12 @@ function openAbilityRound(phase) {
   const iAmActivator = inMulti && (NET.myPlayer === data.activatorP);
 
   // Kennzeichnen, ob es sich um einen Angriff oder eine Faehigkeit handelt
-  const _kindSuffix = data.isAttack ? ' (Angriff)' : ' (Fähigkeit)';
-  const abilitySpan = coloredAbilName(data.abilityName, data.cardColor) + _kindSuffix;
+  // Effektkarten sind keine Buwemon-Faehigkeiten - sie werden als "(Effekt)" gekennzeichnet.
+  const _isEffCard = !data.isAttack && (data.cardType === 'eff' || data.cardCtype === 'eff'
+    || /-eff\d/.test(String(data.slotId || '')));
+  const _kindSuffix = data.isAttack ? ' (Angriff)' : (_isEffCard ? ' (Effekt)' : ' (Fähigkeit)');
+  const abilitySpan = coloredAbilName(data.abilityName, data.cardColor)
+    + (data.extraHtml || '') + _kindSuffix;
   const cardSpan = coloredAbilName(data.cardName, data.cardColor);
   const defenderSpan = data.defenderName ? coloredAbilName(data.defenderName, data.defenderColor) : '';
   const extraTxt = escHtml(data.extraText || '');
@@ -3269,6 +3305,11 @@ function cleanUpOwnAbilityCards(playedCards, killSlotId, killOwnerP, is4, cleanA
     // Karte aus dem Slot entfernen - das machen ALLE Clients (Slot muss überall leer sein)
     // Ausnahme: Glaskuppel bleibt immer im Slot (sie hat ihre eigene Ablauf-Mechanik)
     if (pc.cardName === 'Glaskuppel' || pc.cardName === 'Glaskuppel Ereignis') return;
+    // "Eine Runde noch" bleibt liegen, bis ihr Popup geschlossen ist - entweder durch die
+    // Wahl einer Buwemonkarte (openEineRundeNochGrave raeumt selbst auf) oder durch
+    // manuelles Schliessen (finishEineRundeNoch). Frueher wanderte sie sofort in den
+    // Friedhof, obwohl das Popup noch offen war.
+    if (pc.cardName === 'Eine Runde noch' && !returnToHand) return;
     const cd = G.slots[pc.slotId];
     // Bei returnToHand: Karten-Info aus pc nutzen falls Slot schon leer (durch vorherigen State-Sync)
     const cdData = cd || (returnToHand && pc.cardColor ? {name: pc.cardName, color: pc.cardColor, type: pc.cardType || 'eff', file: pc.cardFile || ''} : null);
@@ -3429,6 +3470,27 @@ function tryConfirmAblehntTarget(equipIdx, targetSlotId) {
   return true;
 }
 
+// Kette komplett NEU BERECHNEN aus den gespielten Karten. Ein "Ablehnt gegen Ablehnt"
+// hebt die Wirkung der getroffenen Karte wirklich auf - frueher wurde das Ziel nur
+// gemerkt, chainBlocked/combatDefense blieben aber auf dem Stand, den das (inzwischen
+// aufgehobene) Ablehnt hinterlassen hatte. Beispiel: Stein -> Tut mir leid -> Ablehnt ->
+// Ablehnt-auf-Ablehnt endete faelschlich OHNE Tut-mir-leid-Wirkung.
+// Karten mit ablehntOf zielen auf etwas Bestimmtes und schalten die Kette NICHT um.
+function recomputeCombatChain(pa) {
+  if (!pa || !pa.isAttack) return;
+  const cancelled = new Set(pa.ablehntCardTargets || []);
+  let chainBlocked = false, combatDefense = null;
+  (pa.playedCards || []).forEach(pc => {
+    if (pc.slotId && cancelled.has(pc.slotId)) return; // aufgehoben -> voellig wirkungslos
+    if (pc.ablehntOf) return;                          // gezieltes Ablehnt: kein Umschalten
+    if (pc.cardName === 'Ablehnt') { chainBlocked = !chainBlocked; combatDefense = null; }
+    else if (pc.cardName === FOURACEFOUR_NAME) { /* eigene Auswertung in resolveAttack */ }
+    else { combatDefense = { name: pc.cardName, ownerP: pc.player, colorHex: pc.cardColor }; chainBlocked = true; }
+  });
+  pa.chainBlocked = chainBlocked;
+  pa.combatDefense = combatDefense;
+}
+
 // "Ablehnt gegen Ablehnt": eine bereits gespielte Ablehnt-Karte als Ziel markieren.
 // Damit wird deren Wirkung aufgehoben, sobald die Kette aufgeloest wird.
 function confirmAblehntCardTarget(effSlotId) {
@@ -3444,6 +3506,7 @@ function confirmAblehntCardTarget(effSlotId) {
     ablehntOf: 'Ablehnt' });
   pendingAbility.lastActor = sel.player;
   pendingAbility.chainStep++;
+  recomputeCombatChain(pendingAbility); // Wirkung des getroffenen Ablehnt zurueckdrehen
   if (NET.mode === 'multi') {
     netSend({t:'ability_chain_play', chainBlocked: pendingAbility.chainBlocked, chainStep: pendingAbility.chainStep,
       lastActor: pendingAbility.lastActor, playedCards: pendingAbility.playedCards,
@@ -3519,6 +3582,17 @@ function undoCombatEquip(pa) {
   renderSlot(pa.defenderSlotId);
 }
 
+// Ist gerade ein "Tut mir leid..." als aktive Verteidigung im Spiel? Dann sind die
+// normalen Verteidigungskarten (Stein/Calgon/Glaskuppel/RGB/UwU) wirkungslos und duerfen
+// nicht gedockt werden - nur Ablehnt und FourAceFour kontern es.
+function blocksTutMirLeidCounter(cardName) {
+  if (sandboxMode || debugMode) return false;
+  if (!pendingAbility || !pendingAbility.isAttack) return false;
+  const cdf = pendingAbility.combatDefense;
+  if (!cdf || cdf.name !== 'Tut mir leid\u2026') return false;
+  return ATTACK_DEFENSE_NAMES.includes(cardName);
+}
+
 function checkAbilityBlock(cd, slotId) {
   if (!pendingAbility || !cd) return;
   if (!/-eff\d/.test(slotId)) return;
@@ -3538,6 +3612,7 @@ function checkAbilityBlock(cd, slotId) {
     validNames = isFirstStep ? ABILITY_FIRST_RESPONSE_NAMES : ABILITY_CHAIN_RESPONSE_NAMES;
   }
   if (!validNames.includes(cd.name)) return;
+  if (blocksTutMirLeidCounter(cd.name)) return; // nur Ablehnt/FourAceFour kontern Tut mir leid
   // Greift ein EX-Buwemon an, sind Calgon/Stein/Tut mir leid/RGB/Ablehnt wirkungslos.
   // Erlaubt bleiben nur Glaskuppel (auch als Ereigniskarte), UwU und FourAceFour -
   // sowie das Ausruesten von Clubmate/Clubmate Ereignis/13er Bogen (eigener Pfad).
@@ -3623,6 +3698,16 @@ function checkAbilityBlock(cd, slotId) {
 function finalizeAbilityChain(killsBuwemon) {
   if (!pendingAbility) return;
   const data = pendingAbility;
+  // FourAceFour beendet alles sofort - das geht so schnell, dass man es leicht uebersieht.
+  // Deshalb bei JEDEM Spieler (die Funktion laeuft auf allen Clients) einen 3s-Hinweis.
+  {
+    const _faf = (data.playedCards || []).filter(pc => pc.cardName === FOURACEFOUR_NAME).pop();
+    if (_faf) {
+      const _fp = parseInt(String(_faf.player).replace('p','')) || _faf.player;
+      showTempInfoToast('FourAceFour-Feuer-Reverse-Blöff von Spieler ' + _fp + ' entkräftet alles',
+                        !!data.is4 || !!fourPlayerMode, 3000);
+    }
+  }
   const wasBlocked = data.chainBlocked;
   const playedCards = data.playedCards;
   const killSlotId = killsBuwemon ? data.slotId : null;
@@ -3745,8 +3830,12 @@ function beginAttackSelection(btn, cardEl) {
   const attackerP = parseInt((slotId.match(/^p(\d)/)||[])[1] || '1');
   const attackName = CARD_ATTACKS[cardEl.dataset.name] || 'Angriff';
   const slotData = G.slots[slotId];
-  const attackPower = (CARD_ATTACK_POWER[cardEl.dataset.name] || 0) + computeEquipBonus(cardEl.dataset.color, slotData ? slotData.equipped : null, attackerP);
-  pendingAttackSelection = { cardEl, slotId, attackerP, is4, attackName, attackPower };
+  const _apBase = CARD_ATTACK_POWER[cardEl.dataset.name] || 0;
+  const attackPower = _apBase + computeEquipBonus(cardEl.dataset.color, slotData ? slotData.equipped : null, attackerP, _apBase);
+  // isPlainAttack: normaler Buwemon-Angriff -> es gilt exakt die Popup-Zahl.
+  // Faehigkeits-Angriffe (Drogen 220, Ueberspringen 200) setzen das Flag NICHT, weil dort
+  // ein Sonderwert statt CARD_ATTACK_POWER gilt.
+  pendingAttackSelection = { cardEl, slotId, attackerP, is4, attackName, attackPower, isPlainAttack: true };
   showTargetSelectToast(is4);
 }
 
@@ -3791,9 +3880,17 @@ function confirmAttackTarget(lsid, targetCd) {
   const realLsid = _lisaTarget;
   const realCd = G.slots[realLsid] || targetCd;
   const preEquipCount = (realCd.equipped || []).length;
-  // Ausruestungs-Bonus zum Angriffsstart merken - waehrend des Kampfes dazugekommene
-  // Karten (Konter-Clubmate) werden spaeter als DIFFERENZ addiert.
-  sel.equipBonusAtStart = computeEquipBonus(realCd.color, realCd.equipped, sel.attackerP);
+  // Ausruestungs-Bonus des ANGREIFERS zum Angriffsstart merken - waehrend des Kampfes
+  // dazugekommene Karten (Konter-Clubmate) werden spaeter als DIFFERENZ addiert.
+  // FRUEHER stand hier realCd - das ist die Karte des VERTEIDIGERS. resolveAttack rechnet
+  // "attackPower + (Angreifer-Bonus - equipBonusAtStart)", also wurde der eigene
+  // Ausruestungs-Bonus DOPPELT gezaehlt und der Verteidiger-Bonus obendrein abgezogen
+  // (200 vs 180 ergab 60 statt 20 LP). Die Popup-Werte bleiben unveraendert - nur diese
+  // Startgroesse muss vom Angreifer kommen, damit die Differenz sauber bei 0 startet.
+  const _atkCdStart = G.slots[toLogicalId(sel.slotId)];
+  sel.equipBonusAtStart = _atkCdStart
+    ? computeEquipBonus(_atkCdStart.color, _atkCdStart.equipped, sel.attackerP, CARD_ATTACK_POWER[_atkCdStart.name] || 0)
+    : 0;
   pendingAttackSelection = null;
   // Lisa-Meldung (falls umgeleitet) wird als extraText direkt in die Kampfsituation
   // eingeblendet statt als konkurrierender Standalone-Toast.
@@ -3952,15 +4049,52 @@ let activeGlaskuppel4p = {}; // {1: slotId, ...}
 // Laeuft gerade irgendein Zielauswahl-Event? Deren Toast darf nicht automatisch
 // weggeraeumt werden - er bleibt, bis der Spieler ein Ziel gewaehlt oder abgebrochen hat.
 function anyTargetSelectOpen() {
+  // Alle Zielauswahlen muessen hier stehen. Fehlt eine, laeuft waehrend ihrer Auswahl der
+  // Schwammika-Bypass aus und die Folgeaktion gilt faelschlich als ZWEITE Buwemonaktion
+  // (so war es bei Phuelueguelueum/Doener schneiden, Meme Belaestigung, Spuelung, Treue ...).
   const flags = ['pendingBaristaTarget','pendingStirliTarget','pendingSaugkraft',
     'pendingAblehntSelect','pendingClariSSIO','pendingAntika','pendingNBK',
-    'pendingOwnTurnTarget','pendingFourAceFourOwnTurn','pendingAttackSelection'];
+    'pendingOwnTurnTarget','pendingFourAceFourOwnTurn','pendingAttackSelection',
+    'pendingDoener','pendingMemeBel','pendingSpuelung','pendingTreue','pendingMarie',
+    'pendingGottkomplex','pendingMarcopter','pendingWanze','pendingSummonCard'];
   // Offenes Farbwahl-Modal (Picky Eating/Raumzeitgenozid) zaehlt ebenfalls als laufende
   // Zielauswahl - sonst laeuft der Schwammika-Bypass waehrend der Farbwahl aus und die
   // Folge-Kampfsituation gilt faelschlich als zweite Buwemonaktion.
   const _crm = document.getElementById('color-remove-modal');
   if (_crm && _crm.classList.contains('open')) return true;
   return flags.some(f => { try { return !!eval(f); } catch(e) { return false; } });
+}
+
+// EIGENSTAENDIGER Kurz-Toast. Nutzt bewusst NICHT das abil-toast-Element (das teilen sich
+// Kampfsituation und Ergebnis-Toast - ein Info-Hinweis wuerde die laufende Kampfsituation
+// verdraengen), ist aber sonst EXAKT der gleiche Toast: gleicher Elternknoten (und damit
+// dieselbe Letterbox-Skalierung - vorher hing er an documentElement und war dadurch viel
+// zu gross), gleiche Klassen, gleiche Inline-Geometrie, gleiche Schriftgroesse.
+function showTempInfoToast(text, is4, ms) {
+  const suf = is4 ? '-4' : '';
+  const id = 'temp-info-toast' + suf;
+  let el = document.getElementById(id);
+  if (!el) {
+    const ref = document.getElementById('abil-toast' + suf);
+    if (!ref) return;
+    el = document.createElement('div');
+    el.id = id;
+    el.className = ref.className;                        // .abil-toast -> identische Optik
+    el.setAttribute('style', ref.getAttribute('style') || ''); // identische Position/Breite
+    // Muss UEBER dem Kampfsituations-Toast liegen (gleicher Container, gleiche Position),
+    // damit der Hinweis sichtbar ist, ohne den Kampf-Toast zu ersetzen.
+    el.style.zIndex = '3000';
+    el.style.marginTop = '-64px'; // knapp oberhalb des Kampf-Toasts
+    const t = document.createElement('div');
+    t.className = 'abil-toast-title';                    // identische Schriftgroesse
+    t.id = id + '-title';
+    el.appendChild(t);
+    ref.parentNode.insertBefore(el, ref.nextSibling);    // SELBER Container = selbe Skalierung
+  }
+  document.getElementById(id + '-title').innerHTML = text;
+  el.classList.add('open');
+  clearTimeout(window._tempInfoToastTimer);
+  window._tempInfoToastTimer = setTimeout(() => { el.classList.remove('open'); }, ms || 2000);
 }
 
 function showOutcomeToast(text, is4) {
@@ -4180,10 +4314,15 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
   }
   // Nach einer bereits fehlgeschlagenen Muenster-Pruefung nicht erneut wuerfeln -
   // sonst meldet die Folgerunde wieder "Muenster hat gewirkt" statt "Calgon".
+  // Das Flag haengt am ANGRIFF (sel), nicht an einem Timer: der globale _luisAlreadyRolled
+  // wurde 6s nach Kettenende zurueckgesetzt, die zweite Chance dauert aber laenger -
+  // dadurch wuerfelte Muenster in der Folgerunde erneut. sel ueberlebt reopenDefenseRound.
   if (actsAsBuwemon(defCd, 'Luis Münsters') && abilActive(defenderSlotId) && !dinkActive(defenderSlotId)
+      && !sel._luisRolled
       && !window._luisAlreadyRolled
       && !(resolveInfo && resolveInfo.combatDefense)) {
     const luisBlocks = Math.random() < 4/6;
+    sel._luisRolled = true; // Muenster ist innerhalb dieses Angriffs verbraucht
     const luisTxt = luisBlocks ? 'Münster-Effekt: Angriff abgewehrt!' : 'Münster-Effekt hat NICHT gewirkt – Angriff wird durchgeführt.';
     showOutcomeToast(luisTxt, is4);
     // resolveAttack laeuft NUR beim Angreifer - ohne netSend saehe der Verteidiger das
@@ -4195,6 +4334,7 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
       // (Calgon, Glaskuppel ...), bevor der Angriff durchgeht.
       window._luisRetryDone = true;
       window._luisAlreadyRolled = true; // in der Folgerunde nicht erneut wuerfeln
+      sel._luisRolled = true;            // dauerhaft fuer GENAU diesen Angriff
       setTimeout(() => {
         window._luisRetryDone = false;
         if (pendingAbility) return;
@@ -4251,7 +4391,13 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
     } else if (defense.name === 'UwU ') {
       atkPowerOverride = sel.attackPower - 30;
       if (atkColor === '#008899') attackerDiesAfterwards = true; // Angreifer ist Cyan
+      { const _t = (atkColor === '#008899')
+          ? '<b>UwU</b> wirkt: -30 AP und der CYANE Angreifer stirbt danach!'
+          : '<b>UwU</b> wirkt: der Angreifer verliert 30 AP!';
+        setTimeout(() => { showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t, is4}); }, 600); }
     } else if (defense.name === 'Tut mir leid\u2026') {
+      { const _t = 'Der Angriff wurde zurückgenommen. Sämtliche beteiligte Effektkarten sind wieder auf die Hand ihres Besitzers zurückgekehrt.';
+        setTimeout(() => { showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t, is4}); }, 600); }
       // Zweiter Angriff der Zwillingsattacke bleibt auch hier bestehen
       if (sel.cardEl && sel.cardEl._afterFn && G.slots[sel.slotId]) {
         const fn = sel.cardEl._afterFn; sel.cardEl._afterFn = null; setTimeout(() => fn(), 3200);
@@ -4263,7 +4409,10 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
     } else if (defense.name === 'Glaskuppel') {
       lpProtected = true;
       if (atkColor === '#aa9900' && Math.random() < 0.5) lpProtected = false; // gelber Angreifer durchbricht mit 50%
-      if (atkColor === '#aa9900') { const _t = lpProtected ? '<b>Glaskuppel</b> hält stand! (50%)' : '<b>Glaskuppel</b> wurde durchbrochen! (50%)'; setTimeout(() => { showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t, is4}); }, 600); }
+      { const _t = (atkColor === '#aa9900')
+          ? (lpProtected ? '<b>Glaskuppel</b> hält stand! (50%)' : '<b>Glaskuppel</b> wurde durchbrochen! (50%)')
+          : '<b>Glaskuppel</b> wirkt: die LP sind geschützt!';
+        setTimeout(() => { showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t, is4}); }, 600); }
     }
   }
 
@@ -4294,18 +4443,24 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
     return;
   }
 
-  const defPower = (CARD_ATTACK_POWER[defCd.name] || 0) + computeEquipBonus(defCd.color, defCd.equipped, defenderP);
+  // Verteidiger-AP: exakt die Zahl aus seinem Vergroesserungs-Popup.
+  const defPower = popupAttackPower(defenderSlotId);
   // Angriffskraft FRISCH berechnen - der Angreifer kann sich waehrend der Kampfsituation
   // selbst noch eine Clubmate/13er Bogen ausruesten (Konter). sel.attackPower ist der
   // eingefrorene Wert vom Angriffsstart und wuerde diesen Bonus verschlucken.
   let _atkPowerLive = sel.attackPower;
-  {
-    // NUR den waehrend des Kampfes dazugekommenen Ausruestungs-Bonus addieren.
-    // sel.attackPower bleibt die Basis - bei Faehigkeits-Angriffen (Drogen 220,
-    // Ueberspringen 200) ist das der korrekte Sonderwert, NICHT CARD_ATTACK_POWER.
-    const _aCd = G.slots[sel.slotId];
+  if (sel.isPlainAttack) {
+    // NORMALER ANGRIFF: Es gilt kompromisslos die Zahl aus dem Vergroesserungs-Popup,
+    // live neu berechnet. Kein Zwischenwert, keine Bonus-Differenz - genau dadurch war
+    // der Schaden bei Ramon (lila, Clubmate +40) frueher zu hoch.
+    _atkPowerLive = popupAttackPower(sel.slotId);
+  } else {
+    // FAEHIGKEITS-ANGRIFF (Drogen 220, Ueberspringen 200): sel.attackPower ist ein
+    // Sonderwert statt CARD_ATTACK_POWER - hier nur den waehrend des Kampfes
+    // dazugekommenen Ausruestungs-Bonus als DIFFERENZ addieren.
+    const _aCd = G.slots[toLogicalId(sel.slotId)];
     if (_aCd) {
-      const _nowBonus = computeEquipBonus(_aCd.color, _aCd.equipped, sel.attackerP);
+      const _nowBonus = computeEquipBonus(_aCd.color, _aCd.equipped, sel.attackerP, CARD_ATTACK_POWER[_aCd.name] || 0);
       const _preBonus = (sel.equipBonusAtStart !== undefined) ? sel.equipBonusAtStart : _nowBonus;
       _atkPowerLive = sel.attackPower + (_nowBonus - _preBonus);
     }
@@ -4403,6 +4558,24 @@ const selfMovedBlockedUids = new Set();
 // AUSNAHME: Giraffael/Clarry, die sich durch ihre EIGENE Faehigkeit verschoben haben
 // (selfMovedBlockedUids) - deren Faehigkeitsbutton bleibt verblasst.
 // Synchronisiert wird ueber LOGISCHE SLOT-IDs, weil uids zwischen den Clients divergieren.
+// Kurzzeitsperre gegen das Wieder-Auferstehen zurueckgesetzter Faehigkeiten.
+// Der State-Sync MERGED permAbilityUsed (nur hinzufuegen) - ein noch unterwegs
+// befindlicher Stand des Mitspielers trug die alte UID und machte den Reset sofort
+// rueckgaengig. Deshalb wirkten nach Liiinks/Recast nur manche Buttons zurueckgesetzt.
+const _permResetKeys = new Map(); // uid -> Zeitpunkt
+const _PERM_RESET_LOCK_MS = 8000;
+function markPermReset(uid) { _permResetKeys.set(String(uid), Date.now()); }
+function isPermResetLocked(uid) {
+  const t = _permResetKeys.get(String(uid));
+  if (t === undefined) return false;
+  if (Date.now() - t > _PERM_RESET_LOCK_MS) { _permResetKeys.delete(String(uid)); return false; }
+  return true;
+}
+// Merge aus einem fremden State: gesperrte UIDs NICHT wieder aufnehmen.
+function mergePermAbilityUsed(list) {
+  (list || []).forEach(uid => { if (!isPermResetLocked(uid)) permanentAbilityUsed.add(uid); });
+}
+
 function resetOwnerChangedCards(slots, preOwners) {
   const changed = [];
   slots.forEach(s => {
@@ -4428,6 +4601,9 @@ function resetOwnerChangedCards(slots, preOwners) {
     // Verbrauchte Faehigkeiten IMMER freigeben - auch wenn die Karte beim selben
     // Spieler gelandet ist (bei Liiinks rotiert das gesamte Feld).
     permanentAbilityUsed.delete(uid);
+    // OHNE diese Sperre trug der naechste (merge-only) State des Mitspielers die UID
+    // sofort wieder ein und der Button blieb verblasst - genau das war Punkt 23.
+    markPermReset(uid);
     // ALLE Verbrauchs-Eintraege dieser Karte loeschen - egal unter welchem Schluessel
     // (uid:... / slot:... / mit Faehigkeitsnamen dahinter). Vorher griff nur indexOf===0.
     Object.keys(abilityUsesThisLife).forEach(k => {
@@ -4456,7 +4632,9 @@ function _resetMovedOwnerAbilities(slots, preOwners) {
     const now = (s.match(/^p\d/)||[''])[0];
     if (pre && pre !== now) {
       permanentAbilityUsed.delete(String(cd.uid));
+      markPermReset(cd.uid); // gegen den merge-only State-Sync absichern
       delete abilityUsesThisLife['uid:'+cd.uid];
+      setAbilityShimmer(s, false); abilSet(s, false); // auch Dauerfaehigkeiten zuruecksetzen
       if (NET.mode === 'multi') netSend({t:'perm_ability_reset', uid: String(cd.uid), slotId: s});
     }
   });
@@ -4918,7 +5096,8 @@ function beginClariSSIO(btn, cardEl) {
       if (!hit) return;
       setTimeout(() => {
         const clariCd = G.slots[ownSlot];
-        const clariPower = clariCd ? (CARD_ATTACK_POWER[clariCd.name] || 140) + computeEquipBonus(clariCd.color, clariCd.equipped, activatorP) : 140;
+        const _clBase = clariCd ? (CARD_ATTACK_POWER[clariCd.name] || 140) : 140;
+        const clariPower = clariCd ? _clBase + computeEquipBonus(clariCd.color, clariCd.equipped, activatorP, _clBase) : 140;
         pendingAttackSelection = {
           cardEl, slotId: ownSlot, is4,
           attackerP: activatorP, attackPower: clariPower,
@@ -4987,6 +5166,17 @@ function resolveAntika(activatorP, targetP, is4) {
   // bliebe cd null und es passierte kommentarlos gar nichts. WICHTIG: randIdx muss der
   // Index in der ECHTEN Hand sein (nicht in der gefilterten Liste), weil der Ziel-Client
   // ueber diesen Index die richtige Karte entfernt.
+  // WICHTIG: NICHT ueber G.cards filtern. Die Handkarten des Gegners existieren beim
+  // Aktivator gar nicht als Elemente (die Hand ist verdeckt) - dadurch war die Auswahl
+  // leer bzw. traf eine fremde Karte, und der Aktivator bekam eine Karte "aus dem Nichts".
+  // Im Mehrspielermodus bestimmt deshalb der BESTOHLENE Client die Karte und meldet sie
+  // zurueck; nur er kennt seine Hand wirklich.
+  if (NET.mode === 'multi' && targetP !== (is4 ? myLogicalPlayer4p() : myLogicalPlayer2p())) {
+    const reqIdx = Math.floor(Math.random() * hand.length);
+    netSend({t:'antika_request', targetP, activatorP, is4, cardIdx: reqIdx});
+    showOutcomeToast('Antika klaut eine Karte von ' + lpOptPlayerName(targetP, is4), is4);
+    return;
+  }
   const drawableIdx = hand.map((u,i)=>i).filter(i => G.cards.some(c => parseInt(c.dataset.uid) === hand[i]));
   if (!drawableIdx.length) { showOutcomeToast('Keine klaubare Handkarte gefunden!', is4); return; }
   const randIdx = drawableIdx[Math.floor(Math.random() * drawableIdx.length)];
@@ -5501,6 +5691,11 @@ document.addEventListener('pointerdown', (e) => {
 function resolveMarie(activatorP, targetP, is4) {
   if (NET.mode === 'multi' && NET.myPlayer !== activatorP) return;
   marieRevealState = { activatorP, targetP, is4 };
+  // Solange der Aktivator die Handkarten offen sieht, soll das auch am Statusfeld des
+  // BETROFFENEN Spielers stehen. Unbeteiligte sehen weder Status noch Karten - deshalb
+  // eine gezielte Nachricht statt einer globalen Statusaenderung.
+  updateRevealStatus(targetP, true, is4);
+  if (NET.mode === 'multi') netSend({t:'marie_reveal', targetP, is4, on:true});
   const physPfx = physId('p'+targetP);
   const suf = is4 ? '-4' : '';
   const handEl = document.getElementById(physPfx+'-hand'+suf);
@@ -5539,7 +5734,12 @@ function resolveMarie(activatorP, targetP, is4) {
       if (is4) { if(!handOrderByPlayer4p[activatorP])handOrderByPlayer4p[activatorP]=[]; handOrderByPlayer4p[activatorP].push(uid2); if(activatorP===myLogicalPlayer4p())layoutMyHand4(); else{el2.style.display='none';renderSimulatedHand('p'+activatorP,handCardsFromUids(handOrderByPlayer4p[activatorP]),true);} }
       else { if(!handOrderByPlayer2p[activatorP])handOrderByPlayer2p[activatorP]=[]; handOrderByPlayer2p[activatorP].push(uid2); if(activatorP===myLogicalPlayer2p())layoutMyHand(); else{el2.style.display='none';renderSimulatedHand('p'+activatorP,handCardsFromUids(handOrderByPlayer2p[activatorP]),false);} }
       if (NET.mode==='multi') netSend({t:'antika_steal', cardIdx, cardName:cd.name, targetP, activatorP, is4, cd, newUid:uid2});
+      // ERST clearMarieReveal, DANN neu aufbauen: renderSimulatedHand steigt sofort aus,
+      // solange marieRevealState auf diesen Spieler zeigt - dadurch blieb die Anzahl bei 5
+      // statt 4 stehen, obwohl die Karte schon geklaut war.
       clearMarieReveal();
+      renderSimulatedHand('p'+targetP,
+        handCardsFromUids(is4 ? handOrderByPlayer4p[targetP] : handOrderByPlayer2p[targetP]), is4);
       if (NET.mode==='multi') { is4?netSendState4():netSendState(); }
     };
   });
@@ -5550,6 +5750,9 @@ function clearMarieReveal() {
   if (!marieRevealState) return;
   const { targetP, is4 } = marieRevealState;
   marieRevealState = null;
+  // Statusfeld zurueck auf den echten Reveal-Zustand des Spielers.
+  updateRevealStatus(targetP, !!(G.reveal && G.reveal[targetP]), is4);
+  if (NET.mode === 'multi') netSend({t:'marie_reveal', targetP, is4, on:false});
   const physPfx = physId('p'+targetP);
   const suf = is4 ? '-4' : '';
   const handEl = document.getElementById(physPfx+'-hand'+suf);
@@ -6315,7 +6518,8 @@ function beginZwillingsattacke(btn, cardEl) {
 function startZwillingsAngriff(cardEl, slotId, is4, afterFn) {
   const slotData = G.slots[slotId];
   if (!slotData) return;
-  const attackPower = (CARD_ATTACK_POWER[slotData.name] || 0) + computeEquipBonus(slotData.color, slotData.equipped);
+  const _zwBase = CARD_ATTACK_POWER[slotData.name] || 0;
+  const attackPower = _zwBase + computeEquipBonus(slotData.color, slotData.equipped, undefined, _zwBase);
   const attackName = CARD_ATTACKS[slotData.name] || 'Zwillingsattacke';
   pendingAttackSelection = {
     cardEl, slotId, is4,
@@ -6323,6 +6527,7 @@ function startZwillingsAngriff(cardEl, slotId, is4, afterFn) {
     attackPower,
     attackName,
     afterFn,
+    isPlainAttack: true, // normaler Angriff -> es gilt die Popup-Zahl
   };
   showTargetSelectToast(is4);
 }
@@ -6509,7 +6714,9 @@ function tryConfirmSaugkraft(lsid, cd) {
   const abilName = CARD_ABILITIES[cd.name];
   const schwCd = G.slots[schwSlotId];
   const schwUid = schwCd ? (schwCd.uid !== undefined ? String(schwCd.uid) : schwSlotId) : schwSlotId;
-  schwammikaState[schwUid] = { copiedAbility: abilName, copiedBuwemon: cd.name, ownerSlotId: schwSlotId };
+  // ts: markiert diesen Kopierstand als den neuesten - schuetzt vor aelteren States
+  // des Mitspielers, die sonst die gerade kopierte Faehigkeit wieder ueberschreiben.
+  schwammikaState[schwUid] = { copiedAbility: abilName, copiedBuwemon: cd.name, ownerSlotId: schwSlotId, ts: Date.now() };
 
   // Schwammikas eigenes Fake-Element - sie wendet die kopierte Faehigkeit IMMER selbst an,
   // also fuer ihren eigenen Spieler (SLOT-ID-VERTRAG: dataset.slotId bleibt logisch).
@@ -6734,7 +6941,26 @@ function openEineRundeNochPopup(ownerP, effSlotId, is4) {
     btn.onclick = () => openEineRundeNochGrave(ownerP, p, effSlotId, is4);
     btns.appendChild(btn);
   });
+  // Merken, damit die Karte auch beim MANUELLEN Schliessen des Popups auf den Friedhof geht.
+  window._eineRundeNochPending = { ownerP, effSlotId, is4 };
   modal.classList.add('open');
+}
+
+// "Eine Runde noch" endgueltig ablegen - wird sowohl beim manuellen Schliessen des Popups
+// als auch nach der Kartenwahl aufgerufen. Mehrfachaufruf ist unschaedlich.
+function finishEineRundeNoch() {
+  const st = window._eineRundeNochPending;
+  if (!st) return;
+  window._eineRundeNochPending = null;
+  const { ownerP, effSlotId, is4 } = st;
+  const cd = G.slots[effSlotId];
+  if (!cd || cd.name !== 'Eine Runde noch') return;
+  G.slots[effSlotId] = null; renderSlot(effSlotId);
+  const ownPfx = 'p'+ownerP;
+  const ownGraves = is4 ? G4.graves[ownPfx] : G.graves[ownPfx];
+  if (ownGraves) ownGraves.push({name:'Eine Runde noch',color:cd.color,type:'eff',file:imgFileFor('Eine Runde noch')});
+  if (is4) updGrave4(ownPfx); else updGrave(ownPfx);
+  if (NET.mode==='multi') { is4 ? netSendState4() : netSendState(); }
 }
 
 // ── BIERRE – System neustarten ──────────────────────────────────────────────────
@@ -6947,6 +7173,7 @@ function selectEineRundeNoch(graveP, idx, effSlotId, is4, ownerP) {
     else { el2.style.display='none'; renderSimulatedHand('p'+ownerP,handCardsFromUids(handOrderByPlayer2p[ownerP]),false); }
   }
   // Eine Runde noch Karte auf den Friedhof des Anwenders
+  window._eineRundeNochPending = null; // hier wird bereits abgelegt
   G.slots[effSlotId] = null; renderSlot(effSlotId);
   const ownPfx = 'p'+ownerP;
   const ownGraves = is4 ? G4.graves[ownPfx] : G.graves[ownPfx];
@@ -7428,13 +7655,18 @@ function transferEquippedOnBanish(cd, is4) {
   });
 }
 
-function computeEquipBonus(buwColorHexRaw, equipped, ownerP) {
+// basePower (optional): Grundwert des Buwemon. Wird er uebergeben, SETZT die 100-Ereignis-
+// karte die Angriffskraft exakt auf 100 (alle weiteren Ausruestungen rechnen darauf drauf).
+// Frueher war sie pauschal -60 verbucht - das stimmt nur bei Basis 160; z.B. Schwammika
+// landete dadurch bei 80 statt 100.
+function computeEquipBonus(buwColorHexRaw, equipped, ownerP, basePower) {
+  const _hundert = (typeof basePower === 'number') ? (100 - basePower) : -60;
   // Finn deaktiviert NUR Clubmate/Clubmate Ereignis/13er Bogen
   let bonus = 0;
   if (ownerP !== undefined && finnBlocksEffects(ownerP)) {
     (equipped || []).forEach(eq => {
       if (eq.name === 'Minus 20') bonus -= 20;
-      else if (eq.name === '100 Ereignis') bonus -= 60;
+      else if (eq.name === '100 Ereignis') bonus += _hundert;
       else if (eq.name === 'Plus10 Ereignis' || eq.name === 'Plus 10') bonus += 10;
       else if (eq.name === 'Plus20 Ereignis' || eq.name === 'Plus 20') bonus += 20;
     });
@@ -7448,7 +7680,7 @@ function computeEquipBonus(buwColorHexRaw, equipped, ownerP) {
     } else if (eq.name === 'Minus 20') {
       bonus -= 20;
     } else if (eq.name === '100 Ereignis') {
-      bonus -= 60; // 160 - 60 = 100 AP
+      bonus += _hundert; // setzt die Angriffskraft auf genau 100
     } else if (eq.name === 'Plus10 Ereignis' || eq.name === 'Plus 10') {
       bonus += 10;
     } else if (eq.name === 'Plus20 Ereignis' || eq.name === 'Plus 20') {
@@ -7456,6 +7688,27 @@ function computeEquipBonus(buwColorHexRaw, equipped, ownerP) {
     }
   });
   return bonus;
+}
+
+// EXAKT dieselbe Rechnung wie im Vergroesserungs-Popup am Angriffsbutton:
+//   Basiswert (CARD_ATTACK_POWER) + computeEquipBonus(Farbe, Ausruestung)
+// Damit kann die Schadensrechnung nicht mehr von der angezeigten Zahl abweichen - egal
+// welche Farbe (Ramon lila: Clubmate +40) oder wie viele Ausruestungskarten dranhaengen.
+// Wird LIVE zum Aufloesungszeitpunkt gelesen, nicht aus einem gemerkten Zwischenwert.
+// Diese Funktion MUSS zeichengleich zur Popup-Zeile bleiben:
+//   basePower + computeEquipBonus(el.dataset.color, (G.slots[el.dataset.slotId]||{}).equipped)
+// Zwei Dinge sind dabei zwingend:
+//   1. KEIN toLogicalId(). slotId kommt aus dataset.slotId / realLsid und ist laut
+//      SLOT-ID-VERTRAG Regel 3+4 BEREITS LOGISCH. Eine zweite Umrechnung las beim Gast
+//      den Slot des Gegners -> Ramons Clubmate war "weg" (200 wurde als 160 gerechnet).
+//      Beim Host faellt das nie auf, weil dort logisch == physisch ist.
+//   2. KEIN ownerP an computeEquipBonus. Das Popup uebergibt keinen - mit ownerP wuerde
+//      finnBlocksEffects() greifen und der Kampfwert waere ein anderer als die Anzeige.
+function popupAttackPower(slotId) {
+  const cd = G.slots[slotId]; // slotId ist bereits LOGISCH - nicht konvertieren!
+  if (!cd) return 0;
+  const _base = CARD_ATTACK_POWER[cd.name] || 0;
+  return _base + computeEquipBonus(cd.color, cd.equipped, undefined, _base);
 }
 
 function renderPopupActionButtons(el, fd) {
@@ -7478,7 +7731,7 @@ function renderPopupActionButtons(el, fd) {
 
   // Angriffskraft: Basiswert + Bonus durch ausgerüstete Clubmate/13er Bogen (nur wenn gedockt)
   const basePower = CARD_ATTACK_POWER[name];
-  const totalPower = basePower !== undefined ? (basePower + (docked ? computeEquipBonus(el.dataset.color, (G.slots[el.dataset.slotId]||{}).equipped) : 0)) : undefined;
+  const totalPower = basePower !== undefined ? (basePower + (docked ? computeEquipBonus(el.dataset.color, (G.slots[el.dataset.slotId]||{}).equipped, undefined, basePower) : 0)) : undefined;
 
   const makeBtn = (icon, label, onClick, powerNum) => {
     const btn = document.createElement('button');
@@ -7532,7 +7785,19 @@ function renderPopupActionButtons(el, fd) {
     const _schwCd = _schwSlotId ? G.slots[_schwSlotId] : null;
     const _schwUid = _schwCd ? (_schwCd.uid !== undefined ? String(_schwCd.uid) : _schwSlotId) : null;
     const _schwState = (_schwUid && schwammikaState[_schwUid]) ? schwammikaState[_schwUid] : null;
-    const abName = (_schwState && name === 'Schwammika') ? _schwState.copiedAbility : CARD_ABILITIES[name];
+    let abName = (_schwState && name === 'Schwammika') ? _schwState.copiedAbility : CARD_ABILITIES[name];
+    // NACHSCHLAG + SCHWAMMIKA: Statt die bereits verbrauchte kopierte Faehigkeit erneut
+    // freizuschalten, bekommt sie ihren Saugkraft-Button zurueck - sie darf also eine NEUE
+    // Faehigkeit kopieren. Nutzt sie ihn nicht, bleibt schwammikaState unveraendert und der
+    // alte (verblasste) Button ist nach Nachschlag wieder da. Nutzt sie ihn, ueberschreibt
+    // tryConfirmSaugkraft den Zustand - die neue Faehigkeit bleibt dann dauerhaft.
+    if (_schwState && name === 'Schwammika' && nachschlagActiveThisTurn && !sandboxMode) {
+      const _schwOwnerP = parseInt((String(_schwSlotId).match(/^p(\d)/) || [])[1] || '0');
+      const _myLogSchw = (typeof fourPlayerMode !== 'undefined' && fourPlayerMode)
+        ? myLogicalPlayer4p() : myLogicalPlayer2p();
+      const _turnNow = (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) ? TURN_4P : TURN_2P;
+      if (_schwOwnerP === _myLogSchw && _turnNow === _schwOwnerP) abName = 'Saugkraft';
+    }
     if (abName) {
       let handler = null;
       if (SPECIAL_ABILITY_HANDLERS[abName]) {
@@ -7542,6 +7807,7 @@ function renderPopupActionButtons(el, fd) {
         handler = (_schwState && name === 'Schwammika')
           ? (btn, cardEl) => {
               window._schwActionOpen = true; // eigenes Flag - wird von anderen Ketten NICHT geloescht
+              window._schwActionCounted = false; // neue Aktion -> genau einmal zaehlen
               clearTimeout(window._schwBypassTimer);
               window._schwBypassTimer = setTimeout(() => { window._schwActionOpen = false; }, 8000);
               try { _rawH(btn, cardEl); }
@@ -7566,6 +7832,7 @@ function renderPopupActionButtons(el, fd) {
             // Cedzilla/Gruenika) zu EINER Buwemonaktion.
             if (_isSchwCopy) {
               window._schwActionOpen = true; // eigenes Flag - wird von anderen Ketten NICHT geloescht
+              window._schwActionCounted = false; // neue Aktion -> genau einmal zaehlen
               clearTimeout(window._schwBypassTimer);
               window._schwBypassTimer = setTimeout(() => { window._schwActionOpen = false; }, 12000);
             }
@@ -7792,6 +8059,12 @@ function onCarryDrop(e) {
       if (isVerbotSlot && !VERBOT_NAMES.includes(cd.name)) break;
       const isBuwSlot = !isExSlot && !isEffSlot && !isVerbotSlot;
       if (isBuwSlot && cd.type !== 'buw' && cd.type !== 'spec') break;
+      // Auch auf diesem Dock-Pfad (Karte aus einem Stapel-Popup): "Tut mir leid..." ist
+      // nur mit Ablehnt/FourAceFour konterbar.
+      if (isEffSlot && blocksTutMirLeidCounter(cd.name)) {
+        showTempInfoToast('Mit dieser Karte kannst du „Tut mir leid…" nicht kontern!', lsid.endsWith('-4'), 2000);
+        break;
+      }
       const player = (lsid.match(/^p[1-4]/)||['p2'])[0];
       const zoneSuffix2 = lsid.endsWith('-4') ? '-4' : '';
       if (!debugMode && isBuwSlot && SUMMON_MAP[cd.name] && !hasSummonCard(player, cd.name, zoneSuffix2)) break;
@@ -8054,6 +8327,80 @@ function applyLP(p){
   checkLPWin(p);
 }
 
+// ── DEBUG-PEEK ──────────────────────────────────────────────────────────────────
+// Nur im Debug-Modus: Klick auf die "Hand verdeckt"-Anzeige eines ANDEREN Spielers legt
+// dessen Handkarten offen - REIN LOKAL, es wird nichts ans Netzwerk geschickt und kein
+// anderer Spieler sieht dadurch etwas.
+let debugPeekPlayers = new Set();
+function toggleDebugPeek(p, is4) {
+  if (!debugMode) return;
+  const key = String(p) + (is4 ? '-4' : '');
+  if (debugPeekPlayers.has(key)) debugPeekPlayers.delete(key); else debugPeekPlayers.add(key);
+  applyDebugPeek(p, is4);
+}
+function applyDebugPeek(p, is4) {
+  const key = String(p) + (is4 ? '-4' : '');
+  const on = debugMode && debugPeekPlayers.has(key);
+  const handEl = document.getElementById(physId('p'+p)+'-hand'+(is4 ? '-4' : ''));
+  if (handEl) handEl.querySelectorAll('.sim-hand-card').forEach(c => {
+    const img = c.querySelector('img');
+    if (!img) return;
+    if (on) { const src = imgFor(c.dataset.name, false, c.dataset.file); if (src) img.src = src; }
+    else if (!marieRevealState) img.src = BACK;
+  });
+  updateRevealStatus(p, on || !!(G.reveal && G.reveal[p]), is4);
+}
+// Nach jedem Neuaufbau einer fremden Hand den Peek-Zustand wieder anwenden.
+function reapplyAllDebugPeeks(is4) {
+  if (!debugMode || !debugPeekPlayers.size) return;
+  [1,2,3,4].forEach(p => applyDebugPeek(p, is4));
+}
+// Klick-Handler auf die Statusanzeigen setzen. Die Felder haben im Markup fest
+// pointer-events:none (sie sind normalerweise reine Anzeigen) - im Debug-Modus wird das
+// gezielt aufgehoben, sonst kommt nie ein Klick an. Optisch aendert sich nichts.
+// Debug-Modus umgeschaltet: Klickbarkeit neu setzen. Beim AUSSCHALTEN werden alle
+// aufgedeckten fremden Haende wieder verdeckt - Debug-Peek gilt nur bei aktivem Debug.
+function refreshDebugPeekMode() {
+  const is4now = (typeof fourPlayerMode !== 'undefined' && fourPlayerMode);
+  if (!debugMode && debugPeekPlayers.size) {
+    const ps = Array.from(debugPeekPlayers).map(k => parseInt(k));
+    debugPeekPlayers.clear();
+    ps.forEach(p => applyDebugPeek(p, is4now));
+  }
+  wireDebugPeekHandlers();
+}
+
+function wireDebugPeekHandlers() {
+  const is4now = (typeof fourPlayerMode !== 'undefined' && fourPlayerMode);
+  const list = is4now ? [[1,true],[2,true],[3,true],[4,true]] : [[1,false],[2,false]];
+  const myL = is4now ? myLogicalPlayer4p() : myLogicalPlayer2p();
+  list.forEach(([physP, is4]) => {
+    const el = document.getElementById('p'+physP+'-reveal-status'+(is4 ? '-4' : ''));
+    if (!el) return;
+    // physische Anzeige -> logischer Spieler (SLOT-ID-VERTRAG: physId/toLogicalId nur hier,
+    // weil die IDs im Markup PHYSISCH sind)
+    const logicalP = parseInt(String(toLogicalId('p'+physP)).replace('p','')) || physP;
+    const peekable = debugMode && !sandboxMode && logicalP !== myL;
+    el.style.pointerEvents = peekable ? 'auto' : 'none';
+    el.style.cursor = peekable ? 'pointer' : 'default';
+    if (!el._peekWired) {
+      el._peekWired = true;
+      el.addEventListener('pointerdown', (ev) => ev.stopPropagation());
+      el.addEventListener('click', (ev) => {
+        if (!debugMode || sandboxMode) return;
+        const _is4 = (typeof fourPlayerMode !== 'undefined' && fourPlayerMode);
+        const _myL = _is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+        const _lp = parseInt(String(toLogicalId('p'+physP)).replace('p','')) || physP;
+        if (_lp === _myL) return; // eigene Hand sieht man ohnehin
+        ev.stopPropagation();
+        toggleDebugPeek(_lp, _is4);
+      });
+    }
+  });
+}
+document.addEventListener('DOMContentLoaded', wireDebugPeekHandlers);
+setTimeout(wireDebugPeekHandlers, 1200);
+
 // ── REVEAL ──
 function updateRevealStatus(p, isRevealed, is4) {
   if (is4) {
@@ -8274,6 +8621,7 @@ function showDebugMenu() {
       dbgBtn.textContent = '🐛 Debug Modus: ' + (debugMode ? 'AN' : 'AUS');
       dbgBtn.style.background = debugMode ? '#cc8800' : '#555';
       setTimeout(applyDebugLpEditable, 30);
+      setTimeout(refreshDebugPeekMode, 30);
     };
     btnWrap.appendChild(dbgBtn);
   }
@@ -8412,15 +8760,41 @@ function showCardCountDebug() {
     totalCount[c.name] = (totalCount[c.name]||0)+1;
   }
 
-  // Spielfeld (G.cards)
+  // GEDOCKTE Karten stecken zusaetzlich als verstecktes Element in G.cards. Ohne diese
+  // Menge wurden sie doppelt gezaehlt -> das Popup meldete "Klone".
+  const _slottedUids = new Set(Object.values(G.slots).filter(Boolean)
+    .map(c => String(c.uid)).filter(u => u !== 'undefined'));
+  // Spielfeld + eigene Handkarten (G.cards)
   G.cards.forEach(c => {
     const t = c.dataset.ctype;
     if (!t || !TYPES.has(t)) return;
+    if (_slottedUids.has(String(c.dataset.uid))) return; // wird ueber G.slots gezaehlt
     totalCount[c.dataset.name] = (totalCount[c.dataset.name]||0)+1;
   });
 
-  // Slots (Buw+Eff Felder)
-  Object.values(G.slots).forEach(c => add(c));
+  // FREMDE Handkarten existieren lokal nur als simulierte Ruecken, nicht in G.cards.
+  // Gezaehlt wird der AUTHENTISCHE Stand, den der jeweilige Besitzer zuletzt gemeldet hat.
+  // Ueber handOrderByPlayer* ging das nicht: dort stehen fuer fremde Spieler
+  // Platzhalter-UIDs, was zu fehlenden Karten UND zu falschen "Klonen" fuehrte.
+  const _myLogCC = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+  Object.keys(remoteHandCards || {}).forEach(pk => {
+    if (parseInt(pk) === _myLogCC) return; // eigene Hand steckt schon in G.cards
+    (remoteHandCards[pk] || []).forEach(hc => {
+      if (hc && hc.name && TYPES.has(hc.ctype)) {
+        totalCount[hc.name] = (totalCount[hc.name]||0)+1;
+      }
+    });
+  });
+
+  // Slots (Buw+Eff Felder) inkl. AUSGERUESTETER Karten - die zaehlten frueher gar nicht mit.
+  Object.values(G.slots).forEach(c => {
+    add(c);
+    if (c && Array.isArray(c.equipped)) c.equipped.forEach(eq => {
+      if (eq && eq.name && TYPES.has(eq.ctype || eq.type)) {
+        totalCount[eq.name] = (totalCount[eq.name]||0)+1;
+      }
+    });
+  });
 
   // Friedhöfe
   if (is4) {
@@ -9005,6 +9379,7 @@ function onCardDockedToEffSlot(player, slotId, cd) {
       // LP-Strafe für verbotene Karte: Mecces -100
       applyLpDamage(ownerP, 100, is4);
       showOutcomeToast('Mecces ist verboten! Spieler ' + ownerP + ' verliert 100 LP.', is4);
+      flashSlotVerboten(slotId, is4); // nur 1 Sekunde rot, dann wieder normal
       G.slots[slotId] = null; renderSlot(slotId);
       const uid = G.nid++;
       const el2 = spawnCard({name:cd.name,color:cd.color,type:cd.type||'eff',uid,file:cd.file||imgFileFor(cd.name)},0,0,false);
@@ -9129,6 +9504,7 @@ function onCardDockedToEffSlot(player, slotId, cd) {
     if (blocked) {
       applyLpDamage(ownerP, 50, is4);
       showOutcomeToast('Nachschlag ist verboten! Spieler ' + ownerP + ' verliert 50 LP.', is4);
+      flashSlotVerboten(slotId, is4); // nur 1 Sekunde rot, dann wieder normal
     } else {
       const fake = document.createElement('div');
       fake.dataset.name = cd.name; fake.dataset.color = cd.color;
@@ -9169,6 +9545,7 @@ function onCardDockedToEffSlot(player, slotId, cd) {
     if (blocked) {
       applyLpDamage(ownerP, 50, is4);
       showOutcomeToast('Eine Runde noch ist verboten! Spieler ' + ownerP + ' verliert 50 LP.', is4);
+      flashSlotVerboten(slotId, is4); // nur 1 Sekunde rot, dann wieder normal
       // Karte wieder auf die Hand zurück
       G.slots[slotId] = null; renderSlot(slotId);
       const uid = G.nid++;
@@ -9253,12 +9630,24 @@ function applyColorHandRemove(hex, is4) {
       // Frueher wurden sie hier nur geloescht - beim Aktivator landeten sie korrekt im
       // Banish, beim Gegner verschwanden sie spurlos.
       const _bcd = {name:el.dataset.name,color:el.dataset.color,type:el.dataset.ctype,file:el.dataset.file||''};
-      if (is4) { G4.banish.push(_bcd); G.banish = G4.banish; updBanish4(); }
+      // NUR EIN CLIENT schreibt in den Entferntstapel. Frueher pushte hier jeder Spieler
+      // seine eigenen Handkarten und schickte danach seinen State - durch das
+      // "G.banish = d.banish"-Ueberschreiben landeten Karten doppelt im Stapel.
+      // Im Mehrspielermodus meldet dieser Client die Karten nur an den Aktivator.
+      if (NET.mode === 'multi') {
+        if (!window._banishOut) window._banishOut = [];
+        window._banishOut.push(_bcd);
+      } else if (is4) { G4.banish.push(_bcd); G.banish = G4.banish; updBanish4(); }
       else { G.banish.push(_bcd); updBanish(); }
       el.remove(); G.cards = G.cards.filter(c=>parseInt(c.dataset.uid)!==uid);
     }
     arr[myL] = (arr[myL]||[]).filter(u=>u!==uid);
   });
+  // Gesammelte Karten EINMAL an den Aktivator melden - der fuehrt den Stapel.
+  if (NET.mode === 'multi' && window._banishOut && window._banishOut.length) {
+    netSend({t:'banish_add', cards: window._banishOut, is4});
+    window._banishOut = [];
+  }
   // Nach dem Entfernen neu anordnen, damit keine Luecke bleibt
   if (is4) layoutMyHand4(); else layoutMyHand();
   updateHandLabels();
@@ -9270,6 +9659,20 @@ function applyColorHandRemove(hex, is4) {
   // Aber wir können die sim-Anzeige sofort aktualisieren indem wir das Deck prüfen
   // Zähle wie viele Karten dieser Farbe aus dem Deck/Banish/Graves verschwunden sind
   // Einfachster Fix: renderSimulatedHand für Gegner wird nach netSendState vom Gegner aktualisiert
+}
+
+// Kurzes rotes Aufleuchten eines Slots (1s), danach zurueck in den normalen Zustand.
+// Frueher blieb die rote Kontur nach einer verbotenen Karte stehen, bis irgendwann eine
+// neue Effektkarte gedockt wurde - checkVerbote() lief in dem Moment naemlich nicht mehr.
+function flashSlotVerboten(slotId, is4) {
+  const el = document.getElementById(physId(slotId));
+  if (!el) return;
+  el.style.setProperty('border-color', '#cc3333', 'important');
+  clearTimeout(el._verbotFlashTimer);
+  el._verbotFlashTimer = setTimeout(() => {
+    const player = (String(slotId).match(/^p\d/) || ['p1'])[0];
+    checkVerbote(player, is4 ? '-4' : '');
+  }, 1000);
 }
 
 function checkVerbote(player, suffix) {
@@ -9635,9 +10038,19 @@ function tryDockCard(el) {
         }
         if (blockReason) {
           const is4x2 = lsid.endsWith('-4');
-          showOutcomeToast('⚠ ' + blockReason, is4x2);
+          // showTempInfoToast statt showOutcomeToast: der Kampfsituations-Toast teilt sich
+          // das abil-toast-Element - ein Hinweis dort verdraengte ihn dauerhaft, der
+          // Spieler konnte "Nichts tun" nicht mehr druecken. Eigenes Element, 3 Sekunden.
+          showTempInfoToast('⚠ ' + blockReason, is4x2, 3000);
           continue;
         }
+      }
+      // "Tut mir leid..." ist NUR mit Ablehnt/FourAceFour konterbar. Stein/Calgon/Glaskuppel/
+      // RGB/UwU duerfen gar nicht erst andocken -> Hinweis + zurueck auf die Hand.
+      // Sobald es abgewehrt wurde, ist combatDefense wieder null und alles ist erneut erlaubt.
+      if (isEffSlot && blocksTutMirLeidCounter(cname)) {
+        showTempInfoToast('Mit dieser Karte kannst du „Tut mir leid…" nicht kontern!', lsid.endsWith('-4'), 2000);
+        continue;
       }
       // Kampfsituations-Einschränkung (alt, nur noch als Fallback für nicht in der Liste):
       if (isEffSlot && !sandboxMode && COMBAT_ONLY_ROLES[cname]) {
@@ -9656,16 +10069,34 @@ function tryDockCard(el) {
         const is4x = lsid.endsWith('-4');
         const turnPlayer = is4x ? TURN_4P : TURN_2P;
         const myLogical = is4x ? myLogicalPlayer4p() : myLogicalPlayer2p();
-        if (turnPlayer !== myLogical) continue;
+        if (turnPlayer !== myLogical) {
+          showTempInfoToast('Du kannst nur in deinem eigenen Zug ein Buwemon ausspielen', is4x, 3000);
+          continue;
+        }
       }
       if (!isExSlot && !isEffSlot && !isVerbotSlot && SUMMON_MAP[cname]) {
         const buwPlayer = (lsid.match(/^p[1-4]/)||['p2'])[0];
         const buwSuffix = lsid.endsWith('-4') ? '-4' : '';
-        if (!debugMode && !hasSummonCard(buwPlayer, cname, buwSuffix)) continue;
+        // Im Debug-Modus duerfen Spezialbuwemon immer beschworen werden - dann auch KEIN Hinweis.
+        if (!debugMode && !hasSummonCard(buwPlayer, cname, buwSuffix)) {
+          showTempInfoToast('Spezialbuwemon brauchen die passende Beschwörungskarte!', buwSuffix === '-4', 3000);
+          continue;
+        }
       }
       // Zug-Regel: normales Buwemon nur einmal pro Zug legen
       if (!sandboxMode && !debugMode && isBuwOrExSlot && !isExSlot && ctype === 'buw') {
         if (turnBuwemonPlaced) { showOutcomeToast('⚠ Du hast in diesem Zug bereits ein Buwemon gelegt!', lsid.endsWith('-4')); continue; }
+      }
+      // UwU laesst sich nicht zur Verteidigung eines CYAN-Buwemon einsetzen. Frueher liess
+      // sie sich trotzdem ins Effektfeld docken (checkAbilityBlock stieg nur still aus) und
+      // blieb wirkungslos liegen. Jetzt: gar nicht erst andocken, zurueck in die Hand.
+      if (!sandboxMode && !debugMode && /-eff\d/.test(lsid) && el.dataset.name === 'UwU '
+          && pendingAbility && pendingAbility.isAttack && pendingAbility.defenderSlotId) {
+        const _defCdU = G.slots[pendingAbility.defenderSlotId];
+        if (_defCdU && _defCdU.color === '#008899') {
+          showTempInfoToast('UwU kann nicht zur Verteidigung eines Cyan-Buwemon eingesetzt werden!', lsid.endsWith('-4'));
+          return false;
+        }
       }
       // dock it
       const cd = {
@@ -10604,7 +11035,11 @@ function confirmPickyEating(btnEl, cardEl) {
       releaseAbilityBtn(btnEl);
       if (!sandboxMode && cardEl) {
         // Automatik-Modus: Kampfsituation beginnt jetzt erst, mit der gewählten Farbe im Toast
-        beginAbilityActivation(cardEl, 'Picky Eating', 'Picky Eating (' + cg.label + ')', () => doPickyEating(cg.hex, cg.label, is4));
+        // Farbname in seiner eigenen Farbe - NICHT in abilityName packen, der wird
+        // escaped (sonst stand der rohe span-Code im Toast). Dafuer gibt es extraHtml.
+        beginAbilityActivation(cardEl, 'Picky Eating', 'Picky Eating',
+          () => doPickyEating(cg.hex, cg.label, is4),
+          null, { extraHtml: ' (' + coloredAbilName(cg.label, cg.hex) + ')' });
       } else {
         if (!confirm(`Picky Eating: Alle ${cg.label}-Buwemon auf dem Spielfeld und in Handzonen entfernen?`)) return;
         doPickyEating(cg.hex, cg.label, is4);
@@ -10653,6 +11088,7 @@ function doPickyEating(hex, label, is4) {
       checkExBuwemon(p, '-4');
     });
     updBanish4();
+    window._colorRemoveOwnerUntil = Date.now() + 15000; // ich fuehre den Entferntstapel
     if (NET.mode === 'multi') { netSend({t:'color_hand_remove', hex, is4:true, sender:NET.myPlayer}); netSend({t:'banish4_update', banish:G4.banish}); netSendState4(); }
   } else {
     // Eigene Handkarten entfernen (gleiche Logik wie Gegner-Client)
@@ -10673,6 +11109,7 @@ function doPickyEating(hex, label, is4) {
       checkExBuwemon(p);
     });
     updBanish();
+    window._colorRemoveOwnerUntil = Date.now() + 15000; // ich fuehre den Entferntstapel
     if (NET.mode === 'multi') { netSend({t:'color_hand_remove', hex, is4:false, sender:NET.myPlayer}); netSendState(); }
   }
 }
@@ -12310,7 +12747,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div id="game-version-label" style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v54j
+    v54t
   </div>
 </div>
 
@@ -12361,9 +12798,14 @@ function wsConnect(onOpen) {
     ws.onopen = () => {
       try { updateConnDot(true); } catch(e) {}
       NET._reconnectAttempts = 0;
+      NET._lastRx = Date.now();
       try { onOpen(); } catch(e) { console.error('onOpen error:', e); }
+      // Gepufferte Aktionen nachsenden, damit nichts aus der Aussetzer-Phase verloren geht.
+      setTimeout(netFlushQueue, 250);
     };
     ws.onmessage = e => {
+      // JEDE eingehende Nachricht beweist, dass die Verbindung wirklich lebt.
+      NET._lastRx = Date.now();
       try { onNetData(JSON.parse(e.data)); } catch(err) {
         console.error(err);
         if (!window._netErrorShown) {
@@ -12380,37 +12822,44 @@ function wsConnect(onOpen) {
       // Mehrspieler-Runde waren (NET.mode wird beim bewussten Verlassen z.B. über
       // "Startbildschirm" bereits auf null gesetzt, dann wird hier nichts versucht)
       if (NET.mode === 'multi' && NET.roomCode) {
+        // UNBEGRENZT weiterversuchen mit ansteigender Wartezeit (max 8s). Frueher war nach
+        // 5 Versuchen Schluss - wer kurz in den Aufzug fuhr, war die Runde los.
         NET._reconnectAttempts = (NET._reconnectAttempts || 0) + 1;
-        if (NET._reconnectAttempts <= 5) {
-          setMultiStatus('Verbindung getrennt – versuche erneut zu verbinden (' + NET._reconnectAttempts + '/5) …');
-          setTimeout(() => {
-            wsConnect(() => {
-              // Immer 'join' verwenden (auch als ursprünglicher Host) - 'create' würde den
-              // Raum serverseitig überschreiben und den anderen Spieler rauswerfen
-              NET.ws.send(JSON.stringify({t:'join', code: NET.roomCode}));
-              setMultiStatus('Neu verbunden!');
-              // Vollständigen Spielstand erneut senden, damit beide Seiten wieder synchron sind
-              setTimeout(() => {
-                if (fourPlayerMode) netSendState4(); else netSendState();
-              }, 500);
-            });
-          }, 1500);
-        } else {
-          setMultiStatus('Verbindung verloren – bitte neu beitreten.');
-        }
+        const _wait = Math.min(1500 + (NET._reconnectAttempts - 1) * 1000, 8000);
+        setMultiStatus('Verbindung getrennt – verbinde neu (Versuch ' + NET._reconnectAttempts + ') …');
+        setTimeout(() => {
+          wsConnect(() => {
+            // Immer 'join' verwenden (auch als ursprünglicher Host) - 'create' würde den
+            // Raum serverseitig überschreiben und den anderen Spieler rauswerfen
+            NET.ws.send(JSON.stringify({t:'join', code: NET.roomCode}));
+            setMultiStatus('Neu verbunden!');
+            // BEIDE Seiten abgleichen: eigenen Stand senden UND den der anderen anfordern.
+            // Nur den eigenen zu senden reicht nicht - was der Mitspieler waehrend des
+            // Aussetzers getan hat, fehlt sonst hier dauerhaft.
+            setTimeout(netRequestResync, 500);
+          });
+        }, _wait);
       } else {
         setMultiStatus('Verbindung getrennt');
       }
     };
-    // Keepalive: alle 20 Sekunden einen Ping senden damit der Server die Verbindung nicht trennt
+    // Keepalive + WATCHDOG. Ein WebSocket kann "halb offen" sein: readyState meldet OPEN,
+    // aber es kommt nichts mehr an und nichts geht mehr raus (typisch bei WLAN-Wechsel,
+    // Standby oder stillem NAT-Timeout). Genau das ist die "Runde ist ploetzlich nicht mehr
+    // synchron"-Situation - ohne close-Event laeuft die Neuverbindung nie an.
+    // Deshalb: alle 10s pingen und pruefen, ob ueberhaupt noch Daten hereinkommen.
     if (NET._keepalive) clearInterval(NET._keepalive);
+    NET._lastRx = Date.now();
     NET._keepalive = setInterval(() => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({t:'ping'}));
-      } else {
-        clearInterval(NET._keepalive); NET._keepalive = null;
+      if (ws.readyState !== WebSocket.OPEN) { clearInterval(NET._keepalive); NET._keepalive = null; return; }
+      try { ws.send(JSON.stringify({t:'ping'})); } catch(e) {}
+      // Seit 40s nichts mehr empfangen -> Verbindung als tot behandeln und erzwungen
+      // schliessen. Das loest onclose und damit den normalen Reconnect-Pfad aus.
+      if (NET.mode === 'multi' && (Date.now() - (NET._lastRx || 0)) > 40000) {
+        try { setMultiStatus('Verbindung eingeschlafen – verbinde neu …'); } catch(e) {}
+        try { ws.close(); } catch(e) {}
       }
-    }, 20000);
+    }, 10000);
     ws.onerror = e => {
       console.error('WS error:', e);
       setMultiStatus('Fehler – läuft buwemon_ws_server.py?');
@@ -12702,7 +13151,18 @@ function netSendState() {
 }
 
 function netSend(obj) {
-  if (!NET.ws || NET.ws.readyState !== WebSocket.OPEN) return;
+  // FRUEHER: bei nicht-offenem Socket wurde die Nachricht STILL VERWORFEN. Genau daraus
+  // entsteht "die Runde ist ploetzlich nicht mehr synchron": ein kurzer Aussetzer reicht,
+  // und die verlorene Aktion kommt nie wieder. Jetzt wird gepuffert und nach dem
+  // Wiederverbinden nachgesendet.
+  if (!NET.ws || NET.ws.readyState !== WebSocket.OPEN) {
+    if (NET.mode === 'multi' && obj && obj.t !== 'ping') {
+      if (!NET._outQueue) NET._outQueue = [];
+      // Deckel gegen unbegrenztes Wachstum bei langem Ausfall
+      if (NET._outQueue.length < 300) NET._outQueue.push(obj);
+    }
+    return;
+  }
   if (obj && obj.gv === undefined) obj.gv = getGameVersion();
   if (obj && obj.t !== 'hello' && obj.t !== 'hello4') {
     if (!fourPlayerMode) {
@@ -12717,7 +13177,46 @@ function netSend(obj) {
       if (obj.senderPlayer === undefined) obj.senderPlayer = NET.myPlayer;
     }
   }
-  NET.ws.send(JSON.stringify(obj));
+  try {
+    NET.ws.send(JSON.stringify(obj));
+  } catch(e) {
+    // send() kann bei einer gerade sterbenden Verbindung werfen - Nachricht puffern
+    // statt sie zu verlieren, und den Watchdog die Neuverbindung ausloesen lassen.
+    if (NET.mode === 'multi' && obj && obj.t !== 'ping') {
+      if (!NET._outQueue) NET._outQueue = [];
+      if (NET._outQueue.length < 300) NET._outQueue.push(obj);
+    }
+  }
+}
+
+// Gepufferte Nachrichten nach dem Wiederverbinden nachsenden.
+// Kommt der Tab aus dem Hintergrund/Standby zurueck, ist die Verbindung sehr oft still
+// gestorben, ohne dass der Browser ein close-Event geliefert hat. Sofort pruefen statt
+// bis zum naechsten Watchdog-Tick zu warten.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || NET.mode !== 'multi' || !NET.roomCode) return;
+  if (!NET.ws || NET.ws.readyState !== WebSocket.OPEN) {
+    NET._reconnectAttempts = 0; // sofortiger, schneller Neuversuch
+    try { if (NET.ws) NET.ws.close(); } catch(e) {}
+    return;
+  }
+  // Verbindung sieht offen aus - Stand vorsichtshalber abgleichen, falls waehrend der
+  // Hintergrundphase Nachrichten verloren gingen.
+  netRequestResync();
+});
+
+function netFlushQueue() {
+  if (!NET._outQueue || !NET._outQueue.length) return;
+  if (!NET.ws || NET.ws.readyState !== WebSocket.OPEN) return;
+  const q = NET._outQueue; NET._outQueue = [];
+  q.forEach(o => { try { NET.ws.send(JSON.stringify(o)); } catch(e) {} });
+}
+
+// Vollstaendigen eigenen Spielstand anfordern/senden. Nach einem Aussetzer weiss man nicht,
+// welche Nachrichten fehlten - deshalb tauschen beide Seiten den kompletten Stand aus.
+function netRequestResync() {
+  netSend({t:'resync_request', is4: !!fourPlayerMode});
+  setTimeout(() => { if (fourPlayerMode) netSendState4(); else netSendState(); }, 300);
 }
 
 function onNetData(d) {
@@ -12896,7 +13395,7 @@ function onNetData(d) {
   if (d.t === 'state') {
     // permanentAbilityUsed synchronisieren (merge: UIDs vom Sender hinzufügen)
     if (d.permAbilityUsed && Array.isArray(d.permAbilityUsed)) {
-      d.permAbilityUsed.forEach(uid => permanentAbilityUsed.add(uid));
+      mergePermAbilityUsed(d.permAbilityUsed);
     }
     // Full state snapshot from peer - apply directly, no mirroring
     G.deck = d.deck; updDeck();
@@ -12942,6 +13441,7 @@ function onNetData(d) {
         while ((handOrderByPlayer2p[senderLogP]||[]).length < d.handCards.length) { if (!handOrderByPlayer2p[senderLogP]) handOrderByPlayer2p[senderLogP]=[]; handOrderByPlayer2p[senderLogP].push(-1 - Math.random()); }
       }
       cacheHandCardData(d.handCards);
+      setRemoteHandCards(senderLogP, d.handCards);
       renderSimulatedHand(sPfx, d.handCards, false);
     }
     if (d.graves) {
@@ -13093,6 +13593,7 @@ if (d.t === 'state4') {
       while (handOrderByPlayer4p[senderP].length > d.handCards.length) handOrderByPlayer4p[senderP].pop();
       while (handOrderByPlayer4p[senderP].length < d.handCards.length) handOrderByPlayer4p[senderP].push(-1 - Math.random());
       cacheHandCardData(d.handCards);
+      setRemoteHandCards(senderP, d.handCards);
       renderSimulatedHand(senderPfx, d.handCards, true);
       scheduleHandLabelUpdate();
     }
@@ -13104,7 +13605,7 @@ if (d.t === 'state4') {
     // Einmalige Fähigkeiten: add-only-Merge (wie im 2-Spieler-State) - verhindert dass
     // Sperren bei anderen Spielern durch fehlende Sync-Pakete "vergessen" werden
     if (d.permAbilityUsed && Array.isArray(d.permAbilityUsed)) {
-      d.permAbilityUsed.forEach(uid => permanentAbilityUsed.add(uid));
+      mergePermAbilityUsed(d.permAbilityUsed);
     }
     if (Array.isArray(d.abilSlots)) {
       setTimeout(() => {
@@ -13274,7 +13775,8 @@ if (d.t === 'state4') {
     }
     startAbilityReactionWindow({
       is4: d.is4, activatorP: d.activatorP, activatorName: d.activatorName,
-      cardName: d.cardName, cardColor: d.cardColor, slotId: d.slotId,
+      cardName: d.cardName, cardColor: d.cardColor, cardType: d.cardType || null, slotId: d.slotId,
+      extraHtml: d.extraHtml || '',
       abilityKey: d.abilityKey, abilityName: d.abilityName, defenderSlotId: d.defenderSlotId || null,
       defenderName: d.defenderName || null, defenderColor: d.defenderColor || null, extraText: d.extraText || '',
       isAttack: !!d.isAttack
@@ -13313,6 +13815,19 @@ if (d.t === 'state4') {
     const p = (d.slotId.match(/^p(\d)/)||[])[1];
     if (p) { checkVerbote('p'+p, d.slotId.endsWith('-4')?'-4':''); }
   }
+  if (d.t === 'marie_reveal') {
+    // NUR der betroffene Spieler aktualisiert seinen eigenen Status - Unbeteiligte nicht.
+    const _myL = d.is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+    if (_myL === d.targetP) {
+      updateRevealStatus(d.targetP, d.on ? true : !!(G.reveal && G.reveal[d.targetP]), d.is4);
+    }
+  }
+  if (d.t === 'resync_request') {
+    // Ein Mitspieler war weg und bittet um den vollstaendigen Stand. Ohne diese Antwort
+    // kennt er nur seine eigene Haelfte des Feldes und die Runde bleibt auseinander.
+    if (d.senderPlayer === NET.myPlayer) return;
+    setTimeout(() => { if (d.is4 || fourPlayerMode) netSendState4(); else netSendState(); }, 200);
+  }
   if (d.t === 'grave_push') {
     if (!G.graves[d.player]) G.graves[d.player] = [];
     G.graves[d.player].push(d.card);
@@ -13337,6 +13852,36 @@ if (d.t === 'state4') {
     renderSimulatedHand('p'+d.activatorP,handCardsFromUids(newActUids),d.is4);
     renderSimulatedHand('p'+d.targetP,handCardsFromUids(newTarUids),d.is4);
   }
+  if (d.t === 'banish_add') {
+    // Nur der Aktivator der Farbentfernung fuehrt den Entferntstapel - so kann keine
+    // Karte doppelt hineingeraten.
+    if (!window._colorRemoveOwnerUntil || Date.now() > window._colorRemoveOwnerUntil) return;
+    (d.cards || []).forEach(bc => {
+      if (d.is4 || fourPlayerMode) { G4.banish.push(bc); G.banish = G4.banish; }
+      else G.banish.push(bc);
+    });
+    if (d.is4 || fourPlayerMode) updBanish4(); else updBanish();
+    if (d.is4 || fourPlayerMode) netSendState4(); else netSendState();
+  }
+  if (d.t === 'antika_request') {
+    // Nur der BESTOHLENE kennt seine Hand - er waehlt die Karte und meldet sie zurueck.
+    const myLr = d.is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+    if (myLr !== d.targetP) return;
+    const myHandR = d.is4 ? (handOrderByPlayer4p[d.targetP]||[]) : (handOrderByPlayer2p[d.targetP]||[]);
+    if (!myHandR.length) return;
+    const idxR = Math.min(d.cardIdx || 0, myHandR.length - 1);
+    const uidR = myHandR[idxR];
+    const elR = G.cards.find(c => parseInt(c.dataset.uid) === uidR);
+    if (!elR) return;
+    const cdR = {name: elR.dataset.name, color: elR.dataset.color, type: elR.dataset.ctype, file: elR.dataset.file||''};
+    if (d.is4) handOrderByPlayer4p[d.targetP] = myHandR.filter(u => u !== uidR);
+    else handOrderByPlayer2p[d.targetP] = myHandR.filter(u => u !== uidR);
+    elR.remove(); G.cards = G.cards.filter(c => parseInt(c.dataset.uid) !== uidR);
+    if (d.is4) layoutMyHand4(); else layoutMyHand();
+    netSend({t:'antika_steal', cardIdx: idxR, cardName: cdR.name, targetP: d.targetP,
+             activatorP: d.activatorP, is4: d.is4, cd: cdR, newUid: G.nid++, fromTarget: true});
+    if (d.is4) netSendState4(); else netSendState();
+  }
   if (d.t === 'antika_steal') {
     const myL = d.is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
     if (myL === d.targetP) {
@@ -13357,8 +13902,26 @@ if (d.t === 'state4') {
         if (d.is4) layoutMyHand4(); else layoutMyHand();
       }
     } else if (myL === d.activatorP) {
-      // Ich bin der Aktivator: Karte ist schon auf meiner Hand (wurde lokal hinzugefügt)
-      // Nichts zu tun
+      if (d.fromTarget && d.cd) {
+        // Der Bestohlene hat die Karte bestimmt - jetzt erst landet sie auf meiner Hand.
+        const uidN = d.newUid;
+        const elN = spawnCard({name:d.cd.name,color:d.cd.color,type:d.cd.type,uid:uidN,file:d.cd.file},0,0,false);
+        if (d.is4) {
+          if (!handOrderByPlayer4p[d.activatorP]) handOrderByPlayer4p[d.activatorP]=[];
+          handOrderByPlayer4p[d.activatorP].push(uidN);
+          handOrderByPlayer4p[d.targetP] = (handOrderByPlayer4p[d.targetP]||[]).filter((u,i) => i !== d.cardIdx);
+          layoutMyHand4();
+          renderSimulatedHand('p'+d.targetP, handCardsFromUids(handOrderByPlayer4p[d.targetP]), true);
+        } else {
+          if (!handOrderByPlayer2p[d.activatorP]) handOrderByPlayer2p[d.activatorP]=[];
+          handOrderByPlayer2p[d.activatorP].push(uidN);
+          handOrderByPlayer2p[d.targetP] = (handOrderByPlayer2p[d.targetP]||[]).filter((u,i) => i !== d.cardIdx);
+          layoutMyHand();
+          renderSimulatedHand('p'+d.targetP, handCardsFromUids(handOrderByPlayer2p[d.targetP]), false);
+        }
+        if (elN) elN.style.display = '';
+      }
+      // sonst: Karte wurde bereits lokal hinzugefuegt - nichts zu tun
     } else {
       // Beobachter: simulierte Hände aktualisieren
       if (d.is4) {
@@ -13625,6 +14188,11 @@ if (d.t === 'state4') {
     if (d.ablehntTargets) pendingAbility.ablehntTargets = d.ablehntTargets;
     if (d.ablehntCardTargets) pendingAbility.ablehntCardTargets = d.ablehntCardTargets;
       if (d.lastCombatEquip !== undefined) pendingAbility.lastCombatEquip = d.lastCombatEquip;
+      // Kette aus den gespielten Karten NEU berechnen, damit aufgehobene Ablehnt-Karten
+      // auf JEDEM Client wirklich wirkungslos sind (sonst weichen die Ergebnisse ab).
+      if (pendingAbility.ablehntCardTargets && pendingAbility.ablehntCardTargets.length) {
+        recomputeCombatChain(pendingAbility);
+      }
       if (d.locked) {
         // FourAceFour gelegt: Aktivator schließt die Kette ab, alle anderen warten auf 'ability_resolved'
         if (NET.myPlayer === pendingAbility.activatorP) finalizeAbilityChain(d.killsBuwemon);
@@ -13705,7 +14273,16 @@ if (d.t === 'state4') {
     // Guard: UIDs kollidieren zwischen Clients (Host/Gast zählen unabhängig hoch)!
     // Nur löschen wenn KEINE Karte mit dieser UID mehr auf dem Feld liegt.
     const _stillOn = Object.keys(G.slots).some(s => G.slots[s] && String(G.slots[s].uid) === String(d.uid));
-    if (!_stillOn) permanentAbilityUsed.delete(d.uid);
+    if (!_stillOn) { permanentAbilityUsed.delete(d.uid); markPermReset(d.uid); }
+    else if (d.slotId) {
+      // Karte liegt hier (unter der logischen SlotId des Senders) - Reset trotzdem anwenden,
+      // sonst bleibt der Button beim Mitspieler verblasst (z.B. Lord Phillipp).
+      const _cdHere = G.slots[d.slotId];
+      if (_cdHere && String(_cdHere.uid) === String(d.uid)) {
+        permanentAbilityUsed.delete(d.uid); markPermReset(d.uid);
+        delete abilityUsesThisLife['uid:'+d.uid];
+      }
+    }
   }
   if (d.t === 'grave_update') {
     if (d.sender === NET.myPlayer) return;
@@ -13721,8 +14298,16 @@ if (d.t === 'state4') {
       const uid = String(cd.uid);
       if (selfMovedBlockedUids.has(uid)) return;
       permanentAbilityUsed.delete(uid);
-      delete abilityUsesThisLife['uid:'+uid];
-      delete abilityUsesThisLife['slot:'+sid];
+      markPermReset(uid); // sonst holt der eigene State die Sperre gleich zurueck
+      Object.keys(abilityUsesThisLife).forEach(k => {
+        if (k.includes('uid:'+uid) || k.includes('slot:'+sid)) delete abilityUsesThisLife[k];
+      });
+      ragequitBlockedUids.delete(uid);
+      // Dauerfaehigkeit + Schimmer beim neuen Besitzer ebenfalls beenden
+      if (abilActive(sid)) setAbilityShimmer(sid, false);
+      abilSet(sid, false); dinkSet(sid, false); glorSuppSet(sid, false);
+      delete schwammikaState[uid]; delete baristaBlocks[uid];
+      renderSlot(sid);
     });
   }
   if (d.t === 'self_moved_block') {
@@ -14094,6 +14679,7 @@ function applyDebugLpEditable() {
 function toggleDebugMode() {
   debugMode = !debugMode;
   setTimeout(applyDebugLpEditable, 30);
+  setTimeout(refreshDebugPeekMode, 30);
   const btn = document.getElementById('debug-mode-btn');
   if (btn) { btn.textContent = '🐛 Debug Modus: ' + (debugMode ? 'AN' : 'AUS'); btn.style.background = debugMode ? 'linear-gradient(160deg,#ffcc44,#ffaa00)' : ''; }
 }
@@ -14134,6 +14720,11 @@ function resetTurnFlags() {
 // nicht und .filter(Boolean) warf sie raus - die Karten tauchten beim Gegner nur kurz auf
 // und verschwanden sofort wieder (betraf u.a. Ereigniskarten aus Alicia/Fabio/Mecces).
 const handCardDataCache = {};
+// Letzter AUTHENTISCHER Handstand je logischem Spieler (so wie ihn der Besitzer gemeldet
+// hat). handOrderByPlayer* enthaelt fuer fremde Spieler teils Platzhalter-UIDs - darueber
+// war eine korrekte Kartenzaehlung nicht moeglich (fehlende Karten UND Klone).
+const remoteHandCards = {};
+function setRemoteHandCards(logP, list) { remoteHandCards[String(logP)] = (list || []).slice(); }
 function cacheHandCardData(list) {
   (list || []).forEach(h => {
     if (h && h.uid !== undefined) {
@@ -14168,6 +14759,10 @@ function renderSimulatedHand(logicalPfx, cards, is4) {
   const logP = parseInt((logicalPfx.match(/^p(\d)/)||[])[1]||'0');
   if (wanzeRevealedPlayer === logP) return;
   if (marieRevealState && marieRevealState.targetP === logP) return;
+  // Debug-Peek: nach dem Neuaufbau die offenen Bilder wieder herstellen (rein lokal).
+  if (debugMode && debugPeekPlayers && debugPeekPlayers.has(String(logP) + suf)) {
+    setTimeout(() => applyDebugPeek(logP, is4), 0);
+  }
   // Legilimens: nach renderSimulatedHand sofort wieder aufdecken
   const legilIsActive = legilimensRevealedPlayers && legilimensRevealedPlayers.includes(logP);
   const handEl = document.getElementById(physPfx + '-hand' + suf);
