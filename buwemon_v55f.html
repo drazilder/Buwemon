@@ -529,6 +529,7 @@ body {
   </div>
   <span class="sp"></span>
   <button class="tbtn sandbox-only" id="btn-deal" onclick="openDealConfirm()" style="color:#1a4a8a;border-color:rgba(30,80,200,0.3);">🃏 Startkarten ausgeben</button>
+  <button class="tbtn automatik-only" id="btn-log-export" onclick="confirmLogExport()" style="color:#00838a;border-color:rgba(0,131,138,0.35);">📝 Log-Datei ausgeben</button>
   <button class="tbtn" onclick="openDebugMenu()" style="color:#666;border-color:rgba(0,0,0,0.2);">🛠️ Debug</button>
   <button class="tbtn" id="btn-switch-perspective" onclick="openPerspectiveSwitch()" style="display:none;color:#8a3ab0;border-color:rgba(138,58,176,0.3);">🔄 Spieler wechseln</button>
   <button class="tbtn danger" id="btn-reset" onclick="openConfirm()">↺ Neue Runde</button>
@@ -559,7 +560,7 @@ body {
     </div>
   </div>
 
-  <div class="row-zones" style="position:relative;"><div class="grave-wrap" style="align-self:flex-start;"><div class="zone zone-grave" id="p2-grave" onclick="openGraveBrowser('p2')" title="Friedhof ansehen"><span class="zlbl" style="font-size:.62rem;">Friedhof</span><div class="grave-preview" id="p2-grave-preview"></div><div class="grave-count" id="p2-grave-count" style="display:none;"></div></div></div><div class="push" style="min-width:20px;"></div><div class="buw-group"><div class="buw-slot" id="p2-buw1"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p2-buw2"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p2-buw3"><span class="zlbl">Buwemon</span></div></div><div class="push" style="flex:2;"></div><div style="flex:1;min-width:0;"></div><div style="position:absolute;right:0;top:0;bottom:0;display:flex;align-items:stretch;gap:50px;margin-left:200px;"><div class="buw-group" id="p2-effekt-group"><div class="buw-slot effekt-slot" id="p2-eff1"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff2"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff3"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff4"><span class="zlbl">Effekt</span></div></div><div class="grave-wrap" style="gap:6px;align-self:flex-start;"><div class="zone zone-grave verbot-slot" id="p2-verbot1"></div><div class="zone zone-grave verbot-slot" id="p2-verbot2"></div><div class="zone zone-grave verbot-slot" id="p2-verbot3"></div></div><div class="grave-wrap" style="align-self:flex-start;"><div class="lp-box" style="position:relative;"><div class="lp-display" id="p2-lp">300</div><div class="lp-calc sandbox-only" style="display:flex;"><input type="text" id="p2-lp-input" placeholder="" onkeydown="lpKey(event,2)"><button onclick="openLpOptPopup(2,false)" class="lp-ok" id="p2-lp-ok" style="font-size:.55rem;">Opt</button></div><div class="lp-calc automatik-only"><button onclick="openLpHistoryDirect(2,false)" class="lp-ok" id="p2-lp-ok-auto" style="font-size:.6rem;width:100%;">Verlauf</button></div><button class="turn-btn" id="turn-btn-p2" onclick="endTurnPhysical(2)" disabled style="position:absolute;left:0;right:0;top:100%;margin-top:4px;">Zug beenden</button></div></div></div></div>
+  <div class="row-zones" style="position:relative;"><div class="grave-wrap" style="align-self:flex-start;"><div class="zone zone-grave" id="p2-grave" onclick="openGraveBrowser('p2')" title="Friedhof ansehen"><span class="zlbl" style="font-size:.62rem;">Friedhof</span><div class="grave-preview" id="p2-grave-preview"></div><div class="grave-count" id="p2-grave-count" style="display:none;"></div></div></div><div class="push" style="min-width:20px;"></div><div class="buw-group"><div class="buw-slot" id="p2-buw1"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p2-buw2"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p2-buw3"><span class="zlbl">Buwemon</span></div></div><div class="push" style="flex:2;"></div><div style="flex:1;min-width:0;"></div><div style="position:absolute;right:0;top:0;bottom:0;display:flex;align-items:stretch;gap:50px;margin-left:200px;"><div class="buw-group" id="p2-effekt-group"><div class="buw-slot effekt-slot" id="p2-eff1"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff2"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff3"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p2-eff4"><span class="zlbl">Effekt</span></div></div><div class="grave-wrap" style="gap:6px;align-self:flex-start;"><div class="zone zone-grave verbot-slot" id="p2-verbot1"></div><div class="zone zone-grave verbot-slot" id="p2-verbot2"></div><div class="zone zone-grave verbot-slot" id="p2-verbot3"></div></div><div class="grave-wrap" style="align-self:flex-start;"><div class="lp-box" style="position:relative;"><div class="lp-display" id="p2-lp">300</div><div class="lp-calc sandbox-only" style="display:flex;"><input type="text" id="p2-lp-input" placeholder="" onkeydown="lpKey(event,2)"><button onclick="openLpOptPopupPhys(2,false)" class="lp-ok" id="p2-lp-ok" style="font-size:.55rem;">Opt</button></div><div class="lp-calc automatik-only"><button onclick="openLpHistoryDirect(2,false)" class="lp-ok" id="p2-lp-ok-auto" style="font-size:.6rem;width:100%;">Verlauf</button></div><button class="turn-btn" id="turn-btn-p2" onclick="endTurnPhysical(2)" disabled style="position:absolute;left:0;right:0;top:100%;margin-top:4px;">Zug beenden</button></div></div></div></div>
 
   <div class="row-ex" id="p2-ex-row" style="display:flex;align-items:stretch;flex:11;min-height:0;">
     <div id="p2-ex-space" style="flex:none;width:0;"></div><!-- grave spacer -->
@@ -618,7 +619,7 @@ body {
     <div style="width:calc(var(--cw) + 4px);flex-shrink:0;"></div><!-- grave spacer -->
   </div>
 
-  <div class="row-zones" style="position:relative;"><div style="flex:1;min-width:0;"></div><div class="push" style="flex:2;"></div><div class="buw-group"><div class="buw-slot" id="p1-buw1"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p1-buw2"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p1-buw3"><span class="zlbl">Buwemon</span></div></div><div class="push" style="min-width:20px;"></div><div class="grave-wrap" style="align-self:flex-end;"><div class="zone zone-grave" id="p1-grave" onclick="openGraveBrowser('p1')" title="Friedhof ansehen"><span class="zlbl" style="font-size:.62rem;">Friedhof</span><div class="grave-preview" id="p1-grave-preview"></div><div class="grave-count" id="p1-grave-count" style="display:none;"></div></div></div><div style="position:absolute;left:0;top:0;bottom:0;display:flex;align-items:stretch;gap:50px;margin-right:200px;"><div class="grave-wrap" style="align-self:flex-end;"><div class="lp-box" style="position:relative;"><button class="turn-btn" id="turn-btn-p1" onclick="endTurnPhysical(1)" disabled style="position:absolute;left:0;right:0;bottom:100%;margin-bottom:4px;">Zug beenden</button><div class="lp-display" id="p1-lp">300</div><div class="lp-calc sandbox-only" style="display:flex;"><input type="text" id="p1-lp-input" placeholder="" onkeydown="lpKey(event,1)"><button onclick="openLpOptPopup(1,false)" class="lp-ok" id="p1-lp-ok" style="font-size:.55rem;">Opt</button></div><div class="lp-calc automatik-only"><button onclick="openLpHistoryDirect(1,false)" class="lp-ok" id="p1-lp-ok-auto" style="font-size:.6rem;width:100%;">Verlauf</button></div></div></div><div class="grave-wrap" style="gap:6px;align-self:flex-end;"><div class="zone zone-grave verbot-slot" id="p1-verbot1"></div><div class="zone zone-grave verbot-slot" id="p1-verbot2"></div><div class="zone zone-grave verbot-slot" id="p1-verbot3"></div></div><div class="buw-group" id="p1-effekt-group"><div class="buw-slot effekt-slot" id="p1-eff1"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff2"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff3"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff4"><span class="zlbl">Effekt</span></div></div></div></div>
+  <div class="row-zones" style="position:relative;"><div style="flex:1;min-width:0;"></div><div class="push" style="flex:2;"></div><div class="buw-group"><div class="buw-slot" id="p1-buw1"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p1-buw2"><span class="zlbl">Buwemon</span></div><div class="buw-slot" id="p1-buw3"><span class="zlbl">Buwemon</span></div></div><div class="push" style="min-width:20px;"></div><div class="grave-wrap" style="align-self:flex-end;"><div class="zone zone-grave" id="p1-grave" onclick="openGraveBrowser('p1')" title="Friedhof ansehen"><span class="zlbl" style="font-size:.62rem;">Friedhof</span><div class="grave-preview" id="p1-grave-preview"></div><div class="grave-count" id="p1-grave-count" style="display:none;"></div></div></div><div style="position:absolute;left:0;top:0;bottom:0;display:flex;align-items:stretch;gap:50px;margin-right:200px;"><div class="grave-wrap" style="align-self:flex-end;"><div class="lp-box" style="position:relative;"><button class="turn-btn" id="turn-btn-p1" onclick="endTurnPhysical(1)" disabled style="position:absolute;left:0;right:0;bottom:100%;margin-bottom:4px;">Zug beenden</button><div class="lp-display" id="p1-lp">300</div><div class="lp-calc sandbox-only" style="display:flex;"><input type="text" id="p1-lp-input" placeholder="" onkeydown="lpKey(event,1)"><button onclick="openLpOptPopupPhys(1,false)" class="lp-ok" id="p1-lp-ok" style="font-size:.55rem;">Opt</button></div><div class="lp-calc automatik-only"><button onclick="openLpHistoryDirect(1,false)" class="lp-ok" id="p1-lp-ok-auto" style="font-size:.6rem;width:100%;">Verlauf</button></div></div></div><div class="grave-wrap" style="gap:6px;align-self:flex-end;"><div class="zone zone-grave verbot-slot" id="p1-verbot1"></div><div class="zone zone-grave verbot-slot" id="p1-verbot2"></div><div class="zone zone-grave verbot-slot" id="p1-verbot3"></div></div><div class="buw-group" id="p1-effekt-group"><div class="buw-slot effekt-slot" id="p1-eff1"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff2"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff3"><span class="zlbl">Effekt</span></div><div class="buw-slot effekt-slot" id="p1-eff4"><span class="zlbl">Effekt</span></div></div></div></div>
 
   <div class="row-hand">
     <div class="zone zone-hand" id="p1-hand">
@@ -676,7 +677,7 @@ body {
   <div id="p1-lp-4" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:default;outline:none;font-family:'AiSpec',sans-serif;font-style:italic;user-select:none;">300</div>
   <div class="sandbox-only" style="display:flex;gap:2px;margin-top:5px;">
     <input id="p1-lp-inp-4" type="text" onkeydown="lpKey4(event,1)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
-    <button id="p1-lp-ok-4" onclick="openLpOptPopup(1,true)" class="lp-ok-4" style="font-size:.5rem;">Opt</button>
+    <button id="p1-lp-ok-4" onclick="openLpOptPopupPhys(1,true)" class="lp-ok-4" style="font-size:.5rem;">Opt</button>
   </div>
   <div class="automatik-only" style="gap:2px;margin-top:5px;">
     <button id="p1-lp-ok-4-auto" onclick="openLpHistoryDirect(1,true)" class="lp-ok-4" style="font-size:.55rem;width:100%;">Verlauf</button>
@@ -688,7 +689,7 @@ body {
   <div id="p2-lp-4" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:default;outline:none;font-family:'AiSpec',sans-serif;font-style:italic;user-select:none;">300</div>
   <div class="sandbox-only" style="display:flex;gap:2px;margin-top:5px;">
     <input id="p2-lp-inp-4" type="text" onkeydown="lpKey4(event,2)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
-    <button id="p2-lp-ok-4" onclick="openLpOptPopup(2,true)" class="lp-ok-4" style="font-size:.5rem;">Opt</button>
+    <button id="p2-lp-ok-4" onclick="openLpOptPopupPhys(2,true)" class="lp-ok-4" style="font-size:.5rem;">Opt</button>
   </div>
   <div class="automatik-only" style="gap:2px;margin-top:5px;">
     <button id="p2-lp-ok-4-auto" onclick="openLpHistoryDirect(2,true)" class="lp-ok-4" style="font-size:.55rem;width:100%;">Verlauf</button>
@@ -702,7 +703,7 @@ body {
   <div id="p3-lp-4" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:default;outline:none;font-family:'AiSpec',sans-serif;font-style:italic;user-select:none;">300</div>
   <div class="sandbox-only" style="display:flex;gap:2px;margin-top:5px;">
     <input id="p3-lp-inp-4" type="text" onkeydown="lpKey4(event,3)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
-    <button id="p3-lp-ok-4" onclick="openLpOptPopup(3,true)" class="lp-ok-4" style="font-size:.5rem;">Opt</button>
+    <button id="p3-lp-ok-4" onclick="openLpOptPopupPhys(3,true)" class="lp-ok-4" style="font-size:.5rem;">Opt</button>
   </div>
   <div class="automatik-only" style="gap:2px;margin-top:5px;">
     <button id="p3-lp-ok-4-auto" onclick="openLpHistoryDirect(3,true)" class="lp-ok-4" style="font-size:.55rem;width:100%;">Verlauf</button>
@@ -714,7 +715,7 @@ body {
   <div id="p4-lp-4" style="background:rgba(255,255,255,0.85);border:2px solid rgba(0,0,0,0.2);border-radius:6px;text-align:center;padding:6px 3px;font-size:1.1rem;font-weight:800;color:#222;cursor:default;outline:none;font-family:'AiSpec',sans-serif;font-style:italic;user-select:none;">300</div>
   <div class="sandbox-only" style="display:flex;gap:2px;margin-top:5px;">
     <input id="p4-lp-inp-4" type="text" onkeydown="lpKey4(event,4)" style="flex:1;min-width:0;background:rgba(255,255,255,0.7);border:1px solid rgba(0,0,0,0.15);border-radius:3px;padding:2px 2px;font-size:.6rem;text-align:center;">
-    <button id="p4-lp-ok-4" onclick="openLpOptPopup(4,true)" class="lp-ok-4" style="font-size:.5rem;">Opt</button>
+    <button id="p4-lp-ok-4" onclick="openLpOptPopupPhys(4,true)" class="lp-ok-4" style="font-size:.5rem;">Opt</button>
   </div>
   <div class="automatik-only" style="gap:2px;margin-top:5px;">
     <button id="p4-lp-ok-4-auto" onclick="openLpHistoryDirect(4,true)" class="lp-ok-4" style="font-size:.55rem;width:100%;">Verlauf</button>
@@ -1094,6 +1095,20 @@ body {
 // Lazy-Getter: das Label-<div> existiert erst nach dem DOM-Aufbau, netSend/onNetData
 // laufen aber ohnehin erst nach User-Interaktion.
 let _gameVersionCache = null;
+// ZIEHSTAPEL-VERSION. Der Stapel wurde per "letzter State gewinnt" uebernommen - ein noch
+// unterwegs befindlicher ALTER State legte eine gerade gezogene Karte wieder zurueck.
+// Ergebnis: beide Spieler zogen dieselbe Karte (Klon) und die Reihenfolge verschob sich.
+// Jede Stapel-Aenderung erhoeht den Zaehler; aeltere Staende werden ignoriert.
+let _deckSeq = 0;
+function bumpDeckSeq() { _deckSeq++; }
+function acceptDeck(remoteDeck, remoteSeq, is4) {
+  if (remoteDeck === undefined) return false;
+  if (remoteSeq !== undefined && remoteSeq < _deckSeq) return false; // veraltet -> verwerfen
+  if (remoteSeq !== undefined) _deckSeq = remoteSeq;
+  if (is4) { G4.deck = remoteDeck; G.deck = G4.deck; } else { G.deck = remoteDeck; }
+  return true;
+}
+
 function getGameVersion() {
   if (_gameVersionCache) return _gameVersionCache;
   try { const el = document.getElementById('game-version-label'); _gameVersionCache = ((el ? el.textContent : '').trim() || 'dev'); }
@@ -1251,6 +1266,8 @@ function updateTopbarScore() {
 
 // startTs: intern, ob der Aufruf vom Netzwerk kommt (verhindert erneutes Senden)
 function startGameTimer(fromNetwork) {
+  // Neue Partie -> frisches Protokoll (nur wenn Logging aktiv ist)
+  try { if (loggingAN && !_gameLog) logInit(); } catch(e) {}
   if (_timerStarted) return;
   _timerStarted = true;
   // Immer die eigene lokale Uhr verwenden - kein Zeitstempel-Abgleich zwischen
@@ -1317,6 +1334,8 @@ function awardRoundWin(winnerP, is4) {
   if (_roundScored) return;
   _roundScored = true;
   stopGameTimer();
+  // Partie vorbei -> Protokoll als Textdatei herunterladen (passiv, stoert nichts)
+  try { logAction('rundenende', { winner: winnerP }); logDownloadIfAny({ winner: winnerP, is4: !!is4 }); } catch(e) {}
   // Im 4-Spieler-Mehrspieler erkennt JEDER Client den Sieg unabhängig selbst (da
   // checkDeathCondition4 durch jede LP-Sync-Nachricht auf allen Clients ausgelöst
   // wird) -> nur der Host zählt tatsächlich hoch, sonst Mehrfachzählung.
@@ -1564,7 +1583,8 @@ function autoDrawIfMyTurn2p(p, seq) {
     return;
   }
   _lastAutoDrawSeq2p = seq;
-  const cd = G.deck.shift();
+  const cd = G.deck.shift(); bumpDeckSeq();
+  try { logAction('ziehen', { karte: cd && cd.name }); } catch(e) {}
   updDeck();
   const uid = G.nid++;
   const el = spawnCard({name:cd.name, color:cd.color, type:cd.type, uid, file:cd.file||''}, 0, 0, false);
@@ -1707,7 +1727,8 @@ function autoDrawIfMyTurn4p(p, seq) {
     return;
   }
   _lastAutoDrawSeq4p = seq;
-  const cd = G4.deck.shift();
+  const cd = G4.deck.shift(); bumpDeckSeq();
+  try { logAction('ziehen', { karte: cd && cd.name }); } catch(e) {}
   updDeck4();
   const uid = G.nid++;
   const el = spawnCard({name:cd.name, color:cd.color, type:cd.type, uid, file:cd.file||''}, 0, 0, false);
@@ -1845,6 +1866,7 @@ function endTurnPhysical(physP) {
 function endTurn(p) {
   if (TURN_2P !== p) return;
   if (combatBlocksEndTurn(false)) return;
+  try { logZugende(p); } catch(e) {}
   clearWanzeReveal();
   clearDinkelmehlSuppression();
   ragequitBlockedUids.clear();
@@ -1860,7 +1882,10 @@ function endTurn(p) {
       const sid = pfx+'-'+es; const nc = G.slots[sid];
       if (nc && nc.name === 'Nachschlag') {
         G.slots[sid]=null; renderSlot(sid); G.graves[pfx].push({name:'Nachschlag',color:nc.color,type:'eff',file:''}); updGrave(pfx);
-        if (NET.mode==='multi') netSend({t:'slot_update', slotId: sid, cd: null, is4:false});
+        if (NET.mode==='multi') {
+          netSend({t:'slot_update', slotId: sid, cd: null, is4:false});
+          netSend({t:'grave_update', player: pfx, grave: G.graves[pfx], is4:false, sender:NET.myPlayer});
+        }
       }
     });
   }
@@ -1887,6 +1912,7 @@ function endTurnPhysical4(physP) {
 function endTurn4(p) {
   if (TURN_4P !== p) return;
   if (combatBlocksEndTurn(true)) return;
+  try { logZugende(p); } catch(e) {}
   clearWanzeReveal();
   clearDinkelmehlSuppression();
   ragequitBlockedUids.clear();
@@ -1899,7 +1925,17 @@ function endTurn4(p) {
     const pfx = 'p'+p;
     ['eff1','eff2','eff3','eff4'].forEach(es => {
       const sid = pfx+'-'+es+'-4'; const nc = G.slots[sid];
-      if (nc && nc.name === 'Nachschlag') { G.slots[sid]=null; renderSlot(sid); G4.graves[pfx].push({name:'Nachschlag',color:nc.color,type:'eff',file:''}); updGrave4(pfx); }
+      if (nc && nc.name === 'Nachschlag') {
+        G.slots[sid]=null; renderSlot(sid);
+        G4.graves[pfx].push({name:'Nachschlag',color:nc.color,type:'eff',file:''}); updGrave4(pfx);
+        // OHNE diese Meldungen leerte nur DIESER Client den Slot - der naechste State eines
+        // Mitspielers klonte die Karte danach ins Effektfeld zurueck (sie lag dann im
+        // Friedhof UND im Feld). Der 2P-Zweig hatte slot_update laengst, der 4P-Zweig nicht.
+        if (NET.mode==='multi') {
+          netSend({t:'slot_update', slotId: sid, cd: null, is4:true});
+          netSend({t:'grave4_update', player: pfx, graves: G4.graves[pfx]});
+        }
+      }
     });
   }
   const next = nextTurnPlayer4(p);
@@ -2142,7 +2178,8 @@ function drawCard(e){
     return; // im Automatik-Modus wird nie manuell gezogen - das Ziehen passiert automatisch bei Zugbeginn
   }
   if(e){ e.preventDefault(); e.stopPropagation(); }
-  const cd=G.deck.shift();updDeck();startGameTimer();
+  const cd=G.deck.shift(); bumpDeckSeq();
+  try { logAction('ziehen', { karte: cd && cd.name }); } catch(e) {}updDeck();startGameTimer();
   if(e && e.clientX){
     const gp=clientToGame(e.clientX, e.clientY);
     const el=spawnCard(cd, clampX(gp.x-31), clampY(gp.y-44), true);
@@ -2431,6 +2468,8 @@ function openGraveBrowser(physPlayer){openBrowser(toLogicalId(physPlayer),'all')
 
 // ── BROWSER ──
 function openBrowser(source,mode,btnEl){
+  try { logAction('popup_geoeffnet', { modus: mode, quelle: source,
+    obersteKarten: (source === 'deck') ? (G.deck||[]).slice(0,10).map(c=>c&&c.name) : undefined }); } catch(e) {}
   if (btnEl) pressAbilityBtn(btnEl);
   G.browserSource=source;G.browserMode=mode;
   const isGrave=source==='p1'||source==='p2'||source==='p3'||source==='p4';
@@ -2445,6 +2484,11 @@ function openKontrollfreak(btnEl){ openBrowser('deck','kontrollfreak',btnEl); }
 function openKontrollfreak4(btnEl){ openBrowser4('kontrollfreak',btnEl); }
 
 function closeBrowser(){
+  // Was im Popup zu sehen war und dass es (ohne Mischen) geschlossen wurde.
+  try { if (G.browserMode) logAction('popup_geschlossen', { modus: G.browserMode,
+    quelle: G.browserSource,
+    obersteKarten: (G.browserSource === 'deck' || !G.browserSource)
+      ? (G.deck||[]).slice(0,10).map(c=>c&&c.name) : undefined }); } catch(e) {}
   document.getElementById('browser-modal').classList.remove('open');
   // Popup manuell geschlossen ohne Karte zu nehmen -> "Eine Runde noch" jetzt ablegen.
   if (typeof finishEineRundeNoch === 'function') finishEineRundeNoch();
@@ -2457,7 +2501,13 @@ document.getElementById('browser-modal').addEventListener('click',e=>{if(e.targe
 function renderBrowserList(){
   const isGrave=G.browserSource==='p1'||G.browserSource==='p2'||G.browserSource==='p3'||G.browserSource==='p4';
   const isBanish=G.browserSource==='banish';
-  const full=isGrave?G.graves[G.browserSource]:(isBanish?G.banish:G.deck);
+  // Im 4P-Board liegen die Friedhoefe in G4.graves. G.graves kennt nur p1/p2 - fuer p3/p4
+  // kam dort undefined heraus und renderBrowserList brach ab ("rawData is undefined").
+  // Betroffen war jeder Client, bei dem noch kein grave4_update fuer den Spieler ankam.
+  const _is4B = (typeof fourPlayerMode !== 'undefined' && fourPlayerMode);
+  const _graveSrc = _is4B ? (G4.graves || {}) : (G.graves || {});
+  const full=(isGrave?(_graveSrc[G.browserSource] || (G.graves||{})[G.browserSource] || [])
+                     :(isBanish?(G.banish||[]):(G.deck||[]))) || [];
   const rawData=G.browserMode==='gossip4'?full.slice(0,G._gossipCount4||4):(G.browserMode==='top4'?full.slice(0,4):full);
   // Reverse order for grave/banish: newest first
   const data=(isGrave||isBanish)?[...rawData].reverse():rawData;
@@ -2496,8 +2546,8 @@ function renderBrowserList(){
 
 // Im 4P-Board MUSS netSendState4 genutzt werden - netSendState schickt den 2P-State,
 // die neue Ziehstapel-Reihenfolge kam dort nie an (Gossip wirkte wirkungslos).
-function moveBCard(i,dir){const j=i+dir;if(j<0||j>=G.deck.length)return;[G.deck[i],G.deck[j]]=[G.deck[j],G.deck[i]];renderBrowserList();if(NET.mode==='multi'){ if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) { G4.deck = G.deck; netSendState4(); } else netSendState(); }}
-function moveBCardTop(i){const c=G.deck.splice(i,1)[0];G.deck.unshift(c);renderBrowserList();if(NET.mode==='multi'){ if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) { G4.deck = G.deck; netSendState4(); } else netSendState(); }}
+function moveBCard(i,dir){const j=i+dir;if(j<0||j>=G.deck.length)return;[G.deck[i],G.deck[j]]=[G.deck[j],G.deck[i]];bumpDeckSeq();renderBrowserList();try{logAction('stapel_sortieren',{karte:G.deck[j]&&G.deck[j].name,von:i,nach:j,quelle:G.browserSource||'deck'});}catch(e){}if(NET.mode==='multi'){ if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) { G4.deck = G.deck; netSendState4(); } else netSendState(); }}
+function moveBCardTop(i){const c=G.deck.splice(i,1)[0];G.deck.unshift(c);bumpDeckSeq();renderBrowserList();try{logAction('stapel_sortieren',{karte:c&&c.name,von:i,nach:0,quelle:G.browserSource||'deck'});}catch(e){}if(NET.mode==='multi'){ if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) { G4.deck = G.deck; netSendState4(); } else netSendState(); }}
 function bRemoveCard(i, src){
   src = src || G.browserSource;
   const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
@@ -2510,8 +2560,8 @@ function bRemoveCard(i, src){
     if(is4){ G4.banish.splice(i,1); G.banish=G4.banish; updBanish4(); }
     else { G.banish.splice(i,1); updBanish(); }
   } else {
-    if(is4){ G4.deck.splice(i,1); G.deck=G4.deck; updDeck4(); }
-    else { G.deck.splice(i,1); updDeck(); }
+    if(is4){ G4.deck.splice(i,1); G.deck=G4.deck; updDeck4(); bumpDeckSeq(); }
+    else { G.deck.splice(i,1); updDeck(); bumpDeckSeq(); }
   }
   G.browserSource=src;
   renderBrowserList();
@@ -2520,6 +2570,13 @@ function bRemoveCard(i, src){
 function bCardToField(i, src){
   src = src || G.browserSource;
   const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
+  // Welche Karte aus welchem Stapel geholt wurde (Schicksal, Friedhof, Entferntstapel ...)
+  try {
+    const _srcArr = (src==='banish') ? (G.banish||[])
+      : ((src && src[0]==='p') ? ((is4 ? G4.graves[src] : G.graves[src]) || []) : (G.deck||[]));
+    const _c = _srcArr[i];
+    logAction('karte_holen', { karte: _c && _c.name, quelle: src, index: i, modus: G.browserMode });
+  } catch(e) {}
   const isGrave=src==='p1'||src==='p2'||src==='p3'||src==='p4';
   const isBanish=src==='banish';
   let cd;
@@ -2531,7 +2588,7 @@ function bCardToField(i, src){
     else { cd=G.banish.splice(i,1)[0]; updBanish(); }
   } else {
     if(is4){ cd=G4.deck.splice(i,1)[0]; G.deck=G4.deck; updDeck4(); }
-    else { cd=G.deck.splice(i,1)[0]; updDeck(); }
+    else { cd=G.deck.splice(i,1)[0]; updDeck(); bumpDeckSeq(); }
   }
   const nidSrc = is4 ? G4 : G;
   cd = {...cd, uid: nidSrc.nid++};
@@ -2549,7 +2606,9 @@ function bCardToField(i, src){
 }
 function shuffleAndClose(){
   const _wasKontrollfreak = (G.browserMode === 'kontrollfreak');
-  shuffle(G.deck); updDeck(); closeBrowser();
+  try { logAction('stapel_mischen', { modus: G.browserMode,
+    reihenfolgeVorher: (G.deck||[]).slice(0,10).map(c=>c&&c.name) }); } catch(e) {}
+  shuffle(G.deck); bumpDeckSeq(); updDeck(); closeBrowser();
   if (NET.mode === 'multi') {
     if (_wasKontrollfreak) {
       const _is4k = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
@@ -3113,6 +3172,10 @@ function beginAbilityActivation(el, abilityKey, abilityName, resolveFn, defender
     isClariPhase1: abilityKey === 'clari_phase1',
     isDrogen: (extra && extra.isDrogen) || false,
   };
+  try { logAction(abilityKey === 'angriff' ? 'angriff' : 'faehigkeit', {
+    karte: data.cardName, faehigkeit: abilityName, slot: slotId,
+    ziel: defenderSlotId || null, zielName: data.defenderName || null,
+    zusatz: (extra && extra.extraText) || '' }); } catch(e) {}
   if (NET.mode === 'multi') netSend({t:'ability_pending', ...data, sender: NET.myPlayer});
   // Zug-Regel: Fähigkeit ODER Angriff als genutzt markieren (verbraucht die Buwemonaktion)
   // _schwActionOpen fasst Saugkraft + Folgeaktion zu EINER Aktion zusammen - frueher wurde
@@ -3232,6 +3295,15 @@ function openAbilityRound(phase) {
     }
     pendingAbility.declinedBy.add(NET.myPlayer);
     netSend({t:'ability_decline', player: NET.myPlayer});
+    // "Nichts tun" ebenfalls protokollieren - inklusive der Karten, die stattdessen
+    // spielbar gewesen waeren (nur die eigenen, andere kennt der Client nicht).
+    try {
+      const _is4Log2 = (typeof fourPlayerMode !== 'undefined' && fourPlayerMode);
+      const _orders2 = _is4Log2 ? handOrderByPlayer4p : handOrderByPlayer2p;
+      const _handNow2 = handCardsFromUids(_orders2[NET.myPlayer] || []).filter(c => c && c.name);
+      logAction('nichts_tun', { spieler: NET.myPlayer,
+        eigeneHand: _handNow2.map(c => c.name) });
+    } catch(e) {}
     checkAllDeclined();
   };
 
@@ -3479,6 +3551,8 @@ function tryConfirmAblehntTarget(equipIdx, targetSlotId) {
   pendingAbility.playedCards.push({ player: sel.player, slotId: sel.ablehntSlotId, cardName: 'Ablehnt',
     cardColor: sel.cd.color, cardType: sel.cd.type || sel.cd.ctype, cardFile: sel.cd.file || '',
     ablehntOf: eq.name });
+  try { logAction('ablehnt_ziel', { spieler: sel.player, zielTyp: 'ausruestung',
+    zielKarte: eq.name, anBuwemon: _slotAbl }); } catch(e) {}
   pendingAbility.lastActor = sel.player;
   pendingAbility.chainStep++;
   if (NET.mode === 'multi') {
@@ -3525,6 +3599,8 @@ function confirmAblehntCardTarget(effSlotId) {
   pendingAbility.playedCards.push({ player: sel.player, slotId: sel.ablehntSlotId, cardName: 'Ablehnt',
     cardColor: sel.cd.color, cardType: sel.cd.type || sel.cd.ctype, cardFile: sel.cd.file || '',
     ablehntOf: 'Ablehnt' });
+  try { logAction('ablehnt_ziel', { spieler: sel.player, zielTyp: 'ablehnt',
+    zielSlot: effSlotId }); } catch(e) {}
   pendingAbility.lastActor = sel.player;
   pendingAbility.chainStep++;
   recomputeCombatChain(pendingAbility); // Wirkung des getroffenen Ablehnt zurueckdrehen
@@ -3704,6 +3780,20 @@ function checkAbilityBlock(cd, slotId) {
 
   pendingAbility.playedCards.push({ player, slotId, cardName: cd.name, cardColor: cd.color, cardType: cd.type || cd.ctype, cardFile: cd.file || '' });
   pendingAbility.lastActor = player;
+  // Verteidigungsentscheidung protokollieren - inklusive der Karten, die der Spieler
+  // stattdessen haette spielen koennen (nur seine EIGENEN Handkarten, andere kennt der
+  // Client nicht). Nur auf dem eigenen Client loggen (NET.myPlayer === player).
+  try {
+    const _is4Log = (typeof fourPlayerMode !== 'undefined' && fourPlayerMode);
+    const _myLogP = (NET.mode === 'multi') ? NET.myPlayer : ((_is4Log ? myLogicalPlayer4p() : myLogicalPlayer2p()));
+    if (NET.mode !== 'multi' || _myLogP === player) {
+      const _orders = _is4Log ? handOrderByPlayer4p : handOrderByPlayer2p;
+      const _handNow = handCardsFromUids(_orders[player] || []).filter(c => c && c.name);
+      const _optionen = _handNow.filter(c => validNames.includes(c.name)).map(c => c.name);
+      logAction('verteidigung_gespielt', { karte: cd.name, spieler: player,
+        gegenKampf: !!isAttack, verfuegbareOptionen: _optionen });
+    }
+  } catch(e) {}
   pendingAbility.chainStep++;
 
   if (NET.mode === 'multi') {
@@ -3993,12 +4083,17 @@ function applyLpDamage(p, amount, is4, attackerColor) {
     G4.lp[p] = Math.max(0, G4.lp[p] - amount);
     const lpEl = document.getElementById(physId('p'+p)+'-lp-4');
     if (lpEl) lpEl.textContent = G4.lp[p];
+    // JEDER angezeigte Wert gehoert in den Verlauf. applyLpDamage hat ihn frueher NICHT
+    // aufgezeichnet - der Empfaenger der lp-Nachricht dagegen schon. Dadurch war der
+    // Verlauf lueckenhaft und sah bei jedem Spieler anders aus.
+    logLpHistory(p, G4.lp[p], true);
     checkDeathCondition4(p);
     if (NET.mode === 'multi') netSend({t:'lp4', p, val: G4.lp[p], increased: false});
   } else {
     G.lp[p] = Math.max(0, G.lp[p] - amount);
     const lpEl = document.getElementById(physId('p'+p)+'-lp');
     if (lpEl) lpEl.textContent = G.lp[p];
+    logLpHistory(p, G.lp[p], false);
     checkLPWin(p);
     if (NET.mode === 'multi') netSend({t:'lp', p, val: G.lp[p], increased: false});
   }
@@ -4332,6 +4427,21 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
         setTimeout(() => { showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t, is4}); }, 600);
       }
     }
+    // Fehlgeschlagene Calgon/Stein-Abwehr: NOCH EINE Abwehr-Runde eroeffnen, damit ein
+    // weiteres Calgon o.ae. gespielt werden kann. Diese Wiederholung gab es bisher nur im
+    // Buwemon-gegen-Buwemon-Zweig - beim DIREKTANGRIFF auf die LP kassierte der Spieler
+    // den Schaden sofort, ohne zweite Chance.
+    if (!directFails && directDefense
+        && (directDefense.name === 'Calgon' || directDefense.name === 'Stein')
+        && !window._defenseRetryDone) {
+      window._defenseRetryDone = true;
+      setTimeout(() => {
+        window._defenseRetryDone = false;
+        if (pendingAbility) return; // laeuft schon wieder etwas
+        reopenDefenseRound(sel, defenderSlotId, defenderP, isDirect, preEquipCount, is4);
+      }, 1400);
+      return;
+    }
     const _atkCd = G.slots[toLogicalId(sel.slotId)]; if (!directFails) applyLpDamage(defenderP, sel.attackPower, is4, _atkCd ? _atkCd.color : null);
     if (sel.isDrogen || (sel.attackName && sel.attackName.includes('Drogen'))) applyDrogenNacheffekt(sel.slotId, false);
     clearCombatEquipAfterFight([sel.slotId].filter(Boolean), is4);
@@ -4546,6 +4656,10 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
   else if (diff < 0) summary = coloredAbilName(sel.cardEl.dataset.name, sel.cardEl.dataset.color) + ' stirbt - ' + lpOptPlayerName(sel.attackerP, is4) + ' verliert ' + (-diff) + ' LP';
   else summary = 'Beide Buwemon sterben - niemand verliert LP';
   showOutcomeToast('Kampf: ' + summary, is4);
+  // ALLEN Spielern zeigen. Der Text wird FERTIG verschickt: lpOptPlayerName loest den
+  // Namen aus der Sicht des jeweiligen Clients auf und haette beim Empfaenger sonst den
+  // falschen (oder gar keinen) Namen ergeben. Frueher sah nur der Angreifer das Ergebnis.
+  if (NET.mode === 'multi') netSend({t:'outcome_toast', text: 'Kampf: ' + summary, is4});
 
   if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
 
@@ -6044,7 +6158,7 @@ function beginSummonSelection(ownerP, cfg, is4) {
   const fieldListeners = fieldCards.map(({slotId:fslotId, cd:fcd}) => {
     const physEl = document.getElementById(physId(fslotId));
     if (!physEl) return null;
-    const fn = (e) => { e.stopPropagation(); toggleCard('f:'+fslotId, fcd.name, fcd.color, physEl.querySelector('img')); };
+    const fn = (e) => { e.stopPropagation(); toggleCard('f:'+fslotId, fcd.name, fcd.color, buwImgOfSlot(physEl)); };
     physEl.addEventListener('pointerdown', fn, true);
     return {physEl, fn};
   });
@@ -8260,6 +8374,18 @@ function rollDice(){
 
 // ── LP DIRECT EDIT ──
 // ── LP-VERLAUF ──
+// LP-Verlauf zusammenfuehren statt ueberschreiben: beide Seiten haben eigene Eintraege
+// (z.B. Debug-Eingaben), und wer laenger ist, hat mehr gesehen. Der laengere Verlauf
+// gewinnt - so sieht jeder Spieler denselben.
+function mergeLpHistory(remote, is4) {
+  if (!remote) return;
+  const local = is4 ? G4.lpHistory : G.lpHistory;
+  Object.keys(remote).forEach(k => {
+    const r = remote[k] || [];
+    if (!local[k] || r.length > local[k].length) local[k] = r.slice();
+  });
+}
+
 function logLpHistory(p, val, is4) {
   const hist = is4 ? G4.lpHistory : G.lpHistory;
   if (!hist[p]) hist[p] = [300];
@@ -8276,6 +8402,15 @@ function lpOptPlayerName(p, is4) {
     return NET.myPlayer === p ? (NET.myName || ('Spieler '+p)) : (NET.enemyName || ('Spieler '+p));
   }
   return 'Spieler ' + p;
+}
+
+// Die LP-/Verlauf-Buttons stehen im Markup an FESTEN Positionen und uebergeben deshalb
+// die PHYSISCHE Spielernummer. Rotiert die Perspektive (Gast P3 sieht sich selbst unten),
+// gehoert dieselbe Position aber einem anderen logischen Spieler - dadurch oeffnete jeder
+// Gast das Popup des Hosts. SLOT-ID-VERTRAG: physisch -> logisch nur hier umrechnen.
+function openLpOptPopupPhys(physP, is4) {
+  const lp = parseInt(String(toLogicalId('p'+physP + (is4 ? '-4' : ''))).replace('p','').replace('-4','')) || physP;
+  openLpOptPopup(lp, is4);
 }
 
 function openLpOptPopup(p, is4) {
@@ -8324,8 +8459,13 @@ function closeLpOptPopup() {
 }
 
 // Öffnet den Verlauf direkt, ohne den Zwischenschritt über das Rechnungs-Popup
-function openLpHistoryDirect(p, is4) {
-  _lpOptCurrentPlayer = p;
+function openLpHistoryDirect(physP, is4) {
+  // GENAU WIE beim Friedhof (openGraveBrowser): physisch -> logisch ueber toLogicalId
+  // umrechnen. Der Button steht im Markup an einer FESTEN Position und uebergibt deshalb
+  // die physische Nummer - bei rotierter Perspektive (Gast sieht sich selbst unten)
+  // gehoert dieselbe Position aber einem anderen logischen Spieler.
+  const logP = parseInt(String(toLogicalId('p'+physP + (is4 ? '-4' : ''))).replace('p','').replace('-4','')) || physP;
+  _lpOptCurrentPlayer = logP;
   _lpOptCurrentIs4 = is4;
   openLpHistoryPopup();
 }
@@ -9116,6 +9256,15 @@ G.slots = {
   'p2-ex': null, 'p1-ex': null,
 };
 
+// Das BUWEMON-Bild eines Slots (nicht die ausgeruestete Karte). physEl.querySelector('img')
+// liefert das ERSTE img im Slot - bei ausgeruesteten Buwemon ist das die Ausruestung, und
+// dann verblasste beim Opfern/Blockieren die falsche Karte.
+function buwImgOfSlot(physEl) {
+  if (!physEl) return null;
+  const dock = physEl.querySelector('.docked-card');
+  return (dock && dock.querySelector('img')) || physEl.querySelector('img');
+}
+
 function renderSlot(slotId) {
   const el = document.getElementById(physId(slotId));
   if (!el) return;
@@ -9564,11 +9713,20 @@ function onCardDockedToEffSlot(player, slotId, cd) {
       // Karte zurück auf Hand
       const myArr = is4 ? handOrderByPlayer4p : handOrderByPlayer2p;
       if(!myArr[ownerP])myArr[ownerP]=[];
-      const _rvUid = cd.uid || G.nid++;
-      const _rvEl = spawnCard({...cd, uid:_rvUid}, 0, 0, false);
+      // IMMER eine frische uid: mit der alten lag u.U. noch ein Element im DOM, die Karte
+      // wurde dann vom naechsten Rendern wieder eingesammelt und verschwand.
+      const _rvUid = G.nid++;
+      const _rvOld = G.cards.find(x => String(x.dataset.uid) === String(cd.uid));
+      if (_rvOld) { _rvOld.remove(); G.cards = G.cards.filter(x => x !== _rvOld); }
+      if (cd.uid !== undefined) myArr[ownerP] = myArr[ownerP].filter(u => String(u) !== String(cd.uid));
+      spawnCard({name:cd.name, color:cd.color, type:cd.type||'eff', uid:_rvUid, file:cd.file||imgFileFor(cd.name)}, 0, 0, false);
       myArr[ownerP].push(_rvUid);
       if(is4)layoutMyHand4();else layoutMyHand();
-      showOutcomeToast('Random Vote: Du musst mindestens ein Buwemon auf dem Spielfeld haben!', is4);
+      scheduleHandLabelUpdate();
+      // OHNE Sync ueberschrieb der naechste State die Hand wieder ohne die Karte -
+      // Random Vote war dann weder auf der Hand noch im Friedhof, also einfach weg.
+      if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
+      showTempInfoToast('Random Vote: Du musst mindestens ein Buwemon auf dem Spielfeld haben!', is4, 3000);
       return;
     }
     const fake = document.createElement('div');
@@ -10294,6 +10452,8 @@ function tryDockCard(el) {
           return false;
         }
       }
+      try { logAction('dock', { karte: el.dataset.name, farbe: el.dataset.color,
+        typ: el.dataset.ctype, slot: lsid }); } catch(e) {}
       // dock it
       const cd = {
         name: el.dataset.name,
@@ -12317,7 +12477,12 @@ function shuffleHand4(player) {
 }
 
 function openGraveBrowser4(player) {
-  // Reuse existing grave browser with G4 graves
+  // Reuse existing grave browser with G4 graves.
+  // ABSICHERN: fehlt der Eintrag (bei Gaesten kamen p3/p4 erst mit dem ersten
+  // grave4_update an), war G.graves[player] undefined und renderBrowserList brach mit
+  // "rawData is undefined" ab - der Friedhof liess sich gar nicht oeffnen.
+  if (!G4.graves) G4.graves = {p1:[],p2:[],p3:[],p4:[]};
+  if (!Array.isArray(G4.graves[player])) G4.graves[player] = [];
   G.graves[player] = G4.graves[player];
   openGraveBrowser(player);
 }
@@ -12707,6 +12872,10 @@ function netSendState4() {
     handCards: handCards4,
     reveal: [...(G4.reveal[myP] instanceof Set ? G4.reveal[myP] : new Set())],
     permAbilityUsed: [...permanentAbilityUsed],
+    // LP-Verlauf mitschicken: er wurde bisher gar nicht synchronisiert, deshalb sah der
+    // Verlauf eines Spielers bei jedem Client anders aus.
+    lpHist: JSON.parse(JSON.stringify(G4.lpHistory)),
+    deckSeq: _deckSeq,
   });
 }
 
@@ -12847,6 +13016,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
       <button id="erweiterung-btn" onclick="toggleErweiterung(1)" style="background:rgba(35,95,200,0.8);border:1px solid rgba(255,255,255,0.7);border-radius:20px;padding:6px 16px;font-family:'AiSpec',sans-serif;font-size:.85rem;cursor:pointer;color:#fff;width:100%;">Erweiterung <span style="font-family:Arial,sans-serif;font-weight:bold;">#</span>1: AN</button>
       <button id="erweiterung2-btn" onclick="toggleErweiterung(2)" style="background:rgba(180,185,195,0.75);border:1px solid rgba(255,255,255,0.7);border-radius:20px;padding:6px 16px;font-family:'AiSpec',sans-serif;font-size:.85rem;cursor:pointer;color:#2a2e3a;width:100%;">Erweiterung <span style="font-family:Arial,sans-serif;font-weight:bold;">#</span>2: AUS</button>
       <button id="buwemon-deck-btn" onclick="toggleBuwemonDeck()" style="background:rgba(180,185,195,0.75);border:1px solid rgba(255,255,255,0.7);border-radius:20px;padding:6px 16px;font-family:'AiSpec',sans-serif;font-size:.85rem;cursor:pointer;color:#2a2e3a;width:100%;">OP-HBF-Deck: AUS</button>
+      <button id="logging-btn" onclick="toggleLogging()" style="background:rgba(0,150,170,0.85);border:1px solid rgba(255,255,255,0.7);border-radius:20px;padding:6px 16px;font-family:'AiSpec',sans-serif;font-size:.85rem;cursor:pointer;color:#fff;width:100%;">Logging: AN</button>
     </div>
   </div>
 
@@ -12949,7 +13119,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div id="game-version-label" style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v54y
+    v55f
   </div>
 </div>
 
@@ -13229,20 +13399,46 @@ function updateHandLabels() {
 }
 
 function updateHandLabels4() {
+  const _is4Now = (typeof fourPlayerMode !== 'undefined' && fourPlayerMode);
   ['p1','p2','p3','p4'].forEach(physP => {
     const zoneEl = document.getElementById(physP+'-hand-4');
-    if (!zoneEl) return;
+    // Im 2P-Board die Overlay-Beschriftungen ausblenden - sie haengen an document.body und
+    // wuerden sonst ueber dem 2P-Brett stehen bleiben.
+    if (!_is4Now) { const _o = document.getElementById('handlbl-ov-'+physP); if (_o) _o.style.display = 'none'; }
+    if (!zoneEl || !_is4Now) return;
     const lbl = zoneEl.querySelector('span');
     if (!lbl) return;
     const logP = parseInt(toLogicalId(physP+'-4').replace('p','').replace('-4',''));
     const count = (handOrderByPlayer4p[logP]||[]).length;
-    lbl.textContent = 'Hand – ' + getPlayerName4(logP) + ' – ' + count + ' Karten';
-    // Beschriftung IMMER ueber den Karten halten - im 4P-Board lagen die Handkarten sonst
-    // darueber und der Text war unlesbar.
-    lbl.style.position = lbl.style.position || 'relative';
-    lbl.style.zIndex = '60';
-    lbl.style.pointerEvents = 'none';
-    lbl.style.textShadow = '0 1px 2px rgba(255,255,255,.85), 0 0 3px rgba(255,255,255,.7)';
+    const txt = 'Hand – ' + getPlayerName4(logP) + ' – ' + count + ' Karten';
+    lbl.textContent = txt;
+    // Die Handkarten sind .card mit position:fixed und haengen direkt an document.body.
+    // Das Label steckt dagegen in #board4, und der hat overflow:hidden - es kann den
+    // Container damit gar nicht ueberragen, egal welcher z-index gesetzt wird. Deshalb
+    // eine ZWEITE, deckungsgleiche Beschriftung direkt an document.body haengen.
+    lbl.style.visibility = 'hidden';
+    let ov = document.getElementById('handlbl-ov-' + physP);
+    if (!ov) {
+      ov = document.createElement('div');
+      ov.id = 'handlbl-ov-' + physP;
+      ov.style.cssText = 'position:fixed;z-index:900;pointer-events:none;text-align:center;'
+        + "font-size:.55rem;text-transform:uppercase;letter-spacing:.3px;font-family:'AiSpec',sans-serif;"
+        + 'font-style:italic;color:rgba(0,0,0,0.72);'
+        + 'text-shadow:0 0 3px #fff, 0 0 3px #fff, 0 1px 2px rgba(255,255,255,.95);';
+      document.body.appendChild(ov);
+    }
+    ov.textContent = txt;
+    // Position aus der Zone uebernehmen (beide sitzen im selben 1920x980-Koordinatensystem
+    // der skalierten body - deshalb offsetLeft/offsetTop aufaddieren statt Bildschirmwerte).
+    let ox = 0, oy = 0, node = zoneEl;
+    while (node && node !== document.body) { ox += node.offsetLeft || 0; oy += node.offsetTop || 0; node = node.offsetParent; }
+    ov.style.left = ox + 'px';
+    ov.style.top  = (oy + 4) + 'px';
+    ov.style.width = (zoneEl.offsetWidth || 151) + 'px';
+    ov.style.display = (zoneEl.offsetParent === null) ? 'none' : 'block';
+    // Nicht (mehr) aktive Spieler: Beschriftung verblassen lassen - wie die uebrige Zone.
+    const _act = !G4.active || G4.active[logP] !== false;
+    ov.style.opacity = _act ? '1' : '0.35';
   });
 }
 
@@ -13340,6 +13536,10 @@ function netSendState() {
     reveal: G.reveal[NET.myPlayer===2 ? 2 : 1],
     verbotenFlags,
     permAbilityUsed: [...permanentAbilityUsed],
+    // LP-Verlauf mitschicken: er wurde bisher gar nicht synchronisiert, deshalb sah der
+    // Verlauf eines Spielers bei jedem Client anders aus.
+    lpHist: JSON.parse(JSON.stringify(G.lpHistory)),
+    deckSeq: _deckSeq,
     // Dauereffekt-Zustand mitschicken, damit er einen Verbindungsabbruch/Reconnect
     // ueberlebt. UEBER NETZ IMMER LOGISCHE SLOT-IDs (UIDs divergieren zwischen Clients).
     abilSlots: activeAbilitySlots(),
@@ -13605,8 +13805,9 @@ function onNetData(d) {
     if (d.permAbilityUsed && Array.isArray(d.permAbilityUsed)) {
       mergePermAbilityUsed(d.permAbilityUsed);
     }
+    if (d.lpHist) mergeLpHistory(d.lpHist, !!d.is4 || (typeof fourPlayerMode!=='undefined' && fourPlayerMode));
     // Full state snapshot from peer - apply directly, no mirroring
-    G.deck = d.deck; updDeck();
+    acceptDeck(d.deck, d.deckSeq, false); updDeck();
     // Dauereffekt-Zustand uebernehmen (Selbstheilung nach Reconnect). Erst NACH dem
     // Slot-Update anwenden, weil die Slot-IDs lokal in uids aufgeloest werden muessen.
     if (Array.isArray(d.abilSlots)) {
@@ -13807,7 +14008,7 @@ if (d.t === 'state4') {
     }
 
     // Shared resources: deck, banish (last-write-wins)
-    if (d.deck !== undefined) { G4.deck = d.deck; updDeck4(); }
+    if (acceptDeck(d.deck, d.deckSeq, true)) updDeck4();
     if (d.banish !== undefined) { G4.banish = d.banish; updBanish4(); }
 
     // Einmalige Fähigkeiten: add-only-Merge (wie im 2-Spieler-State) - verhindert dass
@@ -13815,6 +14016,7 @@ if (d.t === 'state4') {
     if (d.permAbilityUsed && Array.isArray(d.permAbilityUsed)) {
       mergePermAbilityUsed(d.permAbilityUsed);
     }
+    if (d.lpHist) mergeLpHistory(d.lpHist, !!d.is4 || (typeof fourPlayerMode!=='undefined' && fourPlayerMode));
     if (Array.isArray(d.abilSlots)) {
       setTimeout(() => {
         applySchwammikaCopies(d.schwCopies || []);
@@ -14235,7 +14437,11 @@ if (d.t === 'state4') {
       if (d.is4) layoutMyHand4(); else layoutMyHand();
       showOutcomeToast(lpOptPlayerName(d.ownerP, d.is4) + ' und ' + lpOptPlayerName(d.targetP, d.is4)
         + ' haben ' + (d.count !== undefined ? d.count : (d.myCardData||[]).length) + ' Karten getauscht', d.is4);
-      if (NET.mode==='multi') netSend({t:'nbk_result', ownerP:d.ownerP, theirCardData, is4:d.is4, sender:NET.myPlayer});
+      // targetP MITSCHICKEN - ohne ihn stand im Toast beim Aktivator "Spieler undefined".
+      // count ebenfalls, damit die Anzahl ueberall gleich ist.
+      if (NET.mode==='multi') netSend({t:'nbk_result', ownerP:d.ownerP, targetP:d.targetP,
+        count: (d.count !== undefined ? d.count : (d.myCardData||[]).length),
+        theirCardData, is4:d.is4, sender:NET.myPlayer});
       if (NET.mode==='multi') { d.is4 ? netSendState4() : netSendState(); }
     }
   }
@@ -14570,15 +14776,20 @@ if (d.t === 'state4') {
     const myPlayer = NET.myPlayer;
     showWinLose(myPlayer !== d.loser);
     stopGameTimer();
+    // 2P: checkLPWin lief NUR beim Client, der den entscheidenden Schaden ausgeloest hat -
+    // der andere (Verlierer-)Client bekam nie einen Download. Hier lokal nachholen.
+    try { logAction('rundenende', { verlierer: d.loser }); logDownloadIfAny({ loser: d.loser, is4: false }); } catch(e) {}
   }
   if (d.t === 'darkschah') {
     const myPlayer = NET.myPlayer;
     const winnerNum = parseInt(d.winner.replace('p',''));
     showDarkschahWinLose(myPlayer === winnerNum, false);
+    try { logAction('rundenende', { gewinner: winnerNum, art: 'darkschah' }); logDownloadIfAny({ winner: winnerNum, is4: false, art: 'darkschah' }); } catch(e) {}
   }
   if (d.t === 'darkschah4') {
     const winnerP = parseInt(d.winner.replace('p',''));
     showDarkschahWinLose4(NET.myPlayer === winnerP, winnerP, false);
+    try { logAction('rundenende', { gewinner: winnerP, art: 'darkschah' }); logDownloadIfAny({ winner: winnerP, is4: true, art: 'darkschah' }); } catch(e) {}
   }
   if (d.t === 'winlose4') {
     // Nur Wintext für den letzten Überlebenden
@@ -14698,10 +14909,224 @@ function toggleErweiterung(n) {
   else erweiterung2AN = !erweiterung2AN;
   if (erweiterungAN || erweiterung2AN) { buwemonDeckAN = false; updateBuwemonDeckBtn(); }
   const btn1 = document.getElementById('erweiterung-btn');
-  if (btn1) { btn1.innerHTML = 'Erweiterung <span style="font-family:Arial,sans-serif;font-weight:bold;">#</span>1: ' + (erweiterungAN ? 'AN' : 'AUS'); btn1.style.background = erweiterungAN ? 'rgba(0,150,80,0.7)' : 'rgba(180,185,195,0.75)'; btn1.style.color = erweiterungAN ? '#fff' : '#2a2e3a'; }
+  if (btn1) { btn1.innerHTML = 'Erweiterung <span style="font-family:Arial,sans-serif;font-weight:bold;">#</span>1: ' + (erweiterungAN ? 'AN' : 'AUS'); btn1.style.background = erweiterungAN ? 'rgba(35,95,200,0.8)' : 'rgba(180,185,195,0.75)'; btn1.style.color = erweiterungAN ? '#fff' : '#2a2e3a'; }
   const btn2 = document.getElementById('erweiterung2-btn');
-  if (btn2) { btn2.innerHTML = 'Erweiterung <span style="font-family:Arial,sans-serif;font-weight:bold;">#</span>2: ' + (erweiterung2AN ? 'AN' : 'AUS'); btn2.style.background = erweiterung2AN ? 'rgba(0,150,80,0.7)' : 'rgba(180,185,195,0.75)'; btn2.style.color = erweiterung2AN ? '#fff' : '#2a2e3a'; }
+  if (btn2) { btn2.innerHTML = 'Erweiterung <span style="font-family:Arial,sans-serif;font-weight:bold;">#</span>2: ' + (erweiterung2AN ? 'AN' : 'AUS'); btn2.style.background = erweiterung2AN ? 'rgba(35,95,200,0.8)' : 'rgba(180,185,195,0.75)'; btn2.style.color = erweiterung2AN ? '#fff' : '#2a2e3a'; }
   layoutDeckSideButtons();
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SPIEL-PROTOKOLL (Logging)
+// Rein passiv: schreibt nur mit, veraendert NICHTS am Spielablauf. Alle Aufrufe sind
+// in try/catch gekapselt, damit ein Fehler hier niemals eine Spielaktion abbricht.
+// Ziel: vollstaendige Partie-Protokolle als Trainings-/Testmaterial fuer einen Bot.
+// ══════════════════════════════════════════════════════════════════════════════
+let loggingAN = true;
+let _gameLog = null;
+
+// Manueller Abbruch-Export: erst Sicherheitshinweis, dann Log als "abgebrochen" markieren
+// und sofort herunterladen. Nuetzlich wenn eine Online-Runde die Verbindung verliert und
+// nie regulaer endet - sonst waere das Protokoll ohne diesen Button verloren.
+function confirmLogExport() {
+  if (!loggingAN) { alert('Logging ist ausgeschaltet - es wird nichts aufgezeichnet.'); return; }
+  if (!_gameLog || !_gameLog.events.length) {
+    alert('Es wurde noch keine Aktion aufgezeichnet.');
+    return;
+  }
+  const ok = confirm('Log-Datei jetzt ausgeben? Das aktuelle Protokoll wird als "abgebrochen" markiert und heruntergeladen. Das laufende Spiel wird dadurch NICHT beendet.');
+  if (!ok) return;
+  try {
+    logAction('spiel_abgebrochen', { grund: 'manueller Export' });
+    logDownloadIfAny({ aborted: true });
+  } catch(e) {}
+}
+
+function toggleLogging() {
+  loggingAN = !loggingAN;
+  const b = document.getElementById('logging-btn');
+  if (b) {
+    b.textContent = 'Logging: ' + (loggingAN ? 'AN' : 'AUS');
+    b.style.background = loggingAN ? 'rgba(0,150,170,0.85)' : 'rgba(180,185,195,0.75)';
+    b.style.color = loggingAN ? '#fff' : '#2a2e3a';
+  }
+  if (loggingAN) logInit(); else _gameLog = null;
+}
+
+function logInit() {
+  if (!loggingAN) return;
+  _gameLog = {
+    startedAt: new Date().toISOString(),
+    version: (typeof getGameVersion === 'function') ? getGameVersion() : 'unbekannt',
+    mode: (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) ? '4P' : '2P',
+    sandbox: !!sandboxMode,
+    myPlayer: (NET.mode === 'multi') ? NET.myPlayer : null,
+    events: []
+  };
+}
+
+// Vollstaendiger Feldzustand aus Sicht DIESES Clients.
+function logSnapshot() {
+  const is4 = (typeof fourPlayerMode !== 'undefined' && fourPlayerMode);
+  const players = is4 ? [1,2,3,4] : [1,2];
+  const _myLnow = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+  const _turnNow = is4 ? TURN_4P : TURN_2P;
+  // amZug/binIchAmZug: macht im Protokoll sofort erkennbar, ob eine Aktion im EIGENEN Zug
+  // oder waehrend eines gegnerischen Zuges passiert ist (Verteidigung, Effektkarten usw.).
+  const snap = { turn: _turnNow, binIchAmZug: (_turnNow === _myLnow), ichBin: _myLnow,
+                 lp: {}, hands: {}, slots: {}, graves: {},
+                 deckCount: (G.deck||[]).length, banishCount: (G.banish||[]).length,
+                 visibleForeignHands: {}, actionsUsed: turnActionsUsed, actionsAllowed: turnActionsAllowed,
+                 // ERSTE RUNDE: solange sie laeuft, darf NIEMAND angreifen. Erklaert, warum
+                 // am Anfang eines Protokolls keine Angriffe/Faehigkeitsangriffe vorkommen.
+                 ersteRundeAngriffVerboten: !sandboxMode && !debugMode && !firstRoundOver,
+                 // Nachschlag erlaubt eine zusaetzliche Buwemonaktion in diesem Zug.
+                 nachschlagAktiv: !!nachschlagActiveThisTurn,
+                 debugModus: !!debugMode,
+                 // 4P: wer ist ueberhaupt noch im Spiel?
+                 aktiveSpieler: is4 ? [1,2,3,4].filter(x => G4.active[x]) : [1,2],
+                 // Laeuft gerade eine Kampfsituation? Dann ist die Entscheidung eine Reaktion.
+                 kampfsituation: pendingAbility ? {
+                   aktivator: pendingAbility.activatorP,
+                   faehigkeit: pendingAbility.abilityName,
+                   istAngriff: !!pendingAbility.isAttack,
+                   verteidigerSlot: pendingAbility.defenderSlotId || null,
+                   aktuelleVerteidigung: pendingAbility.combatDefense ? pendingAbility.combatDefense.name : null,
+                   kettenSchritt: pendingAbility.chainStep,
+                   gespielteKarten: (pendingAbility.playedCards||[]).map(pc => ({ spieler: pc.player, karte: pc.cardName }))
+                 } : null,
+                 // Wessen Hand liegt gerade offen (Zustand, nicht nur Ereignis)?
+                 offeneHaende: {
+                   wanze: (typeof wanzeRevealedPlayer !== 'undefined') ? wanzeRevealedPlayer : null,
+                   marie: marieRevealState ? marieRevealState.targetP : null,
+                   legilimens: (typeof legilimensRevealedPlayers !== 'undefined' && legilIsActive && legilIsActive())
+                     ? (legilimensRevealedPlayers || []).slice() : []
+                 },
+                 // Welche Kartennamen sind pro Spieler durch Verbotsfelder gesperrt?
+                 verbote: {} };
+  players.forEach(pn => {
+    snap.lp[pn] = is4 ? G4.lp[pn] : G.lp[pn];
+    const orders = is4 ? handOrderByPlayer4p : handOrderByPlayer2p;
+    const myL = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+    if (pn === myL) {
+      snap.hands[pn] = handCardsFromUids(orders[pn] || [])
+        .filter(c => c && c.name).map(c => c.name);
+    } else {
+      const known = (typeof foreignHandCards === 'function') ? foreignHandCards(pn, is4) : [];
+      snap.hands[pn] = { count: (orders[pn] || []).length };
+      // Fremde Handkarten, die ich GERADE sehen darf (Wanze, Alexerus/Legilimens, Marie,
+      // Debug-Peek) - fuer einen Bot ist entscheidend, welche Information vorlag.
+      const sichtbar = (wanzeRevealedPlayer === pn)
+        || (marieRevealState && marieRevealState.targetP === pn)
+        || (typeof legilIsActive === 'function' && legilIsActive() && legilimensSlotId)
+        || (typeof debugPeekPlayers !== 'undefined' && debugPeekPlayers.has(String(pn) + (is4 ? '-4' : '')));
+      if (sichtbar) snap.visibleForeignHands[pn] = known.map(c => c.name);
+    }
+    const suf = is4 ? '-4' : '';
+    ['buw1','buw2','buw3','ex','eff1','eff2','eff3','eff4','verbot1','verbot2','verbot3'].forEach(sl => {
+      const sid = 'p'+pn+'-'+sl+suf;
+      const cd = G.slots[sid];
+      if (!cd) return;
+      const _uid = (cd.uid !== undefined) ? String(cd.uid) : null;
+      const _isBuw = /-(buw\d|ex)(-4)?$/.test(sid);
+      // Dauerfaehigkeit registriert? UND ist sie gerade PAUSIERT (Dinkelmehl / gegnerischer
+      // Glorian)? Das ist fuer einen Bot ein wesentlicher Unterschied: "Luis schimmert"
+      // heisst 4/6-Schutz, "Luis pausiert" heisst gar kein Schutz.
+      const _abil = (typeof abilActive === 'function') ? abilActive(sid) : false;
+      const _dink = (typeof dinkActive === 'function') ? dinkActive(sid) : false;
+      const _glor = (typeof glorSuppActive === 'function') ? glorSuppActive(sid) : false;
+      const e = { name: cd.name, color: cd.color, equipped: (cd.equipped||[]).map(x => x.name) };
+      if (_isBuw) {
+        e.faehigkeit = CARD_ABILITIES[cd.name] || null;
+        e.angriff = CARD_ATTACKS[cd.name] || null;
+        e.ap = (typeof popupAttackPower === 'function') ? popupAttackPower(sid) : null;
+        e.dauerfaehigkeitAktiv = _abil && !_dink && !_glor;   // schimmert wirklich
+        e.dauerfaehigkeitRegistriert = _abil;
+        e.pausiertDurch = _dink ? 'Dinkelmehl' : (_glor ? 'Glorian' : null);
+        // Verbraucht = Button verblasst (einmalige Faehigkeit schon genutzt)
+        e.faehigkeitVerbraucht = !!(_uid && permanentAbilityUsed.has(_uid));
+        e.baristaBlockiert = !!(_uid && baristaBlocks[_uid]);
+        e.ragequitBlockiert = !!(_uid && ragequitBlockedUids.has(_uid));
+        e.selbstBewegtBlockiert = !!(_uid && selfMovedBlockedUids.has(_uid));
+        // Schwammika: welche Faehigkeit hat sie gerade kopiert?
+        if (_uid && schwammikaState[_uid]) {
+          e.kopierteFaehigkeit = schwammikaState[_uid].copiedAbility;
+          e.kopiertVon = schwammikaState[_uid].copiedBuwemon;
+        }
+        // Zusammenfassung: waere der Button jetzt nutzbar? (verblasst = false)
+        e.faehigkeitNutzbar = (typeof canUseAbility === 'function')
+          ? (!!canUseAbility(sid, e.kopierteFaehigkeit || e.faehigkeit) && !e.baristaBlockiert
+             && !e.ragequitBlockiert && !e.selbstBewegtBlockiert) : null;
+      }
+      snap.slots[sid] = e;
+    });
+    // Verbotsfelder: welche Karten darf DIESER Spieler nicht spielen?
+    const _vb = [];
+    ['verbot1','verbot2','verbot3'].forEach(vs => {
+      const vc = G.slots['p'+pn+'-'+vs+suf];
+      if (vc && vc.name) _vb.push(vc.name);
+    });
+    snap.verbote[pn] = _vb;
+    const gv = is4 ? (G4.graves['p'+pn]||[]) : (G.graves['p'+pn]||[]);
+    snap.graves[pn] = gv.map(c => c.name);
+  });
+  return snap;
+}
+
+// Eine Aktion protokollieren. type z.B. 'angriff', 'faehigkeit', 'effektkarte',
+// 'dock', 'ziehen', 'zugende'. detail traegt alles Zusaetzliche (Ziel, gewaehlte Karten ...).
+// gedruecktVon ist fuer die Spiellogik IRRELEVANT (beim Testen beendet ein Spieler auch
+// mal den Zug eines anderen) - steht nur zur Nachvollziehbarkeit im Protokoll.
+function logZugende(p) {
+  logAction('zugende', { spieler: p,
+    gedruecktVon: (NET.mode === 'multi') ? NET.myPlayer : null,
+    hinweisGedruecktVon: 'nicht spielrelevant' });
+}
+
+function logAction(type, detail) {
+  try {
+    if (!loggingAN) return;
+    if (!_gameLog) logInit();
+    if (!_gameLog) return;
+    // Der Snapshot wird SEPARAT abgesichert: wirft er (z.B. weil ein Spielzustand gerade
+    // im Umbau ist), soll das Ereignis trotzdem im Protokoll landen - frueher verschluckte
+    // der aeussere catch den kompletten Eintrag und das Log blieb am Ende leer.
+    let _st = null;
+    try { _st = logSnapshot(); } catch (e2) { _st = { snapshotFehler: String(e2 && e2.message || e2) }; }
+    _gameLog.events.push({
+      t: new Date().toISOString(),
+      type: type,
+      actor: (NET.mode === 'multi') ? NET.myPlayer : null,
+      detail: detail || {},
+      state: _st
+    });
+  } catch (e) { /* Logging darf das Spiel NIE stoeren */ }
+}
+
+// Partie beendet -> Textdatei erzeugen und herunterladen.
+function logDownloadIfAny(winnerInfo) {
+  try {
+    if (!loggingAN || !_gameLog || !_gameLog.events.length) return;
+    _gameLog.endedAt = new Date().toISOString();
+    _gameLog.result = winnerInfo || null;
+    const d = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    // Spielernummer im Namen - sonst haben zwei gleichzeitig heruntergeladene Log-Dateien
+    // (z.B. zwei Tabs am selben Geraet) denselben Namen und ueberschreiben sich.
+    const _pTag = (_gameLog.myPlayer !== null && _gameLog.myPlayer !== undefined) ? ('_P'+_gameLog.myPlayer) : '';
+    const name = 'buwemon_log_' + d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate())
+      + '_' + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds()) + _pTag + '.txt';
+    const blob = new Blob([JSON.stringify(_gameLog, null, 2)], {type:'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+    // _gameLog NICHT loeschen: sonst meldet der manuelle Export danach "kein Protokoll
+    // vorhanden", obwohl gerade eines existierte. Stattdessen nur merken, dass die Datei
+    // schon einmal ausgegeben wurde - erneutes Ausgeben bleibt jederzeit moeglich.
+    _gameLog.exported = true;
+  } catch (e) { /* niemals das Spielende blockieren */ }
 }
 
 function toggleBuwemonDeck() {
@@ -14728,10 +15153,11 @@ function updateBuwemonDeckBtn() {
   const b1 = document.getElementById('erweiterung-btn');
   const b2 = document.getElementById('erweiterung2-btn');
   if (b1) b1.innerHTML = 'Erweiterung <span style="font-family:Arial,sans-serif;font-weight:bold;">#</span>1: AN';
-  // Erweiterung #2 ist standardmaessig AN -> Beschriftung und gruene Farbe setzen
+  // Erweiterung #2 ist standardmaessig AN -> Beschriftung und BLAUE Farbe setzen
+  if (b1) { b1.style.background = 'rgba(35,95,200,0.8)'; b1.style.color = '#fff'; }
   if (b2) {
     b2.innerHTML = 'Erweiterung <span style="font-family:Arial,sans-serif;font-weight:bold;">#</span>2: AN';
-    b2.style.background = 'rgba(0,150,80,0.7)';
+    b2.style.background = 'rgba(35,95,200,0.8)';
     b2.style.color = '#fff';
   }
   // Standardmaessig Automatik-Modus (beide Varianten werden gruen dargestellt)
