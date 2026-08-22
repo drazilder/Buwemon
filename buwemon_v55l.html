@@ -119,7 +119,10 @@ body{background:linear-gradient(160deg,#5c6680 0%,#eef1f7 45%,#838fac 75%,#f8f9f
 .modal-footer button:hover{background:#eee;}
 
 /* OVERVIEW */
-#overview-modal .modal-box{width:min(820px,96vw);}
+/* Ohne max-height wuchs das Popup ueber den Bildschirm hinaus - Ueberschrift und
+   Schliessen-Button waren nicht mehr sichtbar. Die Kartenliste scrollt jetzt intern. */
+#overview-modal .modal-box{width:min(820px,96vw);max-height:88vh;overflow:hidden;padding:14px;gap:8px;}
+#overview-modal #overview-grid{max-height:66vh;}
 #overview-modal h3{font-size:1rem;font-weight:700;}
 #overview-modal .sub{font-size:.78rem;color:#888;}
 #overview-grid{display:flex;flex-wrap:wrap;gap:10px;overflow-y:auto;flex:1;padding:4px;}
@@ -2424,8 +2427,35 @@ function sendToGrave(el,player){
   }
 }
 
+// Ereigniskarten (Clubmate/Mecces/Glaskuppel Ereignis, Plus/Minus, 100er, EX-Buwemon)
+// gehoeren NIE in einen Friedhof - sie verschwinden aus dem Spiel. Trotzdem rutschen sie
+// ueber verschiedene Wege immer wieder hinein. Diese zentrale Sperre raeumt sie bei JEDEM
+// Friedhofs-Update wieder heraus, egal welcher Codepfad sie eingetragen hat.
+function isEreignisCard(c) {
+  if (!c) return false;
+  const t = c.ctype || c.type || '';
+  if (t === 'ereignis' || t === 'ex-ereignis' || t === 'ex-auto' || t === 'ex') return true;
+  const n = String(c.name || '');
+  return /\bEreignis\b/.test(n) || n === 'Plus 10' || n === 'Plus 20' || n === 'Minus 20'
+      || n === '100 Ereignis' || n === 'Plus10 Ereignis' || n === 'Plus20 Ereignis';
+}
+function purgeEreignisFromGrave(arr) {
+  if (!arr || !arr.length) return arr || [];
+  return arr.filter(c => !isEreignisCard(c));
+}
+// Raeumt den Friedhof eines Spielers direkt im Datenmodell auf.
+function purgeGraveInPlace(player, is4) {
+  const src = is4 ? G4.graves : G.graves;
+  if (!src || !src[player]) return;
+  const _p = purgeEreignisFromGrave(src[player]);
+  if (_p.length === src[player].length) return;
+  src[player] = _p;
+  if (is4) G.graves[player] = _p;
+}
+
 function updGrave(player){
   // Zentrale Klon-Sperre fuer entfernte Friedhofskarten
+  purgeGraveInPlace(player, false);
   if (_removedGraveKeys.size && G.graves[player]) {
     const _f = filterRemovedGrave(player, G.graves[player]);
     if (_f.length !== G.graves[player].length) G.graves[player] = _f;
@@ -2770,6 +2800,14 @@ function openColorRemove4(btnEl){
       const ok = confirm(`Alle ${cg.label}-Karten komplett aus dem Spiel entfernen?`);
       releaseAbilityBtn(btnEl);
       if(!ok)return;
+      // Raum-Zeit-Genozid ist eine EINMAL-Faehigkeit (ABILITY_LIMITS = 1), der Verbrauch
+      // wurde aber nirgends vermerkt: openColorRemove laeuft an beginAbilityActivation
+      // vorbei. Dadurch blieb der Button dauerhaft nutzbar.
+      try {
+        const _zfSlot = window._zfSlotId || (btnEl && btnEl.dataset && btnEl.dataset.slotId) || _lastActivatorSlotId;
+        if (_zfSlot) markAbilityUsed(_zfSlot, 'Raum-Zeit-Genozid');
+        window._zfSlotId = null;
+      } catch(e) {}
       // Add removed deck cards to banish
       G4.deck.filter(c=>c.color===cg.hex).forEach(c=>{
         const bcd={name:c.name,color:c.color,type:c.type,file:c.file||''};
@@ -2840,6 +2878,14 @@ function openColorRemove(btnEl){
       const ok = confirm(`Alle ${cg.label}-Karten komplett aus dem Spiel entfernen?`);
       releaseAbilityBtn(btnEl);
       if(!ok)return;
+      // Raum-Zeit-Genozid ist eine EINMAL-Faehigkeit (ABILITY_LIMITS = 1), der Verbrauch
+      // wurde aber nirgends vermerkt: openColorRemove laeuft an beginAbilityActivation
+      // vorbei. Dadurch blieb der Button dauerhaft nutzbar.
+      try {
+        const _zfSlot = window._zfSlotId || (btnEl && btnEl.dataset && btnEl.dataset.slotId) || _lastActivatorSlotId;
+        if (_zfSlot) markAbilityUsed(_zfSlot, 'Raum-Zeit-Genozid');
+        window._zfSlotId = null;
+      } catch(e) {}
       // Add removed deck cards to banish
       G.deck.filter(c=>c.color===cg.hex).forEach(c=>{
         const bcd={name:c.name,color:c.color,type:c.type,file:c.file||''};
@@ -3037,7 +3083,13 @@ function actsAsBuwemon(slotIdOrCd, buwName) {
 // Schluessel: slotId + '|' + Kartenname + '|' + Index-unabhaengige Kennung.
 // Wird beim Kampfende geleert.
 const _removedEquipKeys = new Set();
-function _equipKey(slotId, eq) { return String(slotId) + '|' + (eq && eq.name); }
+// Der Schluessel MUSS die uid enthalten. Mit reinem slotId|Name teilen sich zwei gleiche
+// Karten (z.B. zwei Clubmaten am selben Buwemon) denselben Schluessel - filterRemovedEquip
+// entfernte dann BEIDE, obwohl das Ablehnt nur eine davon getroffen hat.
+function _equipKey(slotId, eq) {
+  const u = (eq && eq.uid !== undefined && eq.uid !== null) ? ('#' + eq.uid) : '';
+  return String(slotId) + '|' + (eq && eq.name) + u;
+}
 // Aus einem Friedhof ENTFERNTE Karten (Zeitfuehrer) duerfen nicht zurueckgeklont werden
 const _removedGraveKeys = new Set();
 function markGraveRemoved(pfx, cd) { _removedGraveKeys.add(pfx + '|' + (cd && cd.name)); }
@@ -3441,14 +3493,27 @@ function cleanUpOwnAbilityCards(playedCards, killSlotId, killOwnerP, is4, cleanA
         else renderSimulatedHand('p'+p, handCardsFromUids(handOrderByPlayer2p[p]||[]), false);
       }
     } else {
-      // Normal: auf den Friedhof
-      if (!cleanAll && myP !== null && p !== myP) return;
+      // Normal: auf den Friedhof.
+      // NUR DER BESITZER legt ab - auch bei cleanAll. Der Slot wurde oben bereits auf
+      // jedem Client geleert, das bleibt so. Frueher pushte bei cleanAll JEDER Client
+      // JEDE Karte in den (mitsynchronisierten) Friedhof - dadurch lagen Ablehnt, Stein
+      // und Tut mir leid anschliessend doppelt darin.
+      if (myP !== null && p !== myP) return;
       const bcd = { name: cdData.name, color: cdData.color, type: cdData.type || cdData.ctype, file: cdData.file || '' };
       if (is4) { if (G4.graves[pfx]) { G4.graves[pfx].push(bcd); updGrave4(pfx); } if (NET.mode==='multi') netSend({t:'grave4_update', player:pfx, graves:G4.graves[pfx]}); }
       else { if (G.graves[pfx]) { G.graves[pfx].push(bcd); updGrave(pfx); } }
     }
   });
-  // Tut-mir-leid selbst auf den Friedhof - nur der Angreifer-Client macht das
+  // Tut-mir-leid selbst auf den Friedhof - nur der Angreifer-Client macht das.
+  // IDEMPOTENZ: cleanUpOwnAbilityCards laeuft beim Aktivator zweimal (lokal aus
+  // finalizeAbilityChain UND ueber die 'ability_resolved'-Nachricht). Ohne diese Sperre
+  // landete Tut mir leid dadurch doppelt im Friedhof.
+  if (tutMirLeidSlotId && window._tutGraveDoneSlot === tutMirLeidSlotId) tutMirLeidSlotId = null;
+  if (tutMirLeidSlotId) {
+    window._tutGraveDoneSlot = tutMirLeidSlotId;
+    clearTimeout(window._tutGraveDoneTimer);
+    window._tutGraveDoneTimer = setTimeout(() => { window._tutGraveDoneSlot = null; }, 8000);
+  }
   if (tutMirLeidSlotId && (myP === null || parseInt((tutMirLeidSlotId.match(/^p(\d)/)||[])[1]||'1') === myP)) {
     const tutOwnerP = parseInt((tutMirLeidSlotId.match(/^p(\d)/)||[])[1] || '1');
     const pfx = 'p' + tutOwnerP;
@@ -3580,16 +3645,20 @@ function tryConfirmAblehntTarget(equipIdx, targetSlotId) {
 function recomputeCombatChain(pa) {
   if (!pa || !pa.isAttack) return;
   const cancelled = new Set(pa.ablehntCardTargets || []);
-  let chainBlocked = false, combatDefense = null;
+  // STAPEL-MODELL: Jede Verteidigungskarte legt sich oben auf, ein Ablehnt nimmt die
+  // OBERSTE wieder weg. Frueher setzte ein Ablehnt die Verteidigung auf null - dadurch
+  // fiel bei "Stein -> Tut mir leid -> Ablehnt" auch der Stein weg und der Angriff lief
+  // voellig ungehindert durch (Lisa starb, obwohl der Stein noch haette wirken muessen).
+  const stack = [];
   (pa.playedCards || []).forEach(pc => {
     if (pc.slotId && cancelled.has(pc.slotId)) return; // aufgehoben -> voellig wirkungslos
     if (pc.ablehntOf) return;                          // gezieltes Ablehnt: kein Umschalten
-    if (pc.cardName === 'Ablehnt') { chainBlocked = !chainBlocked; combatDefense = null; }
-    else if (pc.cardName === FOURACEFOUR_NAME) { /* eigene Auswertung in resolveAttack */ }
-    else { combatDefense = { name: pc.cardName, ownerP: pc.player, colorHex: pc.cardColor }; chainBlocked = true; }
+    if (pc.cardName === 'Ablehnt') { stack.pop(); return; } // hebt die oberste Verteidigung auf
+    if (pc.cardName === FOURACEFOUR_NAME) return;      // eigene Auswertung in resolveAttack
+    stack.push({ name: pc.cardName, ownerP: pc.player, colorHex: pc.cardColor });
   });
-  pa.chainBlocked = chainBlocked;
-  pa.combatDefense = combatDefense;
+  pa.combatDefense = stack.length ? stack[stack.length - 1] : null;
+  pa.chainBlocked = stack.length > 0;
 }
 
 // "Ablehnt gegen Ablehnt": eine bereits gespielte Ablehnt-Karte als Ziel markieren.
@@ -3731,10 +3800,15 @@ function checkAbilityBlock(cd, slotId) {
     const EX_ALLOWED_DEFENSE = ['Glaskuppel', 'Glaskuppel Ereignis', 'UwU ', FOURACEFOUR_NAME];
     if (!EX_ALLOWED_DEFENSE.includes(cd.name)) return;
   }
-  if (isFirstStep && player === pendingAbility.activatorP) return; // Aktivator kann die eigene Fähigkeit/den eigenen Angriff nicht selbst blocken
+  // Aktivator kann die eigene Faehigkeit/den eigenen Angriff nicht selbst blocken -
+  // AUSNAHME "Tut mir leid...": das ist ausdruecklich die Reue des ANGREIFERS und darf
+  // sofort nach dem eigenen Angriff kommen, noch bevor ein Gegner reagiert hat.
+  if (isFirstStep && player === pendingAbility.activatorP && cd.name !== 'Tut mir leid\u2026') return;
   // Ablehnt darf - wie das Ausruesten - mehrfach hintereinander vom selben Spieler
   // gespielt werden (z.B. um zwei Ausruestungskarten nacheinander abzulehnen).
-  if (cd.name !== 'Ablehnt' && player === pendingAbility.lastActor) return; // sonst nicht zweimal hintereinander derselbe Spieler
+  // Auch hier: "Tut mir leid..." darf direkt im Anschluss an den eigenen Angriff kommen
+  // (der Angreifer ist dann noch lastActor).
+  if (cd.name !== 'Ablehnt' && cd.name !== 'Tut mir leid\u2026' && player === pendingAbility.lastActor) return;
 
   // UwU ist nicht einsetzbar, wenn das angegriffene Buwemon Cyan ist
   if (isAttack && cd.name === 'UwU ') {
@@ -3770,6 +3844,12 @@ function checkAbilityBlock(cd, slotId) {
       pendingAbility.combatDefense = null;
     } else if (isFourAceFour) {
       pendingAbility.fourAceFourPlayed = true;
+      // In einer Kampfsituation ist FourAceFour hiermit erledigt - es darf danach KEINE
+      // Zielauswahl mehr aufgehen. Das Flag wurde bisher nie gesetzt, deshalb erschien der
+      // Auswahl-Toast trotzdem und man zerstoerte z.B. nur den 13er Bogen.
+      _fourAceHandledInCombat = true;
+      clearTimeout(window._fafCombatTimer);
+      window._fafCombatTimer = setTimeout(() => { _fourAceHandledInCombat = false; }, 6000);
       if (pendingAbility.lastCombatEquip) {
         undoCombatEquip(pendingAbility);
         pendingAbility.lastCombatEquip = null;
@@ -3786,6 +3866,9 @@ function checkAbilityBlock(cd, slotId) {
 
   pendingAbility.playedCards.push({ player, slotId, cardName: cd.name, cardColor: cd.color, cardType: cd.type || cd.ctype, cardFile: cd.file || '' });
   pendingAbility.lastActor = player;
+  // Kette IMMER neu aus den gespielten Karten ableiten (nicht nur bei Ablehnt-auf-Ablehnt),
+  // damit combatDefense/chainBlocked bei jedem Client identisch sind.
+  recomputeCombatChain(pendingAbility);
   // Verteidigungsentscheidung protokollieren - inklusive der Karten, die der Spieler
   // stattdessen haette spielen koennen (nur seine EIGENEN Handkarten, andere kennt der
   // Client nicht). Nur auf dem eigenen Client loggen (NET.myPlayer === player).
@@ -3904,9 +3987,17 @@ function finalizeAbilityChain(killsBuwemon) {
       // "wasBlocked" ist bei Angriffen KEIN Signal mehr für "nichts passiert".
       // Gruenikas Drogen per DINKELMEHL abgewehrt -> der Fähigkeitsangriff findet gar
       // nicht statt. Niemand stirbt, Gruenika behaelt ihre 160 (keine 100-Karte).
-      const _drogenBlocked = wasBlocked && (data.isDrogen
+      // NUR eine Faehigkeits-Blockade (Dinkelmehl/FourAceFour) laesst Drogen komplett
+      // ausfallen. Wurde stattdessen eine normale KAMPFKARTE gespielt (Stein, Calgon,
+      // Glaskuppel, UwU, RGB, Tut mir leid), muss der Angriff ganz regulaer durch
+      // resolveAttack laufen - mit 4/6-Wahrscheinlichkeit, Farbregeln und dem Steintod des
+      // Angreifers. Frueher wurde er hier abgewuergt: Gruenika ueberlebte und es kam nur
+      // "Drogen wurde abgewehrt" statt der ueblichen Stein-Meldung.
+      const _isDrogenChain = (data.isDrogen
         || (data.abilityName && String(data.abilityName).includes('Drogen'))
         || data.abilityKey === 'drogen');
+      const _combatCardActive = combatDefense && ATTACK_DEFENSE_NAMES.includes(combatDefense.name);
+      const _drogenBlocked = wasBlocked && _isDrogenChain && !_combatCardActive;
       if (_drogenBlocked) {
         // Faehigkeit gilt trotzdem als AUFGEBRAUCHT (keine 100-Karte)
         if (data.slotId) applyDrogenNacheffekt(data.slotId, true);
@@ -3914,7 +4005,11 @@ function finalizeAbilityChain(killsBuwemon) {
         showOutcomeToast(_t, data.is4);
         if (NET.mode === 'multi') netSend({t:'outcome_toast', text:_t, is4:data.is4});
       } else if (fourAceFourPlayed) {
-        if (resolveFn) resolveFn({ fourAceFour: true });
+        // WER hat FourAceFour gespielt? Danach richtet sich, wessen Buwemon stirbt:
+        // spielt es der Verteidiger, stirbt der Angreifer - spielt es der Angreifer,
+        // stirbt das angegriffene Buwemon. Frueher starb immer der Angreifer.
+        const _fafPc = (playedCards || []).filter(pc => pc.cardName === FOURACEFOUR_NAME).pop();
+        if (resolveFn) resolveFn({ fourAceFour: true, fafPlayer: _fafPc ? _fafPc.player : null });
       } else {
         if (resolveFn) resolveFn({ combatDefense, playedCardsForReturn: playedCards });
         else alert('DIAGNOSE: Angriff sollte aufgelöst werden, aber die Auflösungs-Funktion fehlt (resolveFn=null). Bitte diese Meldung an Claude weitergeben.');
@@ -4012,7 +4107,11 @@ function confirmAttackTarget(lsid, targetCd) {
   // Ausruestungs-Bonus DOPPELT gezaehlt und der Verteidiger-Bonus obendrein abgezogen
   // (200 vs 180 ergab 60 statt 20 LP). Die Popup-Werte bleiben unveraendert - nur diese
   // Startgroesse muss vom Angreifer kommen, damit die Differenz sauber bei 0 startet.
-  const _atkCdStart = G.slots[toLogicalId(sel.slotId)];
+  // SLOT-ID-VERTRAG Regel 7: sel.slotId ist BEREITS LOGISCH - kein toLogicalId!
+  // Die frueher hier stehende zweite Umrechnung traf beim Gast die Karte des GEGNERS.
+  // Bei Gruenikas Drogen wurde dadurch dessen Ausruestung (100-Ereignis, -60) gerechnet:
+  // 220 + (-60 - 0) = 160 statt 220 AP.
+  const _atkCdStart = G.slots[sel.slotId];
   sel.equipBonusAtStart = _atkCdStart
     ? computeEquipBonus(_atkCdStart.color, _atkCdStart.equipped, sel.attackerP, CARD_ATTACK_POWER[_atkCdStart.name] || 0)
     : 0;
@@ -4029,7 +4128,12 @@ function confirmAttackTargetLP(defenderP, is4) {
   const suf = is4 ? '-4' : '';
   // Mit einer durch Nachschlag gewonnenen ZUSATZaktion sind Direktangriffe auf die
   // Lebenspunkte nicht erlaubt - nur die regulaere erste Buwemonaktion darf das.
-  if (!sandboxMode && !debugMode && nachschlagActiveThisTurn && turnActionsUsed >= 1) {
+  // AUSNAHME: Die zweite Phase von ClariSSIO (und die Schwammika-Kopie davon) ist die
+  // Aufloesung einer BEREITS bezahlten Faehigkeit, kein eigener Direktangriff. Ohne diese
+  // Ausnahme brach der Ablauf nach erfolgreichem "Arsch anfassen" hier kommentarlos ab -
+  // es kam keine Kampfsituation und der Gegner verlor keine LP.
+  if (!sandboxMode && !debugMode && nachschlagActiveThisTurn && turnActionsUsed >= 1
+      && !window._claripassBypass && !window._schwActionOpen) {
     showOutcomeToast('Mit einer Nachschlag-Zusatzaktion darfst du die LP nicht direkt angreifen!', is4);
     return;
   }
@@ -4398,7 +4502,16 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
   resolveInfo = resolveInfo || {};
 
   if (resolveInfo.fourAceFour) {
-    moveToGraveLogical(sel.slotId, G.slots[sel.slotId], is4);
+    // Es stirbt IMMER das Buwemon des Gegenuebers (aus Sicht dessen, der FourAceFour
+    // gespielt hat) - samt seiner Ausruestung. Ohne diese Unterscheidung starb auch dann
+    // der Angreifer, wenn der Angreifer selbst FourAceFour gespielt hatte.
+    let _fafKill = sel.slotId; // Standard: Verteidiger spielt es -> Angreifer stirbt
+    if (resolveInfo.fafPlayer !== null && resolveInfo.fafPlayer !== undefined
+        && Number(resolveInfo.fafPlayer) === Number(sel.attackerP) && defenderSlotId) {
+      _fafKill = defenderSlotId; // Angreifer spielt es -> das angegriffene Buwemon stirbt
+    }
+    const _fafCd = G.slots[_fafKill];
+    if (_fafCd) moveToGraveLogical(_fafKill, _fafCd, is4);
     clearCombatEquipAfterFight([sel.slotId, defenderSlotId].filter(Boolean), is4);
     if (NET.mode === 'multi') netSend({t:'clear_combat_equip', slotIds:[sel.slotId, defenderSlotId].filter(Boolean), is4});
     return;
@@ -4415,7 +4528,7 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
         setTimeout(() => { showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t, is4}); }, 600);
       } else if (directDefense.name === 'Glaskuppel') {
         // Glaskuppel schützt LP außer bei gelbem Angreifer (50%)
-        const attackerCd = G.slots[toLogicalId(sel.slotId)];
+        const attackerCd = G.slots[sel.slotId];
         const isYellow = attackerCd && attackerCd.color === '#aa9900';
         if (isYellow) {
           directFails = Math.random() < 0.5;
@@ -4430,6 +4543,17 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
         const roll = Math.random() < 4/6;
         if (roll) { directFails = true; moveToGraveLogical(sel.slotId, G.slots[sel.slotId], is4); }
         const _t = roll ? '<b>Stein</b> hat gewirkt - der Angreifer stirbt! (4/6)' : '<b>Stein</b> hat NICHT gewirkt - Angriff wird durchgeführt.';
+        setTimeout(() => { showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t, is4}); }, 600);
+      } else if (directDefense.name === 'UwU ') {
+        // UwU fehlte im Direktangriffs-Block komplett - die 30 AP wurden nie abgezogen und
+        // der cyane Angreifer starb nicht. Jetzt genau wie im Buwemon-Kampf.
+        const _atkCdU = G.slots[sel.slotId];
+        const _isCyan = _atkCdU && _atkCdU.color === '#008899';
+        sel._uwuReduce = 30;
+        if (_isCyan) { directFails = true; moveToGraveLogical(sel.slotId, _atkCdU, is4); }
+        const _t = _isCyan
+          ? '<b>UwU</b> wirkt: -30 AP und der CYANE Angreifer stirbt!'
+          : '<b>UwU</b> wirkt: der Angreifer verliert 30 AP!';
         setTimeout(() => { showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t, is4}); }, 600);
       }
     }
@@ -4448,7 +4572,10 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
       }, 1400);
       return;
     }
-    const _atkCd = G.slots[toLogicalId(sel.slotId)]; if (!directFails) applyLpDamage(defenderP, sel.attackPower, is4, _atkCd ? _atkCd.color : null);
+    const _atkCd = G.slots[sel.slotId];
+    // UwU senkt die Angriffskraft um 30 - auch beim Direktangriff auf die LP.
+    const _dmgDirect = Math.max(0, sel.attackPower - (sel._uwuReduce || 0));
+    if (!directFails) applyLpDamage(defenderP, _dmgDirect, is4, _atkCd ? _atkCd.color : null);
     if (sel.isDrogen || (sel.attackName && sel.attackName.includes('Drogen'))) applyDrogenNacheffekt(sel.slotId, false);
     clearCombatEquipAfterFight([sel.slotId].filter(Boolean), is4);
     if (NET.mode === 'multi') netSend({t:'clear_combat_equip', slotIds:[sel.slotId, defenderSlotId].filter(Boolean), is4});
@@ -4625,7 +4752,7 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
     // FAEHIGKEITS-ANGRIFF (Drogen 220, Ueberspringen 200): sel.attackPower ist ein
     // Sonderwert statt CARD_ATTACK_POWER - hier nur den waehrend des Kampfes
     // dazugekommenen Ausruestungs-Bonus als DIFFERENZ addieren.
-    const _aCd = G.slots[toLogicalId(sel.slotId)];
+    const _aCd = G.slots[sel.slotId];
     if (_aCd) {
       const _nowBonus = computeEquipBonus(_aCd.color, _aCd.equipped, sel.attackerP, CARD_ATTACK_POWER[_aCd.name] || 0);
       const _preBonus = (sel.equipBonusAtStart !== undefined) ? sel.equipBonusAtStart : _nowBonus;
@@ -7449,7 +7576,14 @@ function applyVerbotCard(target, verbotCardName, is4) {
 }
 
 const SPECIAL_ABILITY_HANDLERS = {
-  'Raum-Zeit-Genozid': (btn) => { closePopup(); if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) openColorRemove4(btn); else openColorRemove(btn); },
+  // (btn, el): makeBtn ruft onClick(btn, el) - der Slot steckt am KARTEN-Element, nicht am
+  // Button. Ohne el kam in openColorRemove kein Slot an und der Verbrauch wurde nie
+  // vermerkt (Raum-Zeit-Genozid blieb unbegrenzt nutzbar).
+  'Raum-Zeit-Genozid': (btn, el) => {
+    closePopup();
+    window._zfSlotId = (el && el.dataset && el.dataset.slotId) || null; // bereits LOGISCH
+    if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) openColorRemove4(btn); else openColorRemove(btn);
+  },
   'Picky Eating': (btn, el) => { closePopup(); confirmPickyEating(btn, el); },
   'Gottkomplex': (btn, el) => beginGottkomplex(btn, el),
   'Drogen': (btn, el) => beginGruenikaDrogen(btn, el),
@@ -12531,6 +12665,7 @@ function updGrave4(player) {
     const _f = filterRemovedGrave(player, G4.graves[player]);
     if (_f.length !== G4.graves[player].length) { G4.graves[player] = _f; G.graves[player] = _f; }
   }
+  purgeGraveInPlace(player, true);
   const grave = G4.graves[player];
   const physP = physId(player);
   const preview = document.getElementById(physP+'-grave-4-preview');
@@ -13157,7 +13292,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div id="game-version-label" style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v55h
+    v55l
   </div>
 </div>
 
@@ -13212,6 +13347,7 @@ function wsConnect(onOpen) {
       try { onOpen(); } catch(e) { console.error('onOpen error:', e); }
       // Gepufferte Aktionen nachsenden, damit nichts aus der Aussetzer-Phase verloren geht.
       setTimeout(netFlushQueue, 250);
+      startPeriodicSync();
     };
     ws.onmessage = e => {
       // JEDE eingehende Nachricht beweist, dass die Verbindung wirklich lebt.
@@ -13658,10 +13794,58 @@ function netFlushQueue() {
   q.forEach(o => { try { NET.ws.send(JSON.stringify(o)); } catch(e) {} });
 }
 
+// REGELMAESSIGER ABGLEICH: Auch ohne Verbindungsabbruch koennen ueber viele Zuege hinweg
+// einzelne Nachrichten verlorengehen (Paketverlust, kurze Aussetzer, mehrere Runden in
+// derselben Lobby). Ein leichter Abgleich alle 45s haelt die Staende zusammen, ohne
+// spuerbar Last zu erzeugen - er laeuft nur, wenn gerade KEINE Kampfsituation offen ist
+// und der Tab sichtbar ist.
+let _periodicSyncTimer = null;
+function startPeriodicSync() {
+  if (_periodicSyncTimer) clearInterval(_periodicSyncTimer);
+  _periodicSyncTimer = setInterval(() => {
+    if (NET.mode !== 'multi' || !NET.ws || NET.ws.readyState !== WebSocket.OPEN) return;
+    if (document.visibilityState !== 'visible') return;
+    if (pendingAbility) {
+      // WAEHREND einer Kampfsituation KEIN voller State (der wuerde die Kette
+      // ueberschreiben). Stattdessen die Kette selbst nachreichen: geht dabei eine
+      // Nachricht verloren, haengt die Situation sonst bei einem Spieler fest und die
+      // Runde wirkt "abgebrochen". Nur der Aktivator sendet, damit es keine Echos gibt.
+      try {
+        if (NET.myPlayer === pendingAbility.activatorP) {
+          netSend({t:'ability_chain_refresh',
+            slotId: pendingAbility.slotId,
+            chainBlocked: pendingAbility.chainBlocked,
+            chainStep: pendingAbility.chainStep,
+            lastActor: pendingAbility.lastActor,
+            playedCards: pendingAbility.playedCards,
+            ablehntTargets: pendingAbility.ablehntTargets,
+            ablehntCardTargets: pendingAbility.ablehntCardTargets,
+            combatDefense: pendingAbility.combatDefense});
+        }
+      } catch(e) {}
+      return;
+    }
+    if (anyTargetSelectOpen && anyTargetSelectOpen()) return; // offene Zielauswahl nicht stoeren
+    try { if (fourPlayerMode) netSendState4(); else netSendState(); } catch(e) {}
+  }, 45000);
+}
+
 // Vollstaendigen eigenen Spielstand anfordern/senden. Nach einem Aussetzer weiss man nicht,
 // welche Nachrichten fehlten - deshalb tauschen beide Seiten den kompletten Stand aus.
 function netRequestResync() {
   netSend({t:'resync_request', is4: !!fourPlayerMode});
+  // Laeuft hier gerade eine Kampfsituation, den Kettenstand gleich mitschicken - sonst
+  // wartet der wiederverbundene Spieler auf eine Reaktion, die er nie zu sehen bekommt.
+  try {
+    if (pendingAbility && NET.myPlayer === pendingAbility.activatorP) {
+      netSend({t:'ability_chain_refresh', slotId: pendingAbility.slotId,
+        chainBlocked: pendingAbility.chainBlocked, chainStep: pendingAbility.chainStep,
+        lastActor: pendingAbility.lastActor, playedCards: pendingAbility.playedCards,
+        ablehntTargets: pendingAbility.ablehntTargets,
+        ablehntCardTargets: pendingAbility.ablehntCardTargets,
+        combatDefense: pendingAbility.combatDefense});
+    }
+  } catch(e) {}
   setTimeout(() => { if (fourPlayerMode) netSendState4(); else netSendState(); }, 300);
 }
 
@@ -14270,6 +14454,18 @@ if (d.t === 'state4') {
       updateRevealStatus(d.targetP, d.on ? true : !!(G.reveal && G.reveal[d.targetP]), d.is4);
     }
   }
+  if (d.t === 'ability_chain_refresh') {
+    // Nur abgleichen, wenn hier DIESELBE Kampfsituation laeuft - nie eine neue eroeffnen.
+    if (!pendingAbility || pendingAbility.slotId !== d.slotId) return;
+    if (d.playedCards && d.playedCards.length >= (pendingAbility.playedCards||[]).length) {
+      pendingAbility.playedCards = d.playedCards;
+      pendingAbility.chainStep = d.chainStep;
+      pendingAbility.lastActor = d.lastActor;
+      if (d.ablehntTargets) pendingAbility.ablehntTargets = d.ablehntTargets;
+      if (d.ablehntCardTargets) pendingAbility.ablehntCardTargets = d.ablehntCardTargets;
+      recomputeCombatChain(pendingAbility);
+    }
+  }
   if (d.t === 'resync_request') {
     // Ein Mitspieler war weg und bittet um den vollstaendigen Stand. Ohne diese Antwort
     // kennt er nur seine eigene Haelfte des Feldes und die Runde bleibt auseinander.
@@ -14633,9 +14829,7 @@ if (d.t === 'state4') {
       if (d.lastCombatEquip !== undefined) pendingAbility.lastCombatEquip = d.lastCombatEquip;
       // Kette aus den gespielten Karten NEU berechnen, damit aufgehobene Ablehnt-Karten
       // auf JEDEM Client wirklich wirkungslos sind (sonst weichen die Ergebnisse ab).
-      if (pendingAbility.ablehntCardTargets && pendingAbility.ablehntCardTargets.length) {
-        recomputeCombatChain(pendingAbility);
-      }
+      recomputeCombatChain(pendingAbility);
       if (d.locked) {
         // FourAceFour gelegt: Aktivator schließt die Kette ab, alle anderen warten auf 'ability_resolved'
         if (NET.myPlayer === pendingAbility.activatorP) finalizeAbilityChain(d.killsBuwemon);
