@@ -1983,12 +1983,12 @@ function startGame(mode) {
   // Set MY hand label based on which player I am
   const myHandId = (NET.myPlayer === 2) ? '#p2-hand' : '#p1-hand';
   const myHandZlbl = document.querySelector(myHandId + ' .zlbl');
-  if (myHandZlbl) myHandZlbl.textContent = 'Hand – Spieler ' + (NET.myPlayer || 1) + ' – 0 Karten';
+  if (myHandZlbl) myHandZlbl.textContent = 'Hand – ' + lpOptPlayerName(NET.myPlayer || 1, false) + ' – 0 Karten';
   // Reset enemy hand label
   const enemyHandId = (NET.myPlayer === 2) ? '#p1-hand' : '#p2-hand';
   const enemyHandZlbl = document.querySelector(enemyHandId + ' .zlbl');
   const enemyNum = NET.myPlayer === 2 ? 1 : 2;
-  if (enemyHandZlbl) enemyHandZlbl.textContent = 'Hand – Spieler ' + enemyNum + ' – 0 Karten';
+  if (enemyHandZlbl) enemyHandZlbl.textContent = 'Hand – ' + lpOptPlayerName(enemyNum, false) + ' – 0 Karten';
   const playerLabel = document.getElementById('player-label');
   if (mode === 'multi') {
     const _pname = getLobbyName();
@@ -4008,7 +4008,7 @@ function finalizeAbilityChain(killsBuwemon) {
     const _faf = (data.playedCards || []).filter(pc => pc.cardName === FOURACEFOUR_NAME).pop();
     if (_faf) {
       const _fp = parseInt(String(_faf.player).replace('p','')) || _faf.player;
-      showTempInfoToast('FourAceFour-Feuer-Reverse-Blöff von Spieler ' + _fp + ' entkräftet alles',
+      showTempInfoToast('FourAceFour-Feuer-Reverse-Blöff von ' + lpOptPlayerName(_fp, !!data.is4 || !!fourPlayerMode) + ' entkräftet alles',
                         !!data.is4 || !!fourPlayerMode, 3000);
     }
   }
@@ -7578,7 +7578,7 @@ function openEineRundeNochGrave(ownerP, graveP, effSlotId, is4) {
   const isOwn = graveP === ownerP;
   // Nested: Friedhof-Liste über browser-modal anzeigen, aber mit "Auswählen"-Buttons
   const list = document.getElementById('browser-list');
-  document.getElementById('browser-title').textContent = 'Friedhof Spieler ' + graveP;
+  document.getElementById('browser-title').textContent = 'Friedhof ' + lpOptPlayerName(graveP, (typeof fourPlayerMode !== 'undefined' && fourPlayerMode));
   document.getElementById('browser-sub').textContent = (graves||[]).length + ' Karten';
   document.getElementById('browser-shuffle-btn').style.display = 'none';
   list.innerHTML = '';
@@ -7702,7 +7702,7 @@ function tryStartVerbotAbility(cardEl, verbotCardName, abilityName, target, is4)
     alert(lpOptPlayerName(target, is4) + ' ist bereits von dieser Fähigkeit belegt.');
     return;
   }
-  beginAbilityActivation(cardEl, abilityName, abilityName + ' (gegen Spieler ' + target + ')', () => applyVerbotCard(target, verbotCardName, is4));
+  beginAbilityActivation(cardEl, abilityName, abilityName + ' (gegen ' + lpOptPlayerName(target, is4) + ')', () => applyVerbotCard(target, verbotCardName, is4));
 }
 
 function applyVerbotCard(target, verbotCardName, is4) {
@@ -12433,6 +12433,9 @@ function toggle4PMode() {
   if (_bp) _bp.style.display = fourPlayerMode ? 'none' : '';
   const p34row = document.getElementById('pick-p34-row');
   if (p34row) p34row.style.display = fourPlayerMode ? 'flex' : 'none';
+  const botrow = document.getElementById('mp-bot-row');
+  if (botrow) botrow.style.display = fourPlayerMode ? 'flex' : 'none';
+  if (!fourPlayerMode) { mpBotCount = 0; try { refreshMpBotButtons(); } catch(e) {} }
   if (fourPlayerMode) { G4.deck = buildDeck(); updDeck4(); ['p1','p2','p3','p4'].forEach(updGrave4); }
 }
 
@@ -12776,6 +12779,9 @@ function dealStartCards4() {
 // Automatik-Modus: Startkarten direkt in die sortierten Handreihen einsortieren
 function dealStartCards4Automatik() {
   const CARDS = 5;
+  // Bots ZUERST auf ihre Plaetze setzen - erst dadurch gelten sie als aktiv und bekommen
+  // in derselben Runde Handkarten. Genau hier sind auch alle echten Spieler beigetreten.
+  try { mpBotsAssignSeats(); } catch(e) {}
   const activePlayers = [1,2,3,4].filter(p => G4.active[p]);
   const dealt = {};
   activePlayers.forEach(p => {
@@ -13477,6 +13483,11 @@ document.querySelectorAll('.swatch').forEach(sw=>{
       <button id="pick-p3" onclick="pickPlayer(3)" class="lobby-pick-btn" style="flex:1;">Spieler 3</button>
       <button id="pick-p4" onclick="pickPlayer(4)" class="lobby-pick-btn" style="flex:1;">Spieler 4</button>
     </div>
+    <!-- Bots im Mehrspieler: nur im 4P-Board, optisch abgesetzt (cyan) -->
+    <div id="mp-bot-row" style="display:none;gap:8px;margin-bottom:4px;">
+      <button id="mpbot-1" onclick="toggleMpBots(1)" class="lobby-pick-btn" style="flex:1;border-color:rgba(0,150,170,0.8);">1 Bot</button>
+      <button id="mpbot-2" onclick="toggleMpBots(2)" class="lobby-pick-btn" style="flex:1;border-color:rgba(0,150,170,0.8);">2 Bots</button>
+    </div>
     <div id="lobby-multi-status" style="font-size:.78rem;color:#ffffff;opacity:.9;text-align:center;min-height:1.2em;font-family:'Kievit',sans-serif;text-shadow:0 1px 3px rgba(0,0,0,0.5);"></div>
     <div id="lobby-code-display" style="display:none;font-size:1.8rem;font-weight:900;letter-spacing:6px;color:#2a2e3a;text-align:center;font-family:'AiSpec',sans-serif;background:rgba(255,255,255,0.4);border-radius:8px;padding:8px 16px;"></div>
     <button onclick="showLobbyMode(null)" style="background:linear-gradient(160deg,#c8ccd4 0%,#e8ecf2 40%,#d0d4dc 70%,#f0f2f6 100%);
@@ -13488,7 +13499,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div id="game-version-label" style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v55y
+    v56d
   </div>
 </div>
 
@@ -13530,6 +13541,89 @@ function setBotPlayerCount(n) {
 }
 
 // Menue: Spielerzahl-Auswahl nur im 4P-Board anbieten
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BOTS IM MEHRSPIELER (nur 4P-Board)
+// HOST-AUTORITAER: Ausschliesslich der Host laesst die Bots denken und handeln. Jede
+// Bot-Aktion laeuft ueber die normalen Netzwerkwege (slot_update, netSendState4 ...),
+// deshalb sehen ALLE Clients denselben Zustand - gleiche Handkarten, gleiche gespielte
+// Karten, gleiche gesperrten Buttons, gleiche Dauerfaehigkeiten.
+// Die Gaeste fuehren KEINE Bot-Logik aus, sie empfangen nur.
+// ══════════════════════════════════════════════════════════════════════════════
+let mpBotCount = 0;          // 0, 1 oder 2 Bots
+let mpBotSeats = [];         // logische Spielernummern, die von Bots besetzt sind
+
+function refreshMpBotButtons() {
+  [1,2].forEach(k => {
+    const b = document.getElementById('mpbot-' + k);
+    if (b) b.classList.toggle('selected', mpBotCount === k);
+  });
+}
+
+// Nur der HOST darf die Anzahl festlegen; Gaeste bekommen sie zugeschickt.
+function toggleMpBots(n) {
+  if (NET.mode === 'multi' && !NET.isHost) {
+    setMultiStatus('Die Anzahl der Bots legt der Host fest.');
+    return;
+  }
+  mpBotCount = (mpBotCount === n) ? 0 : n;   // erneuter Klick schaltet wieder aus
+  refreshMpBotButtons();
+  if (NET.mode === 'multi') netSend({t:'bot_count', n: mpBotCount});
+}
+
+// Beim Austeilen: freie Plaetze an Bots vergeben. Erst hier sind alle echten Spieler da.
+// Laeuft NUR beim Host - er verteilt und schickt das Ergebnis an alle.
+function mpBotsAssignSeats() {
+  if (!fourPlayerMode || mpBotCount <= 0) return;
+  if (NET.mode === 'multi' && !NET.isHost) return;
+  const belegt = new Set();
+  [1,2,3,4].forEach(p => { if (G4.everActive && G4.everActive.has(p)) belegt.add(p); });
+  belegt.add(NET.myPlayer);
+  const frei = [1,2,3,4].filter(p => !belegt.has(p));
+  // Zufaellige freie Plaetze - nie zweimal derselbe.
+  mpBotSeats = [];
+  for (let i = 0; i < mpBotCount && frei.length; i++) {
+    mpBotSeats.push(frei.splice(Math.floor(Math.random() * frei.length), 1)[0]);
+  }
+  if (!mpBotSeats.length) return;
+  // Identitaeten vergeben (Namen/Farben nie doppelt) und lokal aktivieren.
+  const npool = BOT_NAMES.slice();
+  const belegteFarben = [1,2,3,4].map(p => (G4.playerColors||{})[p]).filter(Boolean);
+  const cpool = BOT_COLOR_KEYS.filter(c => !belegteFarben.includes(c));
+  const info = [];
+  mpBotSeats.forEach(p => {
+    const nm = npool.splice(Math.floor(Math.random() * npool.length), 1)[0] || ('Bot ' + p);
+    const col = cpool.splice(Math.floor(Math.random() * cpool.length), 1)[0] || 'grau';
+    botNameByPlayer[p] = nm; botColorByPlayer[p] = col;
+    info.push({ p, name: nm, color: col });
+  });
+  mpBotsApply(info);
+  if (NET.mode === 'multi') netSend({t:'bot_seats', seats: info});
+}
+
+// Wird auf JEDEM Client ausgefuehrt (Host direkt, Gaeste per Nachricht).
+function mpBotsApply(info) {
+  (info || []).forEach(e => {
+    botNameByPlayer[e.p] = e.name;
+    botColorByPlayer[e.p] = e.color;
+    if (G4.names) G4.names[e.p] = e.name;
+    if (G4.playerColors) G4.playerColors[e.p] = e.color;
+    if (G4.everActive) G4.everActive.add(e.p);
+    try { setPlayerActive4(e.p, true); } catch(e2) { if (G4.active) G4.active[e.p] = true; }
+    try { applyPlayerBorderColor(e.p, true); } catch(e2) {}
+  });
+  mpBotSeats = (info || []).map(e => e.p);
+  // botPlayers steuert die vorhandene Bot-Logik - beim HOST aktivieren, bei Gaesten nicht.
+  // Nur der Host steuert die Bots (Gaeste empfangen deren Aktionen nur).
+  const _hostSteuert = (NET.mode === 'multi') ? !!NET.isHost : true;
+  if (_hostSteuert) {
+    botActive = true;
+    botPlayers = mpBotSeats.slice();
+    botPlayers.forEach(p => { if (!botMemory[p]) botMemory[p] = new Set(); });
+  }
+  try { updateTopbarScore(); scheduleHandLabelUpdate(); } catch(e2) {}
+}
+
 function refreshBotCountVisibility() {
   const w = document.getElementById('bot-count-wrap');
   if (!w) return;
@@ -13649,11 +13743,36 @@ function botOpponents(p, is4) {
 
 // ── Bewertung ───────────────────────────────────────────────────────────────
 // Lohnt ein Angriff von attackerSlot auf defenderSlot?
+// GEFAHR eines gegnerischen Buwemon: Karten mit starker, noch UNVERBRAUCHTER Faehigkeit
+// sind wertvolle Ziele - lieber jetzt toeten, bevor die Faehigkeit kommt.
+const BOT_GEFAEHRLICH = ['Maxodia','Marie die Königsgardistin','Marzo der Gott','ClariSSIO',
+  'Klorian','Hoffi','Schwammika','Der Hund','Kax Maufmann','Alexerus Snape','Glorian',
+  'Luis Münsters','Barista','Der Zeitführer','Suffia','Leonie die Schäferin'];
+function botThreatBonus(slotId) {
+  const cd = G.slots[slotId];
+  if (!cd) return 0;
+  let bonus = 0;
+  const uid = String(cd.uid);
+  const verbraucht = permanentAbilityUsed.has(uid);
+  if (!verbraucht && BOT_GEFAEHRLICH.some(n => String(cd.name).indexOf(n) === 0)) bonus += 90;
+  if (cd.type === 'spec') bonus += 120;              // Spezialbuwemon sind besonders gefaehrlich
+  if (schwammikaState[uid]) bonus += 60;             // Schwammika hat schon kopiert
+  if (typeof abilActive === 'function' && abilActive(slotId)) bonus += 50; // Dauerfaehigkeit laeuft
+  return bonus;
+}
+
 function botRateAttack(atkSlot, defSlot) {
   const atk = popupAttackPower(atkSlot), def = popupAttackPower(defSlot);
-  if (atk > def) return 100 + (atk - def);   // Gegner stirbt + LP-Schaden
-  if (atk === def) return -20;               // beide sterben
-  return -100 - (def - atk);                 // eigenes Buwemon stirbt
+  const gefahr = botThreatBonus(defSlot);
+  // Eigenes Buwemon, dessen Faehigkeit ohnehin verbraucht/blockiert ist, ist ein guenstiger
+  // Tauschpartner - dann lohnt auch ein 160-gegen-160-Angriff gegen ein gefaehrliches Ziel.
+  const eigenesCd = G.slots[atkSlot];
+  const eigenesEntbehrlich = eigenesCd &&
+    (permanentAbilityUsed.has(String(eigenesCd.uid)) || isBaristaBlocked(eigenesCd.uid)
+     || !CARD_ABILITIES[eigenesCd.name]);
+  if (atk > def) return 100 + (atk - def) + gefahr;
+  if (atk === def) return (eigenesEntbehrlich && gefahr >= 90) ? (10 + gefahr) : -20;
+  return -100 - (def - atk) + Math.min(gefahr, 60);
 }
 
 // Wichtigster Zug: eigenes Feld aufbauen, sonst angreifen.
@@ -13710,6 +13829,8 @@ function botChooseAction(p, is4) {
     if (!firstRoundOver && ['Drogen','Arsch anfassen','Zwillingsattacke','Überspringen'].includes(ab)) continue;
     // Faehigkeiten mit Popup/Zielauswahl kann der Bot (noch) nicht bedienen -> auslassen
     if (BOT_SKIP_ABILITIES.includes(ab)) continue;
+    // SINNPRUEFUNG: eine Faehigkeit, die gerade nichts bewirkt, waere verschwendet.
+    if (!botAbilityMakesSense(ab, p, is4, sid, ownBuw)) continue;
     return { art: 'faehigkeit', slot: sid, ability: ab };
   }
   // 2c. AUSRUESTUNG an ein eigenes Buwemon haengen (macht es im Kampf staerker)
@@ -13741,18 +13862,57 @@ function botChooseAction(p, is4) {
   };
   const effCard = hand.find(c => sinnvoll(c.name));
   if (effCard && freeEff) return { art:'dock', karte: effCard, slot: freeEff };
-  // 4. Noch ein Buwemon nachlegen
-  if (freeBuw && buwCard) return { art:'dock', karte: buwCard, slot: freeBuw };
+  // 4. Nachlegen NUR wenn es sich lohnt. Frueher legte der Bot einfach nach, "weil er
+  //    noch kann" - dabei landete oft ein schwaches Buwemon mit starker Faehigkeit
+  //    (z.B. Maxodia) ungenutzt auf dem Feld und wurde im naechsten Zug abgeraeumt.
+  if (freeBuw && buwCard) {
+    const ap = CARD_ATTACK_POWER[buwCard.name] || 0;
+    const staerksteGegner = botOpponents(p, is4)
+      .reduce((m,o) => Math.max(m, botOwnBuwSlots(o, is4)
+        .reduce((mm,s2) => Math.max(mm, popupAttackPower(s2)), 0)), 0);
+    const hatStarkeFaehigkeit = BOT_GEFAEHRLICH.some(n => String(buwCard.name).indexOf(n) === 0);
+    const aktionFrei = turnActionsUsed < turnActionsAllowed;
+    // Sinnvoll, wenn es stark genug ist, um zu ueberleben, ODER wenn seine Faehigkeit
+    // in diesem Zug noch eingesetzt werden kann.
+    const lohnt = (ap >= staerksteGegner) || (hatStarkeFaehigkeit && aktionFrei);
+    if (lohnt) return { art:'dock', karte: buwCard, slot: freeBuw };
+  }
   return { art: 'zugende' };
+}
+
+// Bringt diese Faehigkeit JETZT ueberhaupt etwas? Frueher setzte der Bot z.B. Leonies
+// Grasen ein, obwohl alle Friedhoefe leer waren, oder Dr. Stirli ohne zweites Buwemon.
+function botAbilityMakesSense(ab, p, is4, sid, ownBuw) {
+  const graves = (x) => (is4 ? (G4.graves['p'+x]||[]) : (G.graves['p'+x]||[]));
+  const gegner = botOpponents(p, is4);
+  switch (ab) {
+    case 'Verarztung':
+      // Stirli staerkt ein ANDERES Buwemon - ohne zweites bringt das nichts.
+      return ownBuw.filter(s2 => s2 !== sid).length > 0;
+    case 'Grasen':
+    case 'Killsteal':
+      // Braucht Karten in fremden Friedhoefen.
+      return gegner.some(o => graves(o).length > 0);
+    case 'Treue':
+      // Der Hund opfert sich - nur sinnvoll, wenn danach noch ein Buwemon bleibt.
+      return ownBuw.length > 1;
+    case 'Legilimens':
+    case 'Wanze':
+      return gegner.length > 0;
+    default:
+      return true;
+  }
 }
 
 // Faehigkeiten mit Popups/Zielauswahl, die der Bot noch nicht bedienen kann.
 // Er ueberspringt sie bewusst, statt eine haengende Auswahl zu hinterlassen.
 // Nur noch Faehigkeiten mit EIGENEM Popup (Kartenlisten, Mehrfachauswahl) bleiben aussen
 // vor - alles mit einfacher Buwemon-Zielauswahl bedient botHandlePendingSelection.
-const BOT_SKIP_ABILITIES = ['Gossip','Schicksal','Killsteal','Grasen','Rotation',
-  'Marcopter','Antika','Spülung','Liiinks','Recast','Vertragsbruch','Gottkomplex',
-  'Raum-Zeit-Genozid','Picky Eating','Kinderkeller'];
+// Nur noch Faehigkeiten, die eine BESTAETIGUNG per confirm()-Dialog brauchen oder das
+// Spielfeld global umbauen - die kann der Bot nicht sinnvoll bedienen und laesst sie aus.
+// Alles mit Zielauswahl, Gegnerwahl oder Popup uebernimmt botHandlePendingSelection.
+const BOT_SKIP_ABILITIES = ['Liiinks','Recast','Rotation','Vertragsbruch',
+  'Raum-Zeit-Genozid','Picky Eating'];
 // 'Drogen' und 'Zwillingsattacke' fehlen hier bewusst: deren Zielauswahl bedient
 // botHandlePendingSelection.
 
@@ -13799,7 +13959,92 @@ function botHandlePendingSelection(p, is4) {
     const t = botPickTargetSlot(p, is4, false);
     if (t) tryConfirmSaugkraft(t, G.slots[t]); return;
   } } catch(e) {}
+  // Treue (Der Hund) und Gottkomplex (Marzo): Buwemon-Ziel
+  try { if (pendingTreue) {
+    const t = botPickTargetSlot(p, is4, false) || botPickTargetSlot(p, is4, true);
+    if (t) tryConfirmTreue(t, G.slots[t]); return;
+  } } catch(e) {}
+  try { if (pendingGottkomplex) {
+    const t = botPickTargetSlot(p, is4, true) || botPickTargetSlot(p, is4, false);
+    if (t) tryConfirmGottkomplex(t, G.slots[t]); return;
+  } } catch(e) {}
+  if (botHandleOpponentPendings(p, is4)) return;
+  if (botHandlePopups(p, is4)) return;
   botHandlePendingSelection2(p, is4);
+}
+
+// GEGNER-AUSWAHL: Viele Faehigkeiten legen ein Objekt mit {opponents, startAgainst} an -
+// der Bot ruft startAgainst() mit dem sinnvollsten Gegner auf, statt auf einen Klick zu
+// warten. Betrifft Antika, Marcopter, Marie, Spuelung, Neue BESSERE Karte, Wanze u.a.
+function botPickOpponent(p, is4, kandidaten) {
+  const liste = (kandidaten && kandidaten.length) ? kandidaten : botOpponents(p, is4);
+  if (!liste.length) return null;
+  // Bevorzugt den gefaehrlichsten Gegner: meiste Buwemon-AP auf dem Feld.
+  let best = null;
+  liste.forEach(o => {
+    const ap = botOwnBuwSlots(o, is4).reduce((m,s2) => m + popupAttackPower(s2), 0);
+    if (!best || ap > best.ap) best = { o, ap };
+  });
+  return best ? best.o : liste[0];
+}
+
+function botHandleOpponentPendings(p, is4) {
+  const namen = ['pendingAntika','pendingMarcopter','pendingMarie','pendingSpuelung',
+                 'pendingNBK','pendingWanze'];
+  for (const n of namen) {
+    let obj = null;
+    try { obj = eval(n); } catch(e) { continue; }
+    if (!obj) continue;
+    const start = obj.startAgainst || obj.startWanzeAgainst;
+    if (typeof start !== 'function') continue;
+    const ziel = botPickOpponent(p, is4, obj.opponents);
+    if (ziel === null) return true;
+    try { start(ziel); } catch(e) {}
+    return true;
+  }
+  return false;
+}
+
+// POPUP-FAEHIGKEITEN: Schicksal, Killsteal/Grasen (Friedhofswahl) und die Browser-Popups.
+// Der Bot waehlt eine sinnvolle Karte bzw. schliesst das Popup wieder, damit nie etwas
+// haengen bleibt.
+// Popups, die durch eine BOT-Aktion aufgehen, dürfen beim Menschen nicht sichtbar sein.
+// Der Bot bedient sie im Hintergrund - deshalb werden sie waehrend seines Zuges
+// ausgeblendet und danach wieder freigegeben.
+function botHidePopups(an) {
+  ['overview-modal','browser-modal','verbot-target-modal','color-remove-modal'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.visibility = an ? 'hidden' : '';
+  });
+}
+
+function botHandlePopups(p, is4) {
+  // Schicksal: staerkstes noch verfuegbares Buwemon aus dem Ziehstapel holen
+  const ov = document.getElementById('overview-modal');
+  if (ov && ov.classList.contains('open')) {
+    let best = null;
+    (G.deck || []).forEach((c, i) => {
+      if (!c || c.type !== 'buw') return;
+      const ap = CARD_ATTACK_POWER[c.name] || 0;
+      if (!best || ap > best.ap) best = { i, ap, c };
+    });
+    if (best) { try { bCardToField(best.i, 'deck'); } catch(e) {} }
+    ov.classList.remove('open');
+    try { releaseAbilityBtn(); } catch(e) {}
+    return true;
+  }
+  // Friedhofswahl (Killsteal/Grasen/Eine Runde noch): staerkstes Buwemon nehmen
+  const vt = document.getElementById('verbot-target-modal');
+  if (vt && vt.classList.contains('open')) {
+    const btns = vt.querySelectorAll('button');
+    if (btns.length) { try { btns[0].click(); } catch(e) {} }
+    return true;
+  }
+  // Karten-Browser (Gossip u.a.): schliessen, ohne die Reihenfolge zu veraendern
+  const bm = document.getElementById('browser-modal');
+  if (bm && bm.classList.contains('open')) { try { closeBrowser(); } catch(e) {} return true; }
+  return false;
 }
 
 function botHandlePendingSelection2(p, is4) {
@@ -13812,11 +14057,17 @@ function botHandlePendingSelection2(p, is4) {
         if (!best || w > best.w) best = { slot: d, w };
       });
     });
+    // Hat der Gegner gar kein Buwemon, greift der Bot die LP direkt an.
     if (best) { try { confirmAttackTarget(best.slot, G.slots[best.slot]); } catch(e) {} }
     else if (typeof confirmAttackTargetLP === 'function') {
       const ziel = botOpponents(p, is4)[0];
       if (ziel) { try { confirmAttackTargetLP(ziel, is4); } catch(e) {} }
     }
+    // Sicherheitsnetz: bleibt die Auswahl trotzdem offen, nach 5s abbrechen - sonst
+    // haengt die Kampfsituation (aufgetreten bei ApoReds Zwillingsattacke).
+    setTimeout(() => {
+      try { if (pendingAttackSelection) { pendingAttackSelection = null; clearAbilityUI(); } } catch(e) {}
+    }, 5000);
     return;
   }
   // b) Gegner-Auswahl (Wanze, Marie, Antika, NBK ...) - erster lebender Gegner
@@ -13868,6 +14119,16 @@ function botPlaceCard(p, is4, karte, slot) {
     if (isEff || isVerbot) checkVerbote(pfxB, sufB);
     if (isEff) onCardDockedToEffSlot(pfxB, slot, cdB);
   } catch(e) {}
+  // SYNCHRONISATION: Im Mehrspieler denkt und handelt NUR der Host fuer die Bots. Damit
+  // alle Clients exakt denselben Zustand sehen (gelegte Karte, Handkartenzahl, Sperren,
+  // Dauerfaehigkeiten), wird jede Bot-Aktion sofort verschickt.
+  if (NET.mode === 'multi') {
+    try {
+      netSend({t:'card_remove', uid: String(uid)});
+      netSend({t:'slot_update', slotId: slot, cd: G.slots[slot], is4});
+      if (is4) netSendState4(); else netSendState();
+    } catch(e) {}
+  }
   return true;
 }
 
@@ -13878,6 +14139,7 @@ function botDoTurn(p) {
   if (turnNow !== p || !botPlayers.includes(p)) return;
   if (pendingAbility) { setTimeout(() => botDoTurn(p), 1200); return; } // Kampf laeuft
   _botThinking = true;
+  botHidePopups(true);   // Popups des Bots bleiben beim Menschen unsichtbar
   botObserveOpenHands(is4);
 
   const act = botChooseAction(p, is4);
@@ -13923,7 +14185,10 @@ function botDoTurn(p) {
     // Nach dem Aktivieren pruefen, ob eine ZIELAUSWAHL offen ist (z.B. Gruenikas Drogen
     // fuehrt in eine Angriffs-Zielauswahl). Der Bot muss die selbst bedienen - sonst blieb
     // der Toast stehen und er beendete einfach den Zug.
-    setTimeout(() => { try { botHandlePendingSelection(p, is4); } catch(e) {} }, 900);
+    // Manche Faehigkeiten laufen in Stufen (Gegnerwahl -> Zielwahl -> Popup) - deshalb
+    // mehrfach nachfassen, bis nichts mehr offen ist.
+    [900, 1900, 2900, 3900].forEach(ms =>
+      setTimeout(() => { try { botHandlePendingSelection(p, is4); } catch(e) {} }, ms));
     const cd = G.slots[act.slot];
     if (cd) {
       const fake = document.createElement('div');
@@ -13958,6 +14223,12 @@ function botDoTurn(p) {
         beginAttackSelection(null, fake);
         setTimeout(() => {
           try { confirmAttackTarget(act.ziel, G.slots[act.ziel]); } catch(e) {}
+          // ZWEITER Angriff (Zwillingsattacke von ApoRed) und Folge-Angriffe von
+          // ClariSSIO/Drogen/Ueberspringen: die oeffnen erneut eine Zielauswahl. Ohne
+          // dieses Nachfassen blieb sie offen und die Kampfsituation lief endlos weiter.
+          [1500, 3000, 4500, 6000].forEach(ms => setTimeout(() => {
+            try { if (pendingAttackSelection) botHandlePendingSelection(p, is4); } catch(e) {}
+          }, ms));
           finish();
         }, 800);
         return;
@@ -13979,15 +14250,27 @@ function botEndTurnWhenIdle(p, is4, tries) {
   if (turnNow !== p) return;
   const beschaeftigt = !!pendingAbility
     || (typeof anyTargetSelectOpen === 'function' && anyTargetSelectOpen());
-  if (beschaeftigt && t < 40) { setTimeout(() => botEndTurnWhenIdle(p, is4, t + 1), 700); return; }
+  if (beschaeftigt && t < 40) {
+    // Offene Auswahl? Erst versuchen, sie selbst zu bedienen - sonst wartet der Bot
+    // sinnlos, bis der Waechter zuschlaegt.
+    if (!pendingAbility) { try { botHandlePendingSelection(p, is4); } catch(e) {} }
+    setTimeout(() => botEndTurnWhenIdle(p, is4, t + 1), 700);
+    return;
+  }
+  botHidePopups(false);  // Zug vorbei -> Popups wieder normal sichtbar
   try { if (is4) endTurn4(p); else endTurn(p); } catch(e) {}
 }
 
 function botCheckTurn() {
   if (!botActive) return;
+  // Im Mehrspieler steuert AUSSCHLIESSLICH der Host die Bots - sonst wuerde jeder Client
+  // eigene Entscheidungen treffen und die Runde liefe sofort auseinander.
+  if (NET.mode === 'multi' && !NET.isHost) return;
   const is4 = (typeof fourPlayerMode !== 'undefined' && fourPlayerMode);
   const t = is4 ? TURN_4P : TURN_2P;
   if (!t || !botPlayers.includes(t)) return;
+  // Ausgeschiedener Bot macht nichts mehr - er wird komplett uebersprungen.
+  if (is4 && G4.active && !G4.active[t]) return;
   setTimeout(() => botDoTurn(t), 1400);
   // WAECHTER: Selbst wenn die Zuglogik irgendwo haengenbleibt (unbekannte Karte, Popup,
   // Fehler) darf der Bot den Zug NIE blockieren - nach 12s wird er zwangsweise beendet.
@@ -14019,6 +14302,7 @@ function botResolveDefensePhase() {
 
 function botMaybeDefend() {
   if (!botActive || !pendingAbility) return;
+  if (NET.mode === 'multi' && !NET.isHost) return; // nur der Host entscheidet fuer Bots
   const is4 = (typeof fourPlayerMode !== 'undefined' && fourPlayerMode);
   const pa = pendingAbility;
   botPlayers.forEach(p => {
@@ -15279,6 +15563,21 @@ if (d.t === 'state4') {
       if (d.ablehntCardTargets) pendingAbility.ablehntCardTargets = d.ablehntCardTargets;
       recomputeCombatChain(pendingAbility);
     }
+  }
+  if (d.t === 'hello4' || d.t === 'hello') {
+    // Neuer Gast: Host teilt ihm die aktuelle Bot-Anzahl mit.
+    try { if (NET.isHost && mpBotCount > 0) setTimeout(() => netSend({t:'bot_count', n: mpBotCount}), 400); } catch(e) {}
+  }
+  if (d.t === 'bot_count') {
+    // Der Host legt die Bot-Anzahl fest - Gaeste uebernehmen sie nur.
+    mpBotCount = d.n || 0;
+    try { refreshMpBotButtons(); } catch(e) {}
+    return;
+  }
+  if (d.t === 'bot_seats') {
+    // Sitzverteilung der Bots (kommt vom Host). Jeder Client wendet sie identisch an.
+    try { mpBotsApply(d.seats || []); } catch(e) {}
+    return;
   }
   if (d.t === 'heartbeat') return; // reines Lebenszeichen - NET._lastRx wurde schon gesetzt
   if (d.t === 'resync_request') {
