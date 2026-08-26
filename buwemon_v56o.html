@@ -1592,7 +1592,9 @@ const HAND_MAX_2P = 92; // 2 x 46 Karten (siehe layoutMyHand fuer die Ueberlauf-
 function autoDrawIfMyTurn2p(p, seq) {
   if (sandboxMode) return;
   if (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) return;
-  if (NET.mode === 'multi' && p !== myLogicalPlayer2p()) return; // Mehrspieler: nur meine eigenen Karten wirklich erzeugen
+  const _botHost2 = (NET.mode === 'multi') ? !!NET.isHost : true;
+  const _botSeat2 = (typeof botPlayers !== 'undefined' && botPlayers.includes(p) && _botHost2);
+  if (NET.mode === 'multi' && p !== myLogicalPlayer2p() && !_botSeat2) return;
   if (_lastAutoDrawSeq2p === seq) return; // für DIESEN konkreten Zug wurde schon gezogen (nicht nur "für diesen Spieler")
   if (!G.deck.length) return;
   // Limit VOR dem Seq-Merker pruefen - sonst gilt der Zug als "gezogen" und man kann
@@ -1609,8 +1611,8 @@ function autoDrawIfMyTurn2p(p, seq) {
   const el = spawnCard({name:cd.name, color:cd.color, type:cd.type, uid, file:cd.file||''}, 0, 0, false);
   if (!handOrderByPlayer2p[p]) handOrderByPlayer2p[p] = [];
   handOrderByPlayer2p[p].push(uid);
-  if (NET.mode !== 'multi' && p !== myLogicalPlayer2p()) {
-    // Debug-Modus: das ist nicht die gerade aktive Perspektive -> nicht am Bildschirm zeigen (nur Datenmodell)
+  // Wie im 4P: fremde Hand (auch die eines Bots) nie als eigene Karte anzeigen.
+  if (p !== myLogicalPlayer2p()) {
     el.style.display = 'none';
     renderSimulatedHand('p'+p, handCardsFromUids(handOrderByPlayer2p[p]), false);
   } else {
@@ -1740,7 +1742,11 @@ let _lastAutoDrawSeq4p = -1;
 const HAND_MAX_4P = 72; // 2 x 36 (horizontal) bzw. 3 x 24-Aequivalent (vertikal), siehe Spezifikation
 function autoDrawIfMyTurn4p(p, seq) {
   if (sandboxMode) return;
-  if (NET.mode === 'multi' && p !== myLogicalPlayer4p()) return;
+  // Fuer BOTS zieht der Host mit - sie sind nicht der lokale Spieler, muessen aber
+  // genauso Karten bekommen. Ohne das blieb ihre Hand leer und sie wirkten untaetig.
+  const _botHost = (NET.mode === 'multi') ? !!NET.isHost : true;
+  const _botSeat = (typeof botPlayers !== 'undefined' && botPlayers.includes(p) && _botHost);
+  if (NET.mode === 'multi' && p !== myLogicalPlayer4p() && !_botSeat) return;
   if (_lastAutoDrawSeq4p === seq) return; // für DIESEN konkreten Zug wurde schon gezogen
   if (!G4.deck.length) return;
   // Limit VOR dem Seq-Merker pruefen (siehe 2P)
@@ -1756,8 +1762,12 @@ function autoDrawIfMyTurn4p(p, seq) {
   const el = spawnCard({name:cd.name, color:cd.color, type:cd.type, uid, file:cd.file||''}, 0, 0, false);
   if (!handOrderByPlayer4p[p]) handOrderByPlayer4p[p] = [];
   handOrderByPlayer4p[p].push(uid);
-  if (NET.mode !== 'multi' && p !== myLogicalPlayer4p()) {
-    el.style.display = 'none'; // Debug-Modus: gerade nicht aktive Perspektive -> nicht anzeigen
+  // Karten eines BOTS (oder einer fremden Perspektive) gehoeren nicht in die eigene Hand:
+  // ausblenden und als simulierte Handkarte in SEINER Zone zeigen. Ohne diese Bedingung
+  // landete die gezogene Bot-Karte im Mehrspieler sichtbar oben links am Bildrand.
+  const _fremd = (p !== myLogicalPlayer4p());
+  if (_fremd) {
+    el.style.display = 'none';
     renderSimulatedHand('p'+p, handCardsFromUids(handOrderByPlayer4p[p]), true);
   } else {
     layoutMyHand4();
@@ -3372,18 +3382,32 @@ function openAbilityRound(phase) {
   timeEl.textContent = '30s';
   toast.classList.add('open');
   pendingAbility.declinedBy = new Set();
-  try { setTimeout(botMaybeDefend, 1500); } catch(e) {}
-  try { setTimeout(botMaybeDefend, 3500); } catch(e) {} // Folge-Runden (Konter) ebenfalls
+  // Bots mehrfach nachfassen lassen - sie sollen NIE den Timer auslaufen lassen, sondern
+  // aktiv verzichten (und das per ability_decline melden), sonst haengt die Runde beim Gast.
+  [1200, 2600, 4200, 6000, 8000].forEach(ms => {
+    try { setTimeout(() => { if (pendingAbility) botMaybeDefend(); }, ms); } catch(e) {}
+  });
   skipBtn.onclick = () => {
     toast.classList.remove('open');
     if (!pendingAbility) return;
-    if (botActive) {
-      // EINZELSPIELER gegen Bots: "Nichts tun" gilt NUR fuer den Menschen. Die Bots
-      // entscheiden selbst (botMaybeDefend) - erst wenn ALLE verzichtet haben, endet die
-      // Runde. Vorher beendete der Mensch die Kampfsituation faelschlich fuer alle.
+    if (botActive && NET.mode !== 'multi') {
+      // EINZELSPIELER gegen Bots: "Nichts tun" gilt NUR fuer den Menschen (immer Spieler 1).
+      // Die Bots entscheiden selbst - erst wenn ALLE verzichtet haben, endet die Runde.
       if (!pendingAbility.declinedBy) pendingAbility.declinedBy = new Set();
       pendingAbility.declinedBy.add(1);
       botResolveDefensePhase();
+      return;
+    }
+    if (botActive && NET.mode === 'multi') {
+      // MEHRSPIELER mit Bots: Dieser Zweig lief frueher AUCH hier - er trug den Verzicht
+      // nur LOKAL ein und verschickte ihn nie. Aktivierte der GAST etwas, wartete er
+      // deshalb ewig auf den Verzicht des Hosts (und die Nummer war fest auf 1 verdrahtet).
+      // Jetzt: ganz normal melden wie ohne Bots, zusaetzlich die Bots entscheiden lassen.
+      if (!pendingAbility.declinedBy) pendingAbility.declinedBy = new Set();
+      pendingAbility.declinedBy.add(NET.myPlayer);
+      netSend({t:'ability_decline', player: NET.myPlayer});
+      try { setTimeout(botMaybeDefend, 200); } catch(e) {}
+      checkAllDeclined();
       return;
     }
     if (NET.mode !== 'multi') {
@@ -3442,7 +3466,15 @@ function checkAllDeclined() {
   const eligible = eligibleResponders();
   const declined = pendingAbility.declinedBy || new Set();
   const allDeclined = eligible.length > 0 && eligible.every(p => declined.has(p));
-  if (allDeclined && NET.myPlayer === pendingAbility.activatorP) {
+  // Normalerweise schliesst der AKTIVATOR die Kette ab. Ist der Aktivator ein BOT, gibt es
+  // dafuer keinen Client - dann uebernimmt der Host, der die Bots ohnehin steuert.
+  // Ohne das lief kein Bot-Angriff und keine Bot-Faehigkeit jemals durch: die Kette
+  // wartete auf einen Abschluss, den niemand ausloeste.
+  const _botIstAktivator = (typeof botPlayers !== 'undefined')
+    && botPlayers.includes(pendingAbility.activatorP);
+  const _hostSchliesst = _botIstAktivator
+    && ((NET.mode !== 'multi') || !!NET.isHost);
+  if (allDeclined && (NET.myPlayer === pendingAbility.activatorP || _hostSchliesst)) {
     finalizeAbilityChain();
   }
 }
@@ -4017,7 +4049,12 @@ function finalizeAbilityChain(killsBuwemon) {
   const killSlotId = killsBuwemon ? data.slotId : null;
   const killOwnerP = killsBuwemon ? parseInt((data.slotId.match(/^p(\d)/)||[])[1]||'0') : null;
   const resolveFn = data.resolveFn;
-  const isActivatorHere = (NET.mode !== 'multi') || (NET.myPlayer === data.activatorP);
+  // Bei einem BOT-Aktivator gibt es keinen eigenen Client - dann fuehrt der Host die
+  // Aufloesung aus (Angriff/Faehigkeit). Ohne das blieb ein Bot-Angriff wirkungslos:
+  // niemand galt als Aktivator, also lief resolveFn nirgends.
+  const _botAkt = (typeof botPlayers !== 'undefined') && botPlayers.includes(data.activatorP);
+  const _hostFuehrtAus = _botAkt && ((NET.mode !== 'multi') || !!NET.isHost);
+  const isActivatorHere = (NET.mode !== 'multi') || (NET.myPlayer === data.activatorP) || _hostFuehrtAus;
   const combatDefense = data.combatDefense || null;
   const fourAceFourPlayed = !!data.fourAceFourPlayed;
 
@@ -5603,7 +5640,12 @@ function resolveAntika(activatorP, targetP, is4) {
   // leer bzw. traf eine fremde Karte, und der Aktivator bekam eine Karte "aus dem Nichts".
   // Im Mehrspielermodus bestimmt deshalb der BESTOHLENE Client die Karte und meldet sie
   // zurueck; nur er kennt seine Hand wirklich.
-  if (NET.mode === 'multi' && targetP !== (is4 ? myLogicalPlayer4p() : myLogicalPlayer2p())) {
+  // Ist das Ziel ein BOT, den ICH selbst steuere (Host bzw. Einzelspieler), kenne ich seine
+  // Hand und kann direkt klauen - dann NICHT den Umweg ueber die Netzwerkanfrage gehen.
+  const _zielIstMeinBot = (typeof botPlayers !== 'undefined') && botPlayers.includes(targetP)
+    && ((NET.mode !== 'multi') || !!NET.isHost);
+  if (NET.mode === 'multi' && !_zielIstMeinBot
+      && targetP !== (is4 ? myLogicalPlayer4p() : myLogicalPlayer2p())) {
     const reqIdx = Math.floor(Math.random() * hand.length);
     netSend({t:'antika_request', targetP, activatorP, is4, cardIdx: reqIdx});
     showOutcomeToast('Antika klaut eine Karte von ' + lpOptPlayerName(targetP, is4), is4);
@@ -7783,7 +7825,10 @@ const ABILITY_EFFECTS = {
   'Döner schneiden': null,
   'Schicksal': () => {
     const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
-    const ownerP = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+    // ANWENDER statt lokalem Spieler: _lastActivatorSlotId zeigt auf das Buwemon, dessen
+    // Faehigkeit gerade laeuft (so macht es auch Cediboy). Mit myLogicalPlayer* bekam
+    // IMMER der lokale Spieler die Karte - beim Bot also faelschlich der Mensch.
+    const ownerP = parseInt((_lastActivatorSlotId||'p1').match(/^p(\d)/)[1]||'1');
     beginSchicksalDiscard(ownerP, is4);
   },
   'Drogen': null,
@@ -7840,15 +7885,24 @@ const ABILITY_EFFECTS = {
   'Zwillingsattacke': null,
   'Mecces Völlerei': () => {
     const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
-    const ownerP = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+    // ANWENDER statt lokalem Spieler: _lastActivatorSlotId zeigt auf das Buwemon, dessen
+    // Faehigkeit gerade laeuft (so macht es auch Cediboy). Mit myLogicalPlayer* bekam
+    // IMMER der lokale Spieler die Karte - beim Bot also faelschlich der Mensch.
+    const ownerP = parseInt((_lastActivatorSlotId||'p1').match(/^p(\d)/)[1]||'1');
     const myArr = is4 ? handOrderByPlayer4p : handOrderByPlayer2p;
     for (let i = 0; i < 2; i++) {
       const uid = G.nid++;
       const el2 = spawnCard({name:'Mecces Ereignis',color:'#888888',type:'ereignis',uid,file:'Mecces_Ereignis.png'},0,0,false);
       if(!myArr[ownerP])myArr[ownerP]=[];
       myArr[ownerP].push(uid);
+      // Gehoert die Karte NICHT mir (z.B. einem Bot), darf sie nicht in meiner Hand
+      // liegen - sonst erscheint sie sichtbar oben links. Wie bei Cediboy/Fabio.
+      const _meNowA = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+      if (ownerP !== _meNowA && el2) el2.style.display = 'none';
     }
-    if(is4){layoutMyHand4();}else{layoutMyHand();}
+    const _meA = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+    if (ownerP === _meA) { if(is4){layoutMyHand4();}else{layoutMyHand();} }
+    else { try { renderSimulatedHand('p'+ownerP, handCardsFromUids(myArr[ownerP]), is4); } catch(e) {} }
     const txt = 'Alicia: 2x Mecces Ereignis auf die Hand!';
     showOutcomeToast(txt, is4);
     if(NET.mode==='multi'){netSend({t:'hand_add_card',ownerP,is4,sender:NET.myPlayer,cd:{name:'Mecces Ereignis',color:'#888888',type:'ereignis',file:'Mecces_Ereignis.png'}});netSend({t:'hand_add_card',ownerP,is4,sender:NET.myPlayer,cd:{name:'Mecces Ereignis',color:'#888888',type:'ereignis',file:'Mecces_Ereignis.png'}});netSend({t:'outcome_toast',text:txt,is4});is4?netSendState4():netSendState();}
@@ -7965,7 +8019,10 @@ const ABILITY_EFFECTS = {
 
   'Clubmate Hamsterung': () => {
     const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
-    const ownerP = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+    // ANWENDER statt lokalem Spieler: _lastActivatorSlotId zeigt auf das Buwemon, dessen
+    // Faehigkeit gerade laeuft (so macht es auch Cediboy). Mit myLogicalPlayer* bekam
+    // IMMER der lokale Spieler die Karte - beim Bot also faelschlich der Mensch.
+    const ownerP = parseInt((_lastActivatorSlotId||'p1').match(/^p(\d)/)[1]||'1');
     const uid = G.nid++;
     const cardEl2 = spawnCard({name:'Clubmate Ereignis',color:'#888888',type:'eff',uid,file:'Clubmate_Ereignis.png'},0,0,false);
     if (is4) {
@@ -8087,7 +8144,10 @@ const ABILITY_EFFECTS = {
   },
   'Ohohoho': () => {
     const is4 = typeof fourPlayerMode !== 'undefined' && fourPlayerMode;
-    const ownerP = is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
+    // ANWENDER statt lokalem Spieler: _lastActivatorSlotId zeigt auf das Buwemon, dessen
+    // Faehigkeit gerade laeuft (so macht es auch Cediboy). Mit myLogicalPlayer* bekam
+    // IMMER der lokale Spieler die Karte - beim Bot also faelschlich der Mensch.
+    const ownerP = parseInt((_lastActivatorSlotId||'p1').match(/^p(\d)/)[1]||'1');
     const oldLp = is4 ? (G4.lp[ownerP]||0) : (G.lp[ownerP]||0);
     const newLp = Math.min(300, oldLp + 20);
     if (is4) { G4.lp[ownerP]=newLp; } else { G.lp[ownerP]=newLp; }
@@ -13243,6 +13303,19 @@ function netSendState4() {
     fieldCards,
     handCount: (handOrderByPlayer4p[NET.myPlayer]||[]).length,
     handCards: handCards4,
+    // BOT-HAENDE MITSCHICKEN: Der Host fuehrt die Bots, also kennt nur er ihre Karten.
+    // Ohne diese Angabe blieb die Kartenzahl der Bots beim Gast fuer immer bei 5 stehen.
+    botHands: (function(){
+      try {
+        if (!botPlayers || !botPlayers.length) return null;
+        if (NET.mode === 'multi' && !NET.isHost) return null;
+        const o = {};
+        botPlayers.forEach(bp => {
+          o[bp] = handCardsFromUids(handOrderByPlayer4p[bp] || []).filter(c => c && c.name);
+        });
+        return o;
+      } catch(e) { return null; }
+    })(),
     reveal: [...(G4.reveal[myP] instanceof Set ? G4.reveal[myP] : new Set())],
     permAbilityUsed: [...permanentAbilityUsed],
     // LP-Verlauf mitschicken: er wurde bisher gar nicht synchronisiert, deshalb sah der
@@ -13499,7 +13572,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div id="game-version-label" style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v56d
+    v56o
   </div>
 </div>
 
@@ -13556,16 +13629,21 @@ let mpBotSeats = [];         // logische Spielernummern, die von Bots besetzt si
 function refreshMpBotButtons() {
   [1,2].forEach(k => {
     const b = document.getElementById('mpbot-' + k);
-    if (b) b.classList.toggle('selected', mpBotCount === k);
+    if (!b) return;
+    const an = (mpBotCount === k);
+    b.classList.toggle('selected', an);
+    // Auch die Inline-Hervorhebung zuruecknehmen, sonst sieht ein abgewaehlter Button
+    // weiterhin aktiv aus.
+    b.style.boxShadow = an ? '0 0 0 3px #fff, 0 0 0 5px rgba(0,0,0,0.4)' : '';
+    b.style.filter = an ? '' : 'none';
   });
 }
 
 // Nur der HOST darf die Anzahl festlegen; Gaeste bekommen sie zugeschickt.
 function toggleMpBots(n) {
-  if (NET.mode === 'multi' && !NET.isHost) {
-    setMultiStatus('Die Anzahl der Bots legt der Host fest.');
-    return;
-  }
+  // JEDER Spieler stellt die Anzahl bei sich ein (und sie wird zusaetzlich verteilt).
+  // Frueher durfte nur der Host klicken - beim Gast passierte gar nichts, weshalb die
+  // Buttons "nicht abwaehlbar" wirkten und sein Austeilen die Bots vergass.
   mpBotCount = (mpBotCount === n) ? 0 : n;   // erneuter Klick schaltet wieder aus
   refreshMpBotButtons();
   if (NET.mode === 'multi') netSend({t:'bot_count', n: mpBotCount});
@@ -13575,7 +13653,10 @@ function toggleMpBots(n) {
 // Laeuft NUR beim Host - er verteilt und schickt das Ergebnis an alle.
 function mpBotsAssignSeats() {
   if (!fourPlayerMode || mpBotCount <= 0) return;
-  if (NET.mode === 'multi' && !NET.isHost) return;
+  // WER austeilt, vergibt die Sitze - auch ein Gast. mpBotCount wird vom Host verteilt,
+  // der Gast kennt sie also, selbst wenn er den Button nie gedrueckt hat. Frueher stieg
+  // diese Funktion beim Gast aus und seine Runde startete komplett ohne Bots.
+  if (mpBotSeats && mpBotSeats.length) return; // schon vergeben
   const belegt = new Set();
   [1,2,3,4].forEach(p => { if (G4.everActive && G4.everActive.has(p)) belegt.add(p); });
   belegt.add(NET.myPlayer);
@@ -13613,8 +13694,8 @@ function mpBotsApply(info) {
     try { applyPlayerBorderColor(e.p, true); } catch(e2) {}
   });
   mpBotSeats = (info || []).map(e => e.p);
-  // botPlayers steuert die vorhandene Bot-Logik - beim HOST aktivieren, bei Gaesten nicht.
-  // Nur der Host steuert die Bots (Gaeste empfangen deren Aktionen nur).
+  // botPlayers steuert die vorhandene Bot-Logik - NUR beim Host. Die Sitzvergabe darf
+  // jeder anstossen, das DENKEN bleibt aber beim Host, sonst laufen die Zuege auseinander.
   const _hostSteuert = (NET.mode === 'multi') ? !!NET.isHost : true;
   if (_hostSteuert) {
     botActive = true;
@@ -13622,6 +13703,7 @@ function mpBotsApply(info) {
     botPlayers.forEach(p => { if (!botMemory[p]) botMemory[p] = new Set(); });
   }
   try { updateTopbarScore(); scheduleHandLabelUpdate(); } catch(e2) {}
+  if (_hostSteuert) { try { botStartHeartbeat(); } catch(e2) {} }
 }
 
 function refreshBotCountVisibility() {
@@ -13654,7 +13736,9 @@ function startBotGame() {
 // Zufaellige Namen und Farben - nie die Farbe des Menschen.
 const botNameByPlayer = {};   // p -> Name (ueberlebt Runden-Resets, anders als G4.names)
 const botColorByPlayer = {};  // p -> Farbschluessel (nie die Farbe des Menschen)
-const BOT_COLOR_KEYS = ['rot','orange','gelb','gruen','blau','lila','grau','cyan','schwarz'];
+// DIREKT aus PLAYER_COLOR_RGB ableiten - frueher standen hier 'lila' und 'schwarz',
+// die es dort gar nicht gibt: playerColorCss lief dann auf "rgb is undefined".
+const BOT_COLOR_KEYS = Object.keys(PLAYER_COLOR_RGB);
 function botSetupIdentities(is4) {
   const pool = BOT_NAMES.slice();
   // Farbpool ohne die Farbe des Menschen - so ist nie eine doppelt vergeben.
@@ -13786,7 +13870,20 @@ function botChooseAction(p, is4) {
   //    und kam nie zum Angriff. Nachlegen passiert jetzt erst, wenn nichts Besseres geht.
   // EIN Buwemon pro Zug - wie beim Menschen. Frueher legte der Bot in einem Zug mehrere.
   const schonBeschworen = (_botSummonedTurn === botTurnKey(p, is4));
-  const buwCard = schonBeschworen ? null : hand.find(c => c.ctype === 'buw');
+  // Buwemon-Auswahl: Karten, deren Wert allein in der Faehigkeit liegt und die ohne
+  // Partner nichts bringen (Dr. Stirli staerkt ANDERE), moeglichst hinten anstellen.
+  // Frueher griff Schritt 1 einfach die erste Buwemonkarte - deshalb landete Stirli
+  // immer wieder allein auf dem Feld.
+  const _buwHand = hand.filter(c => c.ctype === 'buw');
+  const _istStuetze = (c) => String(c.name).indexOf('Dr. Stirli') === 0;
+  const _buwSortiert = _buwHand.slice().sort((a2,b2) => {
+    const sa = _istStuetze(a2) ? 1 : 0, sb = _istStuetze(b2) ? 1 : 0;
+    if (sa !== sb) return sa - sb;                                   // Stuetzen zuletzt
+    return (CARD_ATTACK_POWER[b2.name]||0) - (CARD_ATTACK_POWER[a2.name]||0); // sonst staerkste
+  });
+  const buwCard = schonBeschworen ? null
+    : (_buwSortiert.find(c => !(_istStuetze(c) && ownBuw.length === 0 && _buwSortiert.length > 1))
+       || _buwSortiert[0]);
   if (freeBuw && buwCard && ownBuw.length === 0) {
     return { art: 'dock', karte: buwCard, slot: freeBuw };
   }
@@ -13809,6 +13906,24 @@ function botChooseAction(p, is4) {
       });
     });
     if (best) return best;
+    // DIREKTANGRIFF auf die LP: Hat ein Gegner gar kein Buwemon, ist das der beste Zug.
+    // Ausnahme: Er hat eine Glaskuppel liegen - dann lohnt es nur mit einem GELBEN
+    // Buwemon (das durchbricht sie zu 50%).
+    const frei = botOpponents(p, is4).filter(o => botOwnBuwSlots(o, is4).length === 0);
+    if (frei.length && ownBuw.length) {
+      const ziel = frei[0];
+      const gk = (typeof getGlaskuppelSlot === 'function') ? getGlaskuppelSlot(ziel, is4) : null;
+      const passend = ownBuw.filter(sid => {
+        const c = G.slots[sid];
+        if (!c) return false;
+        if (isBaristaBlocked(c.uid)) return false;
+        return gk ? (c.color === '#aa9900') : true;
+      });
+      if (passend.length) {
+        passend.sort((a2,b2) => popupAttackPower(b2) - popupAttackPower(a2));
+        return { art: 'direktangriff', von: passend[0], zielP: ziel };
+      }
+    }
   }
   // 2b. FAEHIGKEIT eines eigenen Buwemon einsetzen, sofern nutzbar
   for (const sid of ownBuw) {
@@ -13848,7 +13963,10 @@ function botChooseAction(p, is4) {
       case 'Nachschlag':        return turnActionsUsed >= turnActionsAllowed && ownBuw.length > 0;
       case 'Mecces':            return lp <= 250;          // heilt - nicht bei vollen LP
       case 'Mecces Ereignis':   return lp <= 250;
-      case 'RGB':               return hand.length <= 4;   // zieht Karten
+      case 'RGB':
+        // RGB zieht Karten - vor allem wenn gar kein Buwemon auf der Hand ist, ist das
+        // der einzige Weg zu neuem Material. Dann IMMER sofort nutzen.
+        return !hand.some(c => c.ctype === 'buw') || hand.length <= 4;
       case 'Eine Runde noch': {
         // Nur sinnvoll, wenn im eigenen Friedhof ein Buwemon liegt, das STAERKER ist als
         // das beste eigene auf dem Feld (sonst verschwendet der Bot die Karte im 1. Zug).
@@ -13860,7 +13978,11 @@ function botChooseAction(p, is4) {
       default:                  return false;
     }
   };
-  const effCard = hand.find(c => sinnvoll(c.name));
+  // NIE eine Effektkarte legen, wenn gleich noch eine Kampfsituation folgt (z.B. waehrend
+  // der kurzen Pause nach Schwammikas Saugkraft) - die Karte verpuffte dort wirkungslos.
+  const _kampfFolgt = !!pendingAbility || !!window._schwActionOpen
+    || (typeof anyTargetSelectOpen === 'function' && anyTargetSelectOpen());
+  const effCard = _kampfFolgt ? null : hand.find(c => sinnvoll(c.name));
   if (effCard && freeEff) return { art:'dock', karte: effCard, slot: freeEff };
   // 4. Nachlegen NUR wenn es sich lohnt. Frueher legte der Bot einfach nach, "weil er
   //    noch kann" - dabei landete oft ein schwaches Buwemon mit starker Faehigkeit
@@ -13872,8 +13994,15 @@ function botChooseAction(p, is4) {
         .reduce((mm,s2) => Math.max(mm, popupAttackPower(s2)), 0)), 0);
     const hatStarkeFaehigkeit = BOT_GEFAEHRLICH.some(n => String(buwCard.name).indexOf(n) === 0);
     const aktionFrei = turnActionsUsed < turnActionsAllowed;
-    // Sinnvoll, wenn es stark genug ist, um zu ueberleben, ODER wenn seine Faehigkeit
-    // in diesem Zug noch eingesetzt werden kann.
+    // Karten, deren WERT in der Faehigkeit liegt (Maxodia, Marzo, Marie ...), erst legen,
+    // wenn die Faehigkeit im selben Zug auch genutzt werden kann - sonst stehen sie nur
+    // als leichte Beute herum. Ausnahme: der Bot haette sonst gar kein Buwemon.
+    if (hatStarkeFaehigkeit && !aktionFrei && ownBuw.length > 0) return { art: 'zugende' };
+    // Dr. Stirli staerkt andere - allein auf dem Feld bringt er nichts (nur als Notloesung).
+    if (String(buwCard.name).indexOf('Dr. Stirli') === 0 && ownBuw.length === 0
+        && hand.some(c => c.ctype === 'buw' && String(c.name).indexOf('Dr. Stirli') !== 0)) {
+      return { art: 'zugende' };
+    }
     const lohnt = (ap >= staerksteGegner) || (hatStarkeFaehigkeit && aktionFrei);
     if (lohnt) return { art:'dock', karte: buwCard, slot: freeBuw };
   }
@@ -13899,6 +14028,15 @@ function botAbilityMakesSense(ab, p, is4, sid, ownBuw) {
     case 'Legilimens':
     case 'Wanze':
       return gegner.length > 0;
+    case 'Toxische Männlichkeit': {
+      // Nur sinnvoll, wenn es ueberhaupt maennliche gegnerische Buwemon gibt.
+      const maennlich = (n) => {
+        try { return (typeof GENDER_MAP !== 'undefined') && GENDER_MAP[n] === 'm'; } catch(e) { return false; }
+      };
+      return gegner.some(o => botOwnBuwSlots(o, is4).some(sid => {
+        const c = G.slots[sid]; return c && maennlich(c.name);
+      }));
+    }
     default:
       return true;
   }
@@ -13965,8 +14103,21 @@ function botHandlePendingSelection(p, is4) {
     if (t) tryConfirmTreue(t, G.slots[t]); return;
   } } catch(e) {}
   try { if (pendingGottkomplex) {
-    const t = botPickTargetSlot(p, is4, true) || botPickTargetSlot(p, is4, false);
-    if (t) tryConfirmGottkomplex(t, G.slots[t]); return;
+    // Marzo braucht ein GEGNERISCHES Buwemon - und weder Spezial- noch EX-Karten.
+    // Frueher probierte der Bot zuerst ein eigenes, was tryConfirmGottkomplex ablehnt.
+    const kand = [];
+    botOpponents(p, is4).forEach(o => botOwnBuwSlots(o, is4).forEach(sid => {
+      const c = G.slots[sid];
+      if (!c) return;
+      if (c.type === 'spec' || c.type === 'ex' || c.type === 'ex-auto' || c.type === 'ex-ereignis') return;
+      kand.push({ sid, ap: popupAttackPower(sid) });
+    }));
+    kand.sort((a2,b2) => b2.ap - a2.ap);
+    if (kand.length) { tryConfirmGottkomplex(kand[0].sid, G.slots[kand[0].sid]); return; }
+    // Kein gueltiges Ziel -> Auswahl sauber beenden statt haengen zu lassen.
+    pendingGottkomplex = null; clearAbilityUI();
+    if (NET.mode === 'multi') try { netSend({t:'bot_chain_abort'}); } catch(e) {}
+    return;
   } } catch(e) {}
   if (botHandleOpponentPendings(p, is4)) return;
   if (botHandlePopups(p, is4)) return;
@@ -14066,7 +14217,14 @@ function botHandlePendingSelection2(p, is4) {
     // Sicherheitsnetz: bleibt die Auswahl trotzdem offen, nach 5s abbrechen - sonst
     // haengt die Kampfsituation (aufgetreten bei ApoReds Zwillingsattacke).
     setTimeout(() => {
-      try { if (pendingAttackSelection) { pendingAttackSelection = null; clearAbilityUI(); } } catch(e) {}
+      try {
+        if (pendingAttackSelection) {
+          pendingAttackSelection = null; clearAbilityUI();
+          // Auch bei den GAESTEN aufraeumen - sonst bleibt dort der Schein um das Buwemon
+          // stehen, sie koennen keine eigene Kampfsituation starten und nicht beenden.
+          if (NET.mode === 'multi') netSend({t:'bot_chain_abort'});
+        }
+      } catch(e) {}
     }, 5000);
     return;
   }
@@ -14084,6 +14242,14 @@ function botHandlePendingSelection2(p, is4) {
 // ── Ausfuehrung ─────────────────────────────────────────────────────────────
 // Der Bot benutzt dieselben Funktionen wie ein Mensch (kein direkter Zustands-Eingriff).
 function botPlaceCard(p, is4, karte, slot) {
+  // HARTE SPERRE: pro Zug genau EIN Buwemon. Die Pruefung in botChooseAction reichte
+  // nicht - hier kommt jeder Weg vorbei, also wird es hier endgueltig verhindert.
+  const _istBuwSlot = /-(buw\d|ex)(-4)?$/.test(String(slot));
+  if (_istBuwSlot) {
+    const key = botTurnKey(p, is4);
+    if (_botSummonedTurn === key) return false;   // in diesem Zug schon beschworen
+    _botSummonedTurn = key;
+  }
   const orders = is4 ? handOrderByPlayer4p : handOrderByPlayer2p;
   const uid = (orders[p] || []).find(u => {
     const c = handCardsFromUids([u])[0];
@@ -14141,12 +14307,19 @@ function botDoTurn(p) {
   _botThinking = true;
   botHidePopups(true);   // Popups des Bots bleiben beim Menschen unsichtbar
   botObserveOpenHands(is4);
+  // DEBUG-MODUS GILT NIE FUER BOTS: er hebt saemtliche Zug- und Verbrauchsgrenzen auf -
+  // der Bot haette dadurch unbegrenzt viele Angriffe. Waehrend seines Zuges wird er
+  // deshalb voruebergehend abgeschaltet und danach exakt wiederhergestellt.
+  const _dbgVorher = debugMode;
+  if (debugMode) debugMode = false;
+  const _dbgRestore = () => { debugMode = _dbgVorher; };
 
   const act = botChooseAction(p, is4);
   // Nach jeder Aktion NOCHMAL entscheiden: pro Zug sind ein Beschwoeren, EINE Buwemonaktion
   // (Angriff oder Faehigkeit) und beliebig viele sinnvolle Effektkarten erlaubt. Frueher
   // machte der Bot genau eine Sache und beendete sofort - deshalb wirkte er passiv.
   const finish = () => {
+    _dbgRestore();
     _botThinking = false;
     botStep = (botStep || 0) + 1;
     if (botStep < 6) { setTimeout(() => botDoTurn(p), 700); return; }
@@ -14155,7 +14328,9 @@ function botDoTurn(p) {
   };
 
   if (act.art === 'dock') {
-    if (act.karte && act.karte.ctype === 'buw') _botSummonedTurn = botTurnKey(p, is4);
+    // KEINE Vormarkierung hier! botPlaceCard ist die einzige Stelle, die den Zug als
+    // "schon beschworen" markiert. Wurde hier vorher markiert, hielt botPlaceCard bereits
+    // die ERSTE Beschwoerung fuer die zweite und lehnte sie ab - der Bot legte gar nichts mehr.
     botPlaceCard(p, is4, act.karte, act.slot);
     setTimeout(finish, 700);
     return;
@@ -14206,6 +14381,25 @@ function botDoTurn(p) {
       } catch(e) {}
     }
     setTimeout(finish, 1200);
+    return;
+  }
+  if (act.art === 'direktangriff') {
+    const cdD = G.slots[act.von];
+    if (cdD) {
+      const fake = document.createElement('div');
+      fake.dataset.name = cdD.name; fake.dataset.color = cdD.color;
+      fake.dataset.ctype = cdD.type || 'buw'; fake.dataset.uid = cdD.uid;
+      fake.dataset.slotId = act.von; // bereits LOGISCH (SLOT-ID-VERTRAG)
+      try {
+        beginAttackSelection(null, fake);
+        setTimeout(() => {
+          try { confirmAttackTargetLP(act.zielP, is4); } catch(e) {}
+          finish();
+        }, 800);
+        return;
+      } catch(e) {}
+    }
+    finish();
     return;
   }
   if (act.art === 'angriff') {
@@ -14261,8 +14455,60 @@ function botEndTurnWhenIdle(p, is4, tries) {
   try { if (is4) endTurn4(p); else endTurn(p); } catch(e) {}
 }
 
+// SELBSTHEILUNG: Beim Host laeuft im Mehrspieler ein Wachtakt. Falls ein Bot am Zug ist
+// oder eine Kampfsituation auf ihn wartet, ohne dass etwas passiert (verpasste Nachricht,
+// verpasster Zugwechsel), wird er hier angestossen. Ohne das blieben Bots im Mehrspieler
+// stumm - besonders bei Kampfsituationen, die ein GAST ausgeloest hatte.
+let _botHeartbeat = null;
+function botStartHeartbeat() {
+  if (_botHeartbeat) clearInterval(_botHeartbeat);
+  _botHeartbeat = setInterval(() => {
+    try {
+      if (!botActive || !botPlayers.length) return;
+      if (NET.mode === 'multi' && !NET.isHost) return;
+      const is4 = (typeof fourPlayerMode !== 'undefined' && fourPlayerMode);
+      // 1) Offene Kampfsituation -> Bots reagieren lassen
+      if (pendingAbility) {
+        botMaybeDefend();
+        // ZWANGSVERZICHT: Hat ein Bot nach mehreren Takten immer noch nicht entschieden
+        // (verpasste Nachricht, unbekannte Situation), verzichtet er hier ausdruecklich -
+        // sonst wartet die ganze Runde auf ihn, bis der Timer ablaeuft. Betrifft vor allem
+        // Kampfsituationen, die ein GAST ausgeloest hat.
+        const pa = pendingAbility;
+        pa._botWait = (pa._botWait || 0) + 1;
+        // WIEDERHOLUNG: Ein einzelnes 'ability_decline' kann unterwegs verlorengehen -
+        // dann wartet der AKTIVATOR (oft der Gast) die vollen 30s. Der Verzicht wird
+        // deshalb bei jedem Takt erneut geschickt; beim Empfaenger ist das harmlos,
+        // weil declinedBy eine Menge ist.
+        if (NET.mode === 'multi' && pa.declinedBy && pa._botWait <= 8) {
+          botPlayers.forEach(bp => {
+            if (pa.declinedBy.has(bp)) {
+              try { netSend({t:'ability_decline', player: bp}); } catch(e) {}
+            }
+          });
+        }
+        if (pa._botWait >= 2) {
+          if (!pa.declinedBy) pa.declinedBy = new Set();
+          botPlayers.forEach(bp => {
+            if (bp === pa.activatorP && !pa.combatDefense && !(pa.playedCards||[]).length) return;
+            if (pa.declinedBy.has(bp)) return;
+            pa.declinedBy.add(bp);
+            if (NET.mode === 'multi') try { netSend({t:'ability_decline', player: bp}); } catch(e) {}
+          });
+          try { if (typeof checkAllDeclined === 'function') checkAllDeclined(); } catch(e) {}
+        }
+        return;
+      }
+      // 2) Ein Bot ist am Zug, tut aber nichts -> anstossen
+      const t = is4 ? TURN_4P : TURN_2P;
+      if (t && botPlayers.includes(t) && !_botThinking) botDoTurn(t);
+    } catch(e) {}
+  }, 2500);
+}
+
 function botCheckTurn() {
   if (!botActive) return;
+  botStartHeartbeat();
   // Im Mehrspieler steuert AUSSCHLIESSLICH der Host die Bots - sonst wuerde jeder Client
   // eigene Entscheidungen treffen und die Runde liefe sofort auseinander.
   if (NET.mode === 'multi' && !NET.isHost) return;
@@ -14278,7 +14524,18 @@ function botCheckTurn() {
   window._botWatchdog = setTimeout(() => {
     const now = (typeof fourPlayerMode !== 'undefined' && fourPlayerMode) ? TURN_4P : TURN_2P;
     if (now !== t || !botPlayers.includes(t)) return;
-    if (pendingAbility) { botCheckTurn(); return; } // Kampf laeuft noch -> spaeter erneut
+    if (pendingAbility) {
+      // Laeuft die Kette schon sehr lange, wurde sie vermutlich nie abgeschlossen -
+      // dann hier beenden, damit weder Host noch Gaeste haengen bleiben.
+      window._botChainStuck = (window._botChainStuck || 0) + 1;
+      if (window._botChainStuck >= 3) {
+        window._botChainStuck = 0;
+        try { finalizeAbilityChain(); } catch(e) {}
+        if (NET.mode === 'multi') try { netSend({t:'bot_chain_abort'}); } catch(e) {}
+      }
+      botCheckTurn(); return;
+    }
+    window._botChainStuck = 0;
     _botThinking = false;
     try { if (fourPlayerMode) endTurn4(t); else endTurn(t); } catch(e) {}
   }, 12000);
@@ -14320,6 +14577,8 @@ function botMaybeDefend() {
         try { checkAbilityBlock(G.slots[slotK], slotK); } catch(e) {}
       } else {
         pa.declinedBy.add(p);
+        // MUSS raus: der Gast wartet sonst ewig auf die Reaktion dieses Bots.
+        if (NET.mode === 'multi') try { netSend({t:'ability_decline', player: p}); } catch(e) {}
       }
       return;
     }
@@ -14332,10 +14591,15 @@ function botMaybeDefend() {
       // Mein Buwemon wuerde sterben -> verteidigen lohnt fast immer.
       const diff = popupAttackPower(pa.slotId) - popupAttackPower(pa.defenderSlotId);
       schaden = Math.max(0, diff);
-      lohnt = diff > 0;
+      // Verteidigen lohnt, wenn das Buwemon stirbt ODER der Differenzschaden gefaehrlich ist.
+      lohnt = (diff > 0) || (schaden >= lpNow) || (lpNow <= 100);
     } else if (pa.isAttack && !pa.defenderSlotId) {
       // LP-Direktangriff: kleine Betraege aushalten, grosse abwehren.
-      schaden = pa.attackPower || popupAttackPower(pa.slotId) || 0;
+      // Schaden zuverlaessig bestimmen: pa.attackPower fehlt bei manchen Wegen, dann die
+      // AP des angreifenden Buwemon nehmen. Frueher blieb schaden dadurch 0 und der Bot
+      // starb mit vollen Glaskuppeln auf der Hand.
+      schaden = (typeof pa.attackPower === 'number' && pa.attackPower > 0)
+        ? pa.attackPower : (popupAttackPower(pa.slotId) || 0);
       lohnt = (schaden >= lpNow) || (lpNow <= 100) || (schaden >= 80);
     } else if (!pa.isAttack) {
       // Faehigkeit/Effektkarte gegen mich: nur kontern, wenn ich etwas dagegen habe.
@@ -14343,14 +14607,55 @@ function botMaybeDefend() {
     }
     // NUR EINE Abwehrkarte: liegt schon eine wirksame Verteidigung, wartet der Bot die
     // Reaktion der anderen ab, statt sofort die naechste Glaskuppel nachzulegen.
-    if (pa.combatDefense) { if (!pa.declinedBy) pa.declinedBy = new Set(); pa.declinedBy.add(p); return; }
+    if (pa.combatDefense) {
+      if (!pa.declinedBy) pa.declinedBy = new Set();
+      pa.declinedBy.add(p);
+      if (NET.mode === 'multi') try { netSend({t:'ability_decline', player: p}); } catch(e) {}
+      return;
+    }
     // Passende Abwehr zur Bedrohung: gegen Angriffe Calgon/Stein/UwU, gegen reine
     // LP-Bedrohung die Glaskuppel, gegen Faehigkeiten Dinkelmehl, gegen Effektkarten Ablehnt.
     let KARTE;
-    if (!pa.isAttack) KARTE = ['Dinkelmehl','Ablehnt'];
+    // Gegen eine FAEHIGKEIT wirkt nur Dinkelmehl (bzw. FourAceFour) - Ablehnt richtet sich
+    // ausschliesslich gegen bereits gespielte EFFEKTKARTEN. Der Bot hat es vorher falsch
+    // herum versucht und damit wirkungslos Karten verbrannt.
+    if (!pa.isAttack) {
+      KARTE = (pa.playedCards || []).length ? ['Ablehnt','Dinkelmehl'] : ['Dinkelmehl'];
+    }
     else if (!pa.defenderSlotId) KARTE = ['Glaskuppel','Glaskuppel Ereignis','Calgon'];
     else KARTE = ['Calgon','Stein','UwU ','Glaskuppel'];
-    const wahl = lohnt ? hand.find(c => KARTE.includes(c.name)) : null;
+    let wahl = lohnt ? hand.find(c => KARTE.includes(c.name)) : null;
+    // AUSRUESTUNG als Verteidigung: Wuerde mein Buwemon sterben, kann eine Clubmate oder
+    // ein 13er Bogen es ueber die AP des Angreifers heben - das rettet es ohne Effektkarte.
+    if (lohnt && !wahl && pa.isAttack && pa.defenderSlotId
+        && String(pa.defenderSlotId).startsWith('p'+p)) {
+      const fehlt = popupAttackPower(pa.slotId) - popupAttackPower(pa.defenderSlotId);
+      const equip = hand.find(c => c.name === 'Clubmate' || c.name === '13er Bogen');
+      if (fehlt > 0 && equip) {
+        const cdD = G.slots[pa.defenderSlotId];
+        if (cdD) {
+          if (!cdD.equipped) cdD.equipped = [];
+          const orders2 = is4 ? handOrderByPlayer4p : handOrderByPlayer2p;
+          const uidE = (orders2[p]||[]).find(u => {
+            const c = handCardsFromUids([u])[0]; return c && c.name === equip.name;
+          });
+          const elE = uidE !== undefined ? G.cards.find(c => String(c.dataset.uid) === String(uidE)) : null;
+          if (elE) {
+            cdD.equipped.push({ name: elE.dataset.name, color: elE.dataset.color,
+              uid: parseInt(elE.dataset.uid), file: elE.dataset.file || '', ctype: elE.dataset.ctype });
+            orders2[p] = (orders2[p]||[]).filter(u => String(u) !== String(uidE));
+            elE.remove(); G.cards = G.cards.filter(c => c !== elE);
+            renderSlot(pa.defenderSlotId);
+            try { renderSimulatedHand('p'+p, handCardsFromUids(orders2[p]||[]), is4); } catch(e) {}
+            if (NET.mode === 'multi') try {
+              netSend({t:'equip_update', slotId: pa.defenderSlotId, equipped: cdD.equipped});
+              if (is4) netSendState4(); else netSendState();
+            } catch(e) {}
+            return; // Ausruestung reicht als Reaktion in dieser Runde
+          }
+        }
+      }
+    }
     const slot = botFreeEffSlot(p, is4);
     if (wahl && slot) {
       // Der Bot legt seine Verteidigungskarte - wie ein Mensch ueber das Effektfeld.
@@ -14361,6 +14666,7 @@ function botMaybeDefend() {
       // Nichts zu tun (oder nicht lohnend) -> der Bot verzichtet ausdruecklich.
       if (!pa.declinedBy) pa.declinedBy = new Set();
       pa.declinedBy.add(p);
+      if (NET.mode === 'multi') try { netSend({t:'ability_decline', player: p}); } catch(e) {}
     }
   });
   // Sind jetzt alle durch? Dann die Runde abschliessen.
@@ -14909,7 +15215,8 @@ function startPeriodicSync() {
       // Nachricht verloren, haengt die Situation sonst bei einem Spieler fest und die
       // Runde wirkt "abgebrochen". Nur der Aktivator sendet, damit es keine Echos gibt.
       try {
-        if (NET.myPlayer === pendingAbility.activatorP) {
+        const _botAkt2 = (typeof botPlayers !== 'undefined') && botPlayers.includes(pendingAbility.activatorP);
+        if (NET.myPlayer === pendingAbility.activatorP || (_botAkt2 && NET.isHost)) {
           netSend({t:'ability_chain_refresh',
             slotId: pendingAbility.slotId,
             chainBlocked: pendingAbility.chainBlocked,
@@ -15323,6 +15630,21 @@ if (d.t === 'state4') {
       while (handOrderByPlayer4p[senderP].length < d.handCards.length) handOrderByPlayer4p[senderP].push(-1 - Math.random());
       cacheHandCardData(d.handCards);
       setRemoteHandCards(senderP, d.handCards);
+      // Bot-Haende (kommen nur vom Host) genauso uebernehmen wie die eines echten Spielers.
+      if (d.botHands) {
+        Object.keys(d.botHands).forEach(bp => {
+          const liste = d.botHands[bp] || [];
+          const bpN = parseInt(bp);
+          if (bpN === myLogicalPlayer4p()) return;
+          cacheHandCardData(liste);
+          setRemoteHandCards(bpN, liste);
+          if (!handOrderByPlayer4p[bpN]) handOrderByPlayer4p[bpN] = [];
+          while (handOrderByPlayer4p[bpN].length > liste.length) handOrderByPlayer4p[bpN].pop();
+          while (handOrderByPlayer4p[bpN].length < liste.length) handOrderByPlayer4p[bpN].push(-1 - Math.random());
+          renderSimulatedHand('p'+bpN, liste, true);
+        });
+        scheduleHandLabelUpdate();
+      }
       renderSimulatedHand(senderPfx, d.handCards, true);
       scheduleHandLabelUpdate();
     }
@@ -15503,6 +15825,9 @@ if (d.t === 'state4') {
       if (!_isNew) return;
       clearAbilityUI(); pendingAbility = null;
     }
+    // Kampfsituation eines ANDEREN Spielers: die Bots des Hosts muessen ebenfalls
+    // reagieren. Ohne diesen Anstoss blieben Gast-Kampfsituationen von ihnen unbeachtet.
+    try { setTimeout(() => { botStartHeartbeat(); botMaybeDefend(); }, 900); } catch(e) {}
     startAbilityReactionWindow({
       is4: d.is4, activatorP: d.activatorP, activatorName: d.activatorName,
       cardName: d.cardName, cardColor: d.cardColor, cardType: d.cardType || null, slotId: d.slotId,
@@ -15568,6 +15893,14 @@ if (d.t === 'state4') {
     // Neuer Gast: Host teilt ihm die aktuelle Bot-Anzahl mit.
     try { if (NET.isHost && mpBotCount > 0) setTimeout(() => netSend({t:'bot_count', n: mpBotCount}), 400); } catch(e) {}
   }
+  if (d.t === 'bot_chain_abort') {
+    // Der Host hat eine haengende Bot-Kampfsituation abgebrochen - hier dasselbe tun.
+    try {
+      if (pendingAbility) { clearAbilityUI(); pendingAbility = null; }
+      if (typeof pendingAttackSelection !== 'undefined') pendingAttackSelection = null;
+    } catch(e) {}
+    return;
+  }
   if (d.t === 'bot_count') {
     // Der Host legt die Bot-Anzahl fest - Gaeste uebernehmen sie nur.
     mpBotCount = d.n || 0;
@@ -15613,7 +15946,11 @@ if (d.t === 'state4') {
   if (d.t === 'antika_request') {
     // Nur der BESTOHLENE kennt seine Hand - er waehlt die Karte und meldet sie zurueck.
     const myLr = d.is4 ? myLogicalPlayer4p() : myLogicalPlayer2p();
-    if (myLr !== d.targetP) return;
+    // Ist das Ziel ein BOT, gibt es keinen Client mit myLr === targetP - dann antwortet
+    // der Host stellvertretend. Ohne das verpuffte die Anfrage und niemand bekam die Karte.
+    const _botZiel = (typeof botPlayers !== 'undefined') && botPlayers.includes(d.targetP);
+    const _hostAntwortet = _botZiel && ((NET.mode !== 'multi') || !!NET.isHost);
+    if (myLr !== d.targetP && !_hostAntwortet) return;
     const myHandR = d.is4 ? (handOrderByPlayer4p[d.targetP]||[]) : (handOrderByPlayer2p[d.targetP]||[]);
     if (!myHandR.length) return;
     const idxR = Math.min(d.cardIdx || 0, myHandR.length - 1);
@@ -15927,10 +16264,14 @@ if (d.t === 'state4') {
     if (pendingAbility) {
       if (!pendingAbility.declinedBy) pendingAbility.declinedBy = new Set();
       pendingAbility.declinedBy.add(d.player);
+      // Bots bei JEDEM Kettenfortschritt neu entscheiden lassen - nicht nur beim Start.
+      // Genau daran lag es, dass sie auf Aktionen des GASTS oft nicht reagierten.
+      try { setTimeout(botMaybeDefend, 300); } catch(e) {}
       checkAllDeclined();
     }
   }
   if (d.t === 'ability_chain_play') {
+    try { setTimeout(botMaybeDefend, 600); } catch(e) {} // Bots auf die gespielte Karte reagieren lassen
     if (pendingAbility) {
       pendingAbility.chainBlocked = d.chainBlocked;
       pendingAbility.chainStep = d.chainStep;
@@ -15946,7 +16287,9 @@ if (d.t === 'state4') {
       recomputeCombatChain(pendingAbility);
       if (d.locked) {
         // FourAceFour gelegt: Aktivator schließt die Kette ab, alle anderen warten auf 'ability_resolved'
-        if (NET.myPlayer === pendingAbility.activatorP) finalizeAbilityChain(d.killsBuwemon);
+        // Bot-Aktivator: der Host schliesst ab (siehe checkAllDeclined).
+        const _botA = (typeof botPlayers !== 'undefined') && botPlayers.includes(pendingAbility.activatorP);
+        if (NET.myPlayer === pendingAbility.activatorP || (_botA && NET.isHost)) finalizeAbilityChain(d.killsBuwemon);
       } else {
         openAbilityRound('chain');
       }
