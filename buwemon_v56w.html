@@ -2683,6 +2683,38 @@ function shuffleAndClose(){
 function beginSchicksalDiscard(ownerP, is4, onDone) {
   // effectFn läuft nur auf dem Aktivator-Client
   if(NET.mode==='multi') netSend({t:'schicksal_start', ownerP, is4, sender:NET.myPlayer});
+  // Gehoert die Faehigkeit einem BOT, ist das seine imaginaere Auswahl - der Toast darf
+  // beim Menschen NICHT erscheinen. Der Host waehlt stattdessen selbst die entbehrlichsten
+  // Karten des Bots aus und bestaetigt. Frueher blieb der Toast beim Host ewig stehen.
+  const _istBot = (typeof botPlayers !== 'undefined') && botPlayers.includes(ownerP);
+  if (_istBot) {
+    const arr = is4 ? (handOrderByPlayer4p[ownerP]||[]) : (handOrderByPlayer2p[ownerP]||[]);
+    const bewertet = arr.map(u => {
+      const el = G.cards.find(c => String(c.dataset.uid) === String(u));
+      const nm = el ? el.dataset.name : '';
+      return { u, el, wert: (CARD_ATTACK_POWER[nm]||0)
+        + (BOT_GEFAEHRLICH.some(x => String(nm).indexOf(x) === 0) ? 200 : 0) };
+    }).filter(x => x.el).sort((a2,b2) => a2.wert - b2.wert);
+    const weg = bewertet.slice(0, 3);
+    weg.forEach(k => {
+      const pfxG = 'p'+ownerP;
+      const cdG = { name: k.el.dataset.name, color: k.el.dataset.color,
+                    type: k.el.dataset.ctype, file: k.el.dataset.file || '' };
+      if (is4) { (G4.graves[pfxG] = G4.graves[pfxG] || []).push(cdG); }
+      else { (G.graves[pfxG] = G.graves[pfxG] || []).push(cdG); }
+      const orders = is4 ? handOrderByPlayer4p : handOrderByPlayer2p;
+      orders[ownerP] = (orders[ownerP]||[]).filter(u => String(u) !== String(k.u));
+      k.el.remove(); G.cards = G.cards.filter(c => c !== k.el);
+    });
+    const pfxG = 'p'+ownerP;
+    if (is4) updGrave4(pfxG); else updGrave(pfxG);
+    try { renderSimulatedHand('p'+ownerP,
+      handCardsFromUids((is4?handOrderByPlayer4p:handOrderByPlayer2p)[ownerP]||[]), is4); } catch(e) {}
+    scheduleHandLabelUpdate();
+    if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
+    if (onDone) setTimeout(() => { try { onDone(); } catch(e) {} }, 300);
+    return;
+  }
   const myHand = is4 ? (handOrderByPlayer4p[ownerP]||[]) : (handOrderByPlayer2p[ownerP]||[]);
   // Alle eigenen Handkarten als DOM-Elemente
   const handEls = G.cards.filter(c => myHand.includes(parseInt(c.dataset.uid)));
@@ -3520,6 +3552,11 @@ function reopenDefenseRound(sel, defenderSlotId, defenderP, isDirect, preEquipCo
 
 function cleanUpOwnAbilityCards(playedCards, killSlotId, killOwnerP, is4, cleanAll, returnToHand, tutMirLeidSlotId, combatSlotIds) {
   const myP = NET.mode === 'multi' ? NET.myPlayer : null;
+  // Der Host raeumt auch fuer SEINE BOTS auf - deren Karten (z.B. eine gespielte
+  // Glaskuppel) blieben sonst liegen, weil sie niemandem "gehoeren".
+  const _istMeinsOderBot = (pp) => (myP === null) || (pp === myP)
+    || ((typeof botPlayers !== 'undefined') && botPlayers.includes(pp)
+        && ((NET.mode !== 'multi') || !!NET.isHost));
   // IDEMPOTENZ fuer die ABLAGE: Diese Funktion laeuft beim Aktivator zweimal - lokal aus
   // finalizeAbilityChain UND ueber die eintreffende 'ability_resolved'-Nachricht. Ohne
   // Sperre landete jede Karte doppelt im Friedhof (zuletzt bei FourAceFour aufgefallen).
@@ -3561,7 +3598,7 @@ function cleanUpOwnAbilityCards(playedCards, killSlotId, killOwnerP, is4, cleanA
     if (returnToHand) {
       // Jeder Client legt NUR SEINE EIGENEN Karten auf seine Hand.
       // Für fremde Spieler wird die simulierte Anzeige aktualisiert.
-      const isOwnCard = (myP === null || p === myP);
+      const isOwnCard = _istMeinsOderBot(p);
       if (isOwnCard) {
         const uid = G.nid++;
         const el2 = spawnCard({ name: cdData.name, color: cdData.color, type: cdData.type || cdData.ctype, uid, file: cdData.file || imgFileFor(cdData.name) }, 0, 0, false);
@@ -3586,7 +3623,7 @@ function cleanUpOwnAbilityCards(playedCards, killSlotId, killOwnerP, is4, cleanA
       // jedem Client geleert, das bleibt so. Frueher pushte bei cleanAll JEDER Client
       // JEDE Karte in den (mitsynchronisierten) Friedhof - dadurch lagen Ablehnt, Stein
       // und Tut mir leid anschliessend doppelt darin.
-      if (myP !== null && p !== myP) return;
+      if (!_istMeinsOderBot(p)) return;
       if (_alreadyFiled(pc)) return; // zweiter Durchlauf derselben Kette
       const bcd = { name: cdData.name, color: cdData.color, type: cdData.type || cdData.ctype, file: cdData.file || '' };
       if (is4) { if (G4.graves[pfx]) { G4.graves[pfx].push(bcd); updGrave4(pfx); } if (NET.mode==='multi') netSend({t:'grave4_update', player:pfx, graves:G4.graves[pfx]}); }
@@ -4100,9 +4137,12 @@ function finalizeAbilityChain(killsBuwemon) {
   let playedCardsToClean = playedCards;
   let returnToHand = false;
   let tutMirLeidSlotId = null;
-  if (data.isAttack && combatDefense && combatDefense.name === 'Glaskuppel') {
-    const glaskuppelEntry = playedCards.find(pc => pc.cardName === 'Glaskuppel');
-    playedCardsToClean = playedCards.filter(pc => pc.cardName !== 'Glaskuppel');
+  // BEIDE Varianten beruecksichtigen - 'Glaskuppel Ereignis' fiel bisher durch dieses
+  // Raster und wurde deshalb nie wie eine Glaskuppel behandelt.
+  const _istGk = (n) => (n === 'Glaskuppel' || n === 'Glaskuppel Ereignis');
+  if (data.isAttack && combatDefense && _istGk(combatDefense.name)) {
+    const glaskuppelEntry = playedCards.find(pc => _istGk(pc.cardName));
+    playedCardsToClean = playedCards.filter(pc => !_istGk(pc.cardName));
     if (glaskuppelEntry) {
       const gp = combatDefense.ownerP;
       if (data.is4) activeGlaskuppel4p[gp] = glaskuppelEntry.slotId;
@@ -7486,6 +7526,42 @@ function graveRelevantPlayers(is4) {
 
 // ── EINE RUNDE NOCH ──
 function openEineRundeNochPopup(ownerP, effSlotId, is4) {
+  // Gehoert die Karte einem BOT, gehoert das Popup in SEINE imaginaere Sicht - beim
+  // Menschen darf es nicht aufgehen. Der Host waehlt stattdessen selbst: bevorzugt aus dem
+  // eigenen Friedhof des Bots das staerkste Buwemon.
+  if ((typeof botPlayers !== 'undefined') && botPlayers.includes(ownerP)) {
+    try {
+      const graves = (x) => (is4 ? (G4.graves['p'+x]||[]) : (G.graves['p'+x]||[]));
+      const kandidaten = graveRelevantPlayers(is4)
+        .map(x => ({ x, liste: graves(x) }))
+        .filter(e => e.liste.length);
+      if (kandidaten.length) {
+        // Eigener Friedhof zuerst, sonst der mit der staerksten Karte.
+        kandidaten.sort((a2,b2) => {
+          if (a2.x === ownerP) return -1;
+          if (b2.x === ownerP) return 1;
+          const wa = Math.max(...a2.liste.map(c => CARD_ATTACK_POWER[c.name]||0));
+          const wb = Math.max(...b2.liste.map(c => CARD_ATTACK_POWER[c.name]||0));
+          return wb - wa;
+        });
+        const q = kandidaten[0];
+        let bi = 0, bw = -1;
+        q.liste.forEach((c, i) => { const w = CARD_ATTACK_POWER[c.name]||0; if (w > bw) { bw = w; bi = i; } });
+        const cd = q.liste.splice(bi, 1)[0];
+        if (is4) updGrave4('p'+q.x); else updGrave('p'+q.x);
+        const orders = is4 ? handOrderByPlayer4p : handOrderByPlayer2p;
+        const uid = G.nid++;
+        const el = spawnCard({name:cd.name,color:cd.color,type:cd.type,uid,file:cd.file||imgFileFor(cd.name)},0,0,false);
+        if (el) el.style.display = 'none';
+        (orders[ownerP] = orders[ownerP] || []).push(uid);
+        try { renderSimulatedHand('p'+ownerP, handCardsFromUids(orders[ownerP]), is4); } catch(e) {}
+        scheduleHandLabelUpdate();
+      }
+      if (effSlotId && G.slots[effSlotId]) { G.slots[effSlotId] = null; renderSlot(effSlotId); }
+      if (NET.mode === 'multi') { is4 ? netSendState4() : netSendState(); }
+    } catch(e) {}
+    return;
+  }
   const activePlayers = graveRelevantPlayers(is4);
   const sorted = [ownerP, ...activePlayers.filter(p => p !== ownerP)];
   const modal = document.getElementById('verbot-target-modal');
@@ -12555,7 +12631,7 @@ function toggle4PMode() {
   fourPlayerMode = !fourPlayerMode;
   const btn = document.getElementById('lobby-4p-toggle');
   if (btn) {
-    btn.textContent = fourPlayerMode ? '2 - 4 Spieler Board' : '2 Spieler Board';
+    btn.textContent = fourPlayerMode ? '4 Spieler Board' : '2 Spieler Board';
     btn.style.background = fourPlayerMode ? 'rgba(120,50,170,0.8)' : 'rgba(205,165,0,0.85)'; // 4P violett, 2P gelb
     btn.style.color = '#fff';
   }
@@ -13130,7 +13206,10 @@ function checkDeathCondition4(p) {
 function eliminatePlayer4(p) {
   // NUR der betroffene Spieler selbst räumt auf.
   // Andere Clients empfangen nur grave4_update + card_remove Events.
-  if (NET.mode === 'multi' && NET.myPlayer !== p) return;
+  // Der Host raeumt auch fuer seine BOTS auf - fuer sie gibt es keinen eigenen Client,
+  // deshalb blieben ihre Karten beim Ausscheiden einfach liegen.
+  const _botSitz = (typeof botPlayers !== 'undefined') && botPlayers.includes(p) && !!NET.isHost;
+  if (NET.mode === 'multi' && NET.myPlayer !== p && !_botSitz) return;
 
   const pfx = 'p'+p;
   const EREIGNIS_TYPES = new Set(['ereignis','ex-ereignis','ex-auto']);
@@ -13653,7 +13732,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div id="game-version-label" style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v56t
+    v56w
   </div>
 </div>
 
@@ -13922,6 +14001,11 @@ function botThreatBonus(slotId) {
   if (!verbraucht && BOT_GEFAEHRLICH.some(n => String(cd.name).indexOf(n) === 0)) bonus += 90;
   if (cd.type === 'spec') bonus += 120;              // Spezialbuwemon sind besonders gefaehrlich
   if (schwammikaState[uid]) bonus += 60;             // Schwammika hat schon kopiert
+  // Eine Barista, die gerade ein Buwemon blockiert, ist besonders lohnend - sie
+  // freizukaempfen bringt dem Bot seine Aktion zurueck.
+  try {
+    if (String(cd.name).indexOf('Barista') === 0 && Object.keys(baristaBlocks).length) bonus += 130;
+  } catch(e) {}
   if (typeof abilActive === 'function' && abilActive(slotId)) bonus += 50; // Dauerfaehigkeit laeuft
   return bonus;
 }
@@ -13970,6 +14054,22 @@ function botChooseAction(p, is4) {
   }
   // 2. ANGRIFF hat Vorrang, sobald er sich lohnt (mehr AP als das Ziel).
   if (firstRoundOver && turnActionsUsed < turnActionsAllowed) {
+    // DIREKTANGRIFF ZUERST: Steht ein Gegner ohne Buwemon da, ist das der wertvollste Zug -
+    // er kostet ihn direkt LP. Frueher wurde erst nach einem Buwemon-Ziel gesucht, deshalb
+    // liess der Bot schutzlose Gegner oft ungestraft stehen.
+    const _freiJetzt = botOpponents(p, is4).filter(o => botOwnBuwSlots(o, is4).length === 0);
+    if (_freiJetzt.length && ownBuw.length) {
+      const _zielFrei = _freiJetzt
+        .map(o => ({ o, lp: (is4 ? G4.lp[o] : G.lp[o]) || 0 }))
+        .sort((a2,b2) => a2.lp - b2.lp)[0].o;
+      const _gkFrei = (typeof getGlaskuppelSlot === 'function') ? getGlaskuppelSlot(_zielFrei, is4) : null;
+      const _passend = ownBuw.filter(sid => {
+        const c = G.slots[sid];
+        if (!c || isBaristaBlocked(c.uid)) return false;
+        return _gkFrei ? (c.color === '#aa9900') : true;   // Glaskuppel: nur Gelb lohnt
+      }).sort((a2,b2) => popupAttackPower(b2) - popupAttackPower(a2));
+      if (_passend.length) return { art: 'direktangriff', von: _passend[0], zielP: _zielFrei };
+    }
     let best = null;
     ownBuw.filter(sid => {
       const c = G.slots[sid];
@@ -14060,7 +14160,15 @@ function botChooseAction(p, is4) {
         return gv.some(c => c && (CARD_ATTACK_POWER[c.name]||0) > bestesFeld);
       }
       case 'Schicksal':         return ownBuw.length === 0;
-      default:                  return false;
+      default: {
+        // BESCHWOERUNGSKARTE: nur sinnvoll, wenn der Bot das passende Spezialbuwemon auf
+        // der Hand hat - dann kann er es anschliessend wirklich beschwoeren.
+        try {
+          const eigene = hand.map(c => c.name);
+          return Object.keys(SUMMON_MAP || {}).some(spec =>
+            SUMMON_MAP[spec] === name && eigene.includes(spec));
+        } catch(e) { return false; }
+      }
     }
   };
   // NIE eine Effektkarte legen, wenn gleich noch eine Kampfsituation folgt (z.B. waehrend
@@ -14255,8 +14363,16 @@ function botHandleOpponentPendings(p, is4) {
 // Der Bot bedient sie im Hintergrund - deshalb werden sie waehrend seines Zuges
 // ausgeblendet und danach wieder freigegeben.
 function botHidePopups(an) {
-  ['overview-modal','browser-modal','verbot-target-modal','color-remove-modal',
-   'card-popup','confirm-modal'].forEach(id => {
+  // Sicherheitsnetz: eine Ausblendung wird IMMER spaetestens nach 6s aufgehoben, damit
+  // die Oberflaeche des Menschen nie dauerhaft blockiert bleibt.
+  try {
+    clearTimeout(window._botHideTimer);
+    if (an) window._botHideTimer = setTimeout(() => { try { botHidePopups(false); } catch(e) {} }, 6000);
+  } catch(e) {}
+  // WICHTIG: 'card-popup' (das Vergroesserungsfenster) und 'confirm-modal' gehoeren dem
+  // MENSCHEN. Sie waren hier faelschlich mit drin - blieb die Ausblendung haengen, liess
+  // sich per Doppelklick keine Karte mehr vergroessern.
+  ['overview-modal','browser-modal','verbot-target-modal','color-remove-modal'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.style.visibility = an ? 'hidden' : '';
@@ -14342,6 +14458,93 @@ function botHandleMarie(p, is4) {
   return true;
 }
 
+// STAPELPLANUNG (Gossip / Kontrollfreak)
+// Der Bot rechnet aus, welche der einsehbaren Karten ER selbst ziehen wird: bei n aktiven
+// Spielern zieht jeder reihum eine Karte, seine liegen also an Position (abstand-1),
+// (abstand-1)+n, usw. - gezaehlt ab der obersten Karte.
+function botEigeneZiehPositionen(p, is4, sichtbar) {
+  const order = is4 ? TURN_ORDER_4P : [1,2];
+  const aktive = order.filter(x => is4 ? G4.active[x] : true);
+  const n = Math.max(1, aktive.length);
+  const jetzt = is4 ? TURN_4P : TURN_2P;
+  let start = aktive.indexOf(jetzt);
+  if (start < 0) start = 0;
+  const meiner = aktive.indexOf(p);
+  if (meiner < 0) return [];
+  // Abstand bis der Bot wieder an der Reihe ist (er selbst zieht in diesem Zug zuerst)
+  const abstand = ((meiner - start) + n) % n;
+  const pos = [];
+  for (let i = abstand; i < sichtbar; i += n) pos.push(i);
+  return pos;
+}
+
+// Wie gut ist eine Karte fuer den Bot? Buwemon nach AP, starke Faehigkeiten mit Zuschlag,
+// RGB zaehlt hoch, weil er damit sofort nachziehen kann.
+function botKartenWert(cd, p, is4) {
+  if (!cd) return 0;
+  const nm = cd.name || '';
+  let w = CARD_ATTACK_POWER[nm] || 0;
+  if (BOT_GEFAEHRLICH.some(x => String(nm).indexOf(x) === 0)) w += 150;
+  if (nm === 'RGB') w += 120;
+  try {
+    const eigene = botHand(p, is4).map(c => c.name);
+    Object.keys(SUMMON_MAP || {}).forEach(spec => {
+      if (SUMMON_MAP[spec] === nm && eigene.includes(spec)) w += 300;
+    });
+  } catch(e) {}
+  return w;
+}
+
+// Gossip: die besten Karten auf die eigenen Ziehpositionen schieben.
+// Kontrollfreak: bekommt der Bot ohnehin nichts Brauchbares (oder ein Gegner etwas sehr
+// Starkes), mischt er den Stapel lieber neu.
+function botPlanStapel(p, is4) {
+  const modus = G.browserMode;
+  if (modus !== 'gossip4' && modus !== 'top4' && modus !== 'top' && modus !== 'kontrollfreak') return false;
+  const deck = G.deck || [];
+  const sichtbar = Math.min(deck.length, (typeof G._gossipCount4 === 'number' && G._gossipCount4) || 6);
+  if (!sichtbar) return false;
+  const meine = botEigeneZiehPositionen(p, is4, sichtbar);
+  if (!meine.length) return false;
+
+  if (modus === 'kontrollfreak') {
+    // Nur ANSEHEN moeglich: mischen, wenn meine Karten schwach sind oder ein Gegner eine
+    // sehr starke bekommt.
+    const meinBester = Math.max(0, ...meine.map(i => botKartenWert(deck[i], p, is4)));
+    let gegnerBester = 0;
+    for (let i = 0; i < sichtbar; i++) {
+      if (meine.includes(i)) continue;
+      gegnerBester = Math.max(gegnerBester, botKartenWert(deck[i], p, is4));
+    }
+    if (meinBester < 140 || gegnerBester >= meinBester + 120) {
+      try { shuffleAndClose(); } catch(e) {}
+      return true;
+    }
+    try { closeBrowser(); } catch(e) {}
+    return true;
+  }
+
+  // GOSSIP: fuer jede eigene Position die beste noch freie Karte nach vorn holen.
+  const belegt = new Set();
+  meine.forEach(ziel => {
+    let bestIdx = -1, bestW = -1;
+    for (let i = 0; i < sichtbar; i++) {
+      if (belegt.has(i)) continue;
+      const w = botKartenWert(deck[i], p, is4);
+      if (w > bestW) { bestW = w; bestIdx = i; }
+    }
+    if (bestIdx < 0 || bestIdx === ziel) { if (bestIdx >= 0) belegt.add(bestIdx); return; }
+    // Schrittweise nach oben schieben, bis die Karte auf der Zielposition liegt.
+    let cur = bestIdx;
+    let schutz = 0;
+    while (cur > ziel && schutz++ < 12) { try { moveBCard(cur, -1); } catch(e) {} cur--; }
+    while (cur < ziel && schutz++ < 12) { try { moveBCard(cur, 1); } catch(e) {} cur++; }
+    belegt.add(ziel);
+  });
+  try { closeBrowser(); } catch(e) {}
+  return true;
+}
+
 function botHandlePopups(p, is4) {
   if (botHandleMarie(p, is4)) return true;
   // 0) Auswahl-Toast mit Bestaetigung zuerst - er blockiert sonst alles Weitere.
@@ -14400,6 +14603,16 @@ function botHandlePopups(p, is4) {
     if (btns.length) {
       const eigener = btns.find(b2 => (b2.textContent || '').indexOf('👤') === 0);
       const zahl = (b2) => { const m = (b2.textContent||'').match(/\((\d+)\s*Karten\)/); return m ? parseInt(m[1]) : 0; };
+      // Reine SPIELERWAHL (z.B. Mecces Pakt) - dort steht keine Kartenzahl im Text.
+      // Dann den gefaehrlichsten Gegner nehmen, nicht stur den ersten Button.
+      const ohneZahlen = btns.every(b2 => zahl(b2) === 0);
+      if (ohneZahlen) {
+        const zielP = botPickOpponent(p, is4, null);
+        const treffer = btns.find(b2 => new RegExp('\\b' + lpOptPlayerName(zielP, is4).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b').test(b2.textContent || ''));
+        try { (treffer || btns[Math.floor(Math.random() * btns.length)]).click(); } catch(e) {}
+        setTimeout(() => { try { botHandlePopups(p, is4); } catch(e) {} }, 500);
+        return true;
+      }
       const sortiert = btns.slice().sort((x,y) => zahl(y) - zahl(x));
       const wahl = (eigener && zahl(eigener) > 0) ? eigener : sortiert[0];
       try { wahl.click(); } catch(e) {}
@@ -14414,6 +14627,8 @@ function botHandlePopups(p, is4) {
   // STAERKSTE Karte nehmen. Sonst (Gossip/Kontrollfreak) nur schliessen.
   const bm = document.getElementById('browser-modal');
   if (bm && bm.classList.contains('open')) {
+    // Gossip/Kontrollfreak: Reihenfolge planen bzw. mischen, statt nur zu schliessen.
+    if (botPlanStapel(p, is4)) return true;
     const take = Array.prototype.slice.call(bm.querySelectorAll('button'))
       .filter(b2 => !b2.disabled && /hand|auswählen|auswaehlen|nehmen|friedhof/i.test(b2.textContent || '')
                     && !/schließen|schliessen|mischen/i.test(b2.textContent || ''));
@@ -14887,8 +15102,17 @@ function botMaybeDefend() {
       // Frueher galt das fuer jede Faehigkeit - die Bots verbrauchten ihre Karten dann
       // auch zum Schutz anderer Spieler.
       const zielIchSelbst = pa.defenderSlotId && String(pa.defenderSlotId).startsWith('p'+p);
-      const ohneZiel = !pa.defenderSlotId;   // wirkt auf alle (z.B. Raum-Zeit-Genozid)
-      lohnt = !!zielIchSelbst || ohneZiel;
+      // Ein ausdrueckliches ZIEL-Spieler-Feld (Mecces Pakt, Wanze, Marie ...) entscheidet:
+      // trifft es jemand anderen, geht es den Bot nichts an. Frueher verteidigte er auch
+      // fremde Spieler, weil "kein Slot-Ziel" als "betrifft alle" galt.
+      const zielSpieler = (pa.targetP !== undefined ? pa.targetP
+        : (pa.directLPTarget !== undefined ? pa.directLPTarget : null));
+      if (zielSpieler !== null && zielSpieler !== undefined) {
+        lohnt = (Number(zielSpieler) === Number(p));
+      } else {
+        const ohneZiel = !pa.defenderSlotId;   // wirkt wirklich auf alle (Raum-Zeit-Genozid)
+        lohnt = !!zielIchSelbst || ohneZiel;
+      }
     }
     // NUR EINE Abwehrkarte: liegt schon eine wirksame Verteidigung, wartet der Bot die
     // Reaktion der anderen ab, statt sofort die naechste Glaskuppel nachzulegen.
@@ -14911,6 +15135,9 @@ function botMaybeDefend() {
     }
     else if (!pa.defenderSlotId) KARTE = ['Glaskuppel','Glaskuppel Ereignis','Calgon'];
     else KARTE = ['Calgon','Stein','UwU ','Glaskuppel'];
+    // Liegt bereits eine eigene Glaskuppel im Feld, schuetzt die schon - dann keine zweite.
+    const _gkLiegt = (typeof getGlaskuppelSlot === 'function') && !!getGlaskuppelSlot(p, is4);
+    if (_gkLiegt) KARTE = KARTE.filter(n => n !== 'Glaskuppel' && n !== 'Glaskuppel Ereignis');
     let wahl = lohnt ? hand.find(c => KARTE.includes(c.name)) : null;
     // AUSRUESTUNG als Verteidigung: Wuerde mein Buwemon sterben, kann eine Clubmate oder
     // ein 13er Bogen es ueber die AP des Angreifers heben - das rettet es ohne Effektkarte.
