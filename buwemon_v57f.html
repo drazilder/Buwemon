@@ -4460,6 +4460,20 @@ function applyLpDamage(p, amount, is4, attackerColor) {
           const _t1 = 'Glaskuppel durchbrochen! (50%)';
           showOutcomeToast(_t1, is4);
           if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t1, is4});
+          // ZWEITE CHANCE: Wie bei einer gescheiterten Calgon/Stein-Abwehr bekommt der
+          // Getroffene eine weitere Abwehr-Runde, bevor der Schaden wirklich ankommt.
+          // Vorher kassierte er ihn sofort. Die durchbrochene Glaskuppel bleibt dabei
+          // entwertet (markGlaskuppelBroken oben) - eine neu gelegte zaehlt normal.
+          if (!window._gkRetryDone && window._gkLastSel) {
+            window._gkRetryDone = true;
+            const _sel = window._gkLastSel;
+            setTimeout(() => {
+              window._gkRetryDone = false;
+              if (pendingAbility) return;
+              try { reopenDefenseRound(_sel.sel, _sel.defenderSlotId, p, _sel.isDirect, _sel.preEquipCount, is4); } catch(e) {}
+            }, 1200);
+            return;   // Schaden erst nach der zusaetzlichen Runde
+          }
           // Schaden geht normal durch
         } else {
           const _t2 = 'Glaskuppel schützt die LP! (50%)';
@@ -5010,6 +5024,7 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
   let attackerDiesInstead = false;
   let lpProtected = false;
   let atkPowerOverride = null;
+  let uwuAbzug = 0;   // Summe der UwU-Abzuege; wird auf die LIVE berechnete Kraft angewendet
   let attackerDiesAfterwards = false;
   const atkCdGlobal = G.slots[sel.slotId];
   const atkColor = atkCdGlobal ? atkCdGlobal.color : (sel.cardEl ? sel.cardEl.dataset.color : null);
@@ -5038,7 +5053,12 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
           : '<b>Stein</b> hat NICHT gewirkt - Angriff wird durchgeführt.';
         setTimeout(() => { showOutcomeToast(_t, is4); if (NET.mode==='multi') netSend({t:'outcome_toast', text:_t, is4}); }, 600); }
     } else if (defense.name === 'UwU ') {
-      atkPowerOverride = sel.attackPower - 30;
+      // UwU zieht 30 AP ab - aber vom AKTUELLEN Wert, nicht vom eingefrorenen Startwert.
+      // Frueher stand hier sel.attackPower (Stand bei Angriffsbeginn). Ruestete sich der
+      // Angreifer waehrend der Kampfsituation noch einen 13er Bogen aus, wurde dessen
+      // Bonus dadurch verschluckt: AnniKKKa 180 -> 150 statt 200.
+      // Der Abzug wird deshalb erst UNTEN auf die frisch berechnete Kraft angewendet.
+      uwuAbzug += 30;
       if (atkColor === '#008899') attackerDiesAfterwards = true; // Angreifer ist Cyan
       { const _t = (atkColor === '#008899')
           ? '<b>UwU</b> wirkt: -30 AP und der CYANE Angreifer stirbt danach!'
@@ -5099,6 +5119,8 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
     return;
   }
 
+  // Angaben fuer eine moegliche Glaskuppel-Wiederholungsrunde merken (siehe applyLpDamage).
+  try { window._gkLastSel = { sel, defenderSlotId, isDirect, preEquipCount }; } catch(e) {}
   // Verteidiger-AP: exakt die Zahl aus seinem Vergroesserungs-Popup.
   const defPower = popupAttackPower(defenderSlotId);
   // Angriffskraft FRISCH berechnen - der Angreifer kann sich waehrend der Kampfsituation
@@ -5121,7 +5143,8 @@ function resolveAttack(sel, defenderSlotId, defenderP, isDirect, resolveInfo, pr
       _atkPowerLive = sel.attackPower + (_nowBonus - _preBonus);
     }
   }
-  const atkPower = atkPowerOverride !== null ? atkPowerOverride : _atkPowerLive;
+  // UwU-Abzug ganz zum Schluss - so zaehlt jede waehrend des Kampfes ausgeruestete Karte mit.
+  const atkPower = Math.max(0, (atkPowerOverride !== null ? atkPowerOverride : _atkPowerLive) - uwuAbzug);
   const diff = atkPower - defPower;
 
   if (diff > 0) {
@@ -6870,7 +6893,15 @@ function beginSpuelung(btn, cardEl) {
   const opponents = activePlayers.filter(p => {
     if (p === activatorP) return false;
     const hand = is4 ? (handOrderByPlayer4p[p]||[]) : (handOrderByPlayer2p[p]||[]);
-    return hand.length >= 8;
+    // Die lokale Handreihenfolge kennt fremde Haende nicht immer (z.B. Bot-Haende beim
+    // Gast). Dann die zuletzt gemeldete Kartenliste heranziehen - sonst fand die Spuelung
+    // gar keinen Gegner und brach kommentarlos ab.
+    let anzahl = hand.length;
+    try {
+      const fern = (typeof foreignHandCards === 'function') ? foreignHandCards(p, is4) : null;
+      if (fern && fern.length > anzahl) anzahl = fern.length;
+    } catch(e) {}
+    return anzahl >= 8;
   });
   if (!opponents.length) { showOutcomeToast('⚠ Kein Gegner hat mind. 8 Handkarten!', is4); return; }
 
@@ -13918,7 +13949,7 @@ document.querySelectorAll('.swatch').forEach(sw=>{
   </div>
 
   <div id="game-version-label" style="font-size:.72rem;color:rgba(40,46,60,0.35);font-family:'Kievit','Segoe UI',sans-serif;letter-spacing:1px;font-size:2rem;font-weight:900;background:rgba(180,185,195,0.75);padding:3px 12px;border-radius:7px;">
-    v57d
+    v57f
   </div>
 </div>
 
@@ -14266,6 +14297,13 @@ function botChooseAction(p, is4) {
   const buwCard = schonBeschworen ? null
     : (_buwSortiert.find(c => !(_istStuetze(c) && ownBuw.length === 0 && _buwSortiert.length > 1))
        || _buwSortiert[0]);
+  // EX SOFORT: Liegen schon ZWEI gleichfarbige Buwemon und die dritte Farbe ist auf der
+  // Hand, wird sie als ALLERERSTES gelegt - dann steht das EX-Buwemon noch in diesem Zug
+  // bereit und kann angreifen.
+  if (!schonBeschworen && freeBuw) {
+    const _dritte = _buwSortiert.find(c => (_farbZaehler[c.color] || 0) >= 2);
+    if (_dritte) return { art:'dock', karte: _dritte, slot: freeBuw };
+  }
   if (freeBuw && buwCard && ownBuw.length === 0) {
     return { art: 'dock', karte: buwCard, slot: freeBuw };
   }
@@ -14400,7 +14438,27 @@ function botChooseAction(p, is4) {
   const _finnSperrt = (typeof finnBlocksEffects === 'function') && finnBlocksEffects(p);
   const _kampfFolgt = _finnSperrt || !!pendingAbility || !!window._schwActionOpen
     || (typeof anyTargetSelectOpen === 'function' && anyTargetSelectOpen());
-  const effCard = _kampfFolgt ? null : hand.find(c => sinnvoll(c.name));
+  // VERBOTE BEACHTEN: Liegt die zugehoerige Verbotskarte im eigenen Feld, waere die Karte
+  // toedlich (LP-Strafe). Der Bot hat sich damit schon selbst umgebracht.
+  const _verboten = new Set();
+  try {
+    const _sufV = is4 ? '-4' : '';
+    ['verbot1','verbot2','verbot3'].forEach(vs => {
+      const vc = G.slots['p'+p+'-'+vs+_sufV];
+      if (vc && VERBOT_MAP[vc.name]) VERBOT_MAP[vc.name].forEach(n => _verboten.add(n));
+    });
+  } catch(e) {}
+  // VERTRAGSBRUCH raeumt alle eigenen Verbotsfelder ab - lohnt ab zwei Verbotskarten.
+  if (!_kampfFolgt && freeEff) {
+    const _vbKarte = hand.find(c => c.name === 'Vertragsbruch');
+    let _vbAnzahl = 0;
+    try {
+      const _sufV2 = is4 ? '-4' : '';
+      ['verbot1','verbot2','verbot3'].forEach(vs => { if (G.slots['p'+p+'-'+vs+_sufV2]) _vbAnzahl++; });
+    } catch(e) {}
+    if (_vbKarte && _vbAnzahl >= 2) return { art:'dock', karte: _vbKarte, slot: freeEff };
+  }
+  const effCard = _kampfFolgt ? null : hand.find(c => sinnvoll(c.name) && !_verboten.has(c.name));
   if (effCard && freeEff) return { art:'dock', karte: effCard, slot: freeEff };
   // 4. Nachlegen NUR wenn es sich lohnt. Frueher legte der Bot einfach nach, "weil er
   //    noch kann" - dabei landete oft ein schwaches Buwemon mit starker Faehigkeit
@@ -14449,6 +14507,15 @@ function botAbilityMakesSense(ab, p, is4, sid, ownBuw) {
     case 'Legilimens':
     case 'Wanze':
       return gegner.length > 0;
+    case 'Glibbern': {
+      // Bringt im Kampf nichts - nur einsetzen, wenn es gar keinen lohnenden Angriff und
+      // keine andere Aktion gibt.
+      if (!firstRoundOver) return true;
+      const lohnenderAngriff = gegner.some(o => botOwnBuwSlots(o, is4)
+        .some(d => ownBuw.some(a2 => popupAttackPower(a2) > popupAttackPower(d))));
+      const freierGegner = gegner.some(o => botOwnBuwSlots(o, is4).length === 0);
+      return !lohnenderAngriff && !freierGegner;
+    }
     case 'Meme Belästigung': {
       // Kax Maufmann belegt am besten ein STARKES gegnerisches Buwemon (Ausruestung zaehlt
       // ueber popupAttackPower mit).
@@ -14481,6 +14548,27 @@ function botAbilityMakesSense(ab, p, is4, sid, ownBuw) {
         try { if (c && GENDER_MAP[c.name] === 'm' && popupAttackPower(s2) >= 160) m++; } catch(e) {}
       }));
       return m >= 2;
+    }
+    case 'Giraffael': {
+      // Giraffael tauscht mit dem Nachbarn im Uhrzeigersinn. Nur sinnvoll, wenn dessen
+      // Buwemon staerker sind - Ereigniskarten zaehlen dabei NICHT mit, die verschwinden
+      // beim Rotieren.
+      const ohneEreignis = (sid) => {
+        const c = G.slots[sid];
+        if (!c) return 0;
+        const basis = CARD_ATTACK_POWER[c.name] || 0;
+        const eq = (c.equipped || []).filter(e => e && !e.deaktiviert
+          && e.ctype !== 'ereignis' && e.ctype !== 'ex-ereignis');
+        return basis + computeEquipBonus(c.color, eq, undefined, basis);
+      };
+      const meins = ownBuw.reduce((x,s2) => x + ohneEreignis(s2), 0);
+      const order = is4 ? TURN_ORDER_4P : [1,2];
+      const aktiv = order.filter(x => is4 ? G4.active[x] : true);
+      const idx = aktiv.indexOf(p);
+      const nachbar = idx >= 0 ? aktiv[(idx + 1) % aktiv.length] : null;
+      if (!nachbar || nachbar === p) return false;
+      const seins = botOwnBuwSlots(nachbar, is4).reduce((x,s2) => x + ohneEreignis(s2), 0);
+      return seins > meins + 40;
     }
     case 'Liiinks':
     case 'Recast': {
@@ -15434,7 +15522,17 @@ function botMaybeDefend() {
       else KARTE = (pa.playedCards || []).length ? ['Ablehnt'] : ['Dinkelmehl'];
     }
     else if (!pa.defenderSlotId) KARTE = ['Glaskuppel','Glaskuppel Ereignis','Calgon'];
-    else KARTE = ['Calgon','Stein','UwU ','Glaskuppel'];
+    else {
+      // UwU lohnt nur, wenn die -30 den Angreifer wirklich unter das eigene Buwemon
+      // druecken (sonst stirbt es trotzdem) - oder wenn es ohnehin eng wird (<100 LP).
+      const _atkAP = popupAttackPower(pa.slotId);
+      const _defAP = pa.defenderSlotId ? popupAttackPower(pa.defenderSlotId) : 0;
+      // Nur sinnvoll, wenn das eigene Buwemon OHNE UwU sterben wuerde und MIT UwU
+      // ueberlebt. Ist es ohnehin sicher oder auch mit -30 noch unterlegen, waere die
+      // Karte verschwendet (Phils Fall: 160 gegen 170 - da bringt UwU gar nichts).
+      const _uwuLohnt = (_atkAP > _defAP && (_atkAP - 30) < _defAP) || (lpNow <= 100);
+      KARTE = _uwuLohnt ? ['Calgon','Stein','UwU ','Glaskuppel'] : ['Calgon','Stein','Glaskuppel'];
+    }
     // Liegt bereits eine eigene Glaskuppel im Feld, schuetzt die schon - dann keine zweite.
     const _gkLiegt = (typeof getGlaskuppelSlot === 'function') && !!getGlaskuppelSlot(p, is4);
     if (_gkLiegt) KARTE = KARTE.filter(n => n !== 'Glaskuppel' && n !== 'Glaskuppel Ereignis');
@@ -15465,7 +15563,10 @@ function botMaybeDefend() {
               netSend({t:'equip_update', slotId: pa.defenderSlotId, equipped: cdD.equipped});
               if (is4) netSendState4(); else netSendState();
             } catch(e) {}
-            return; // Ausruestung reicht als Reaktion in dieser Runde
+            // MEHRFACH ausruesten: reicht eine Karte nicht, haengt der Bot direkt die
+            // naechste dran (mehrere Clubmaten/13er Bogen sind in einem Durchgang erlaubt).
+            try { setTimeout(() => { if (pendingAbility) botMaybeDefend(); }, 350); } catch(e) {}
+            return;
           }
         }
       }
